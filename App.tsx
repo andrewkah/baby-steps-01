@@ -3,9 +3,13 @@ import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import Auth from './components/Auth'
 import Onboarding from './components/Onboarding'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { Session } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { resetOnboardingStatus } from './lib/utils'
+
+// Determine if we're in development mode
+const isDev = process.env.NODE_ENV === 'development'
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -59,6 +63,18 @@ export default function App() {
           )}
         </>
       )}
+      
+      {isDev && (
+        <TouchableOpacity 
+          style={styles.devButton} 
+          onPress={async () => {
+            await resetOnboardingStatus();
+            alert('Onboarding reset. Restart the app to see changes.');
+          }}
+        >
+          <Text style={styles.devButtonText}>Reset Onboarding</Text>
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
@@ -70,5 +86,18 @@ const styles = StyleSheet.create({
   userInfo: {
     marginTop: 16,
     paddingHorizontal: 12,
+  },
+  devButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#ff5722',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  devButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   }
 })
