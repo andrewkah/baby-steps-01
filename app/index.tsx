@@ -76,6 +76,8 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.text}>Welcome!</Text>
+
       {isDev && (
         <TouchableOpacity
           style={styles.devButton}
@@ -96,6 +98,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  text: {
+    fontSize: 20,
+    marginBottom: 20,
   },
   devButton: {
     position: "absolute",

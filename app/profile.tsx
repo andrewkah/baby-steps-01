@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Session } from "@supabase/supabase-js";
 import { Button } from "@rneui/themed";
 import { supabase } from "../lib/supabase";
+import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
-  const [session, setSession] = React.useState<Session | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const router = useRouter();
 
-  React.useEffect(() => {
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
@@ -26,7 +28,8 @@ export default function ProfileScreen() {
     if (error) {
       console.error("Error signing out:", error.message);
     } else {
-      // Navigation not needed here as auth state change will trigger App.tsx redirects
+      console.log("Signed out successfully");
+      router.replace("/");
     }
   };
 

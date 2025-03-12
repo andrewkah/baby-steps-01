@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Button, Input } from "@rneui/themed";
+import { useRouter } from "expo-router";
+import { resetOnboardingStatus } from "@/lib/utils";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function signInWithEmail() {
     setLoading(true);
@@ -15,7 +18,12 @@ export default function Auth() {
       password: password,
     });
 
-    if (error) Alert.alert(error.message);
+    if (error) {
+      Alert.alert(error.message);
+    } else {
+      router.replace("/profile");
+    }
+
     setLoading(false);
   }
 
@@ -70,6 +78,14 @@ export default function Auth() {
           title="Sign up"
           disabled={loading}
           onPress={() => signUpWithEmail()}
+        />
+      </View>
+
+      <View style={styles.verticallySpaced}>
+        <Button
+          title="Reset on boarding"
+          disabled={loading}
+          onPress={() => resetOnboardingStatus()}
         />
       </View>
     </View>

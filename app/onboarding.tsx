@@ -11,11 +11,11 @@ export default function OnboardingScreen() {
     try {
       // Save that onboarding is completed
       await AsyncStorage.setItem("@onboarding_completed", "true");
-      
+
       // Navigate to the appropriate screen
       // This will trigger the useEffect in index.tsx which will
       // redirect based on the updated onboarding status
-      router.replace("/");
+      router.replace("/auth");
     } catch (error) {
       console.error("Failed to save onboarding status", error);
     }
