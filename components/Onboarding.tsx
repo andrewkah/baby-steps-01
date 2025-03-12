@@ -1,36 +1,38 @@
-import React, { useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Dimensions, 
-  FlatList, 
-  Animated, 
-  TouchableOpacity 
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Button } from '@rneui/themed';
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  FlatList,
+  Animated,
+  TouchableOpacity,
+} from "react-native";
+import { Button } from "@rneui/themed";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const onboardingData = [
   {
-    id: '1',
-    title: 'Welcome to Baby Steps',
-    description: 'Interactive early cultural learning game for Ugandan children',
-    image: '🧒', // This would be replaced with a real image
+    id: "1",
+    title: "Welcome to Baby Steps",
+    description:
+      "Interactive early cultural learning game for Ugandan children",
+    image: "🧒", // This would be replaced with a real image
   },
   {
-    id: '2',
-    title: 'Learn Through Stories',
-    description: 'Engage with culturally themed narratives that introduce Ugandan folklore',
-    image: '📚', // This would be replaced with a real image
+    id: "2",
+    title: "Learn Through Stories",
+    description:
+      "Engage with culturally themed narratives that introduce Ugandan folklore",
+    image: "📚", // This would be replaced with a real image
   },
   {
-    id: '3',
-    title: 'Cultural Immersion',
-    description: 'Enhance listening and speaking skills in Luganda through interactive exercises',
-    image: '🎮', // This would be replaced with a real image
+    id: "3",
+    title: "Cultural Immersion",
+    description:
+      "Enhance listening and speaking skills in Luganda through interactive exercises",
+    image: "🎮", // This would be replaced with a real image
   },
 ];
 
@@ -42,12 +44,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
-  
+
   const completeOnboarding = () => {
     onComplete();
   };
-  
-  const renderItem = ({ item }: { item: typeof onboardingData[0] }) => {
+
+  const renderItem = ({ item }: { item: (typeof onboardingData)[0] }) => {
     return (
       <View style={styles.slide}>
         <Text style={styles.imageText}>{item.image}</Text>
@@ -56,20 +58,20 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       </View>
     );
   };
-  
+
   const renderNextButton = () => {
     if (currentIndex === onboardingData.length - 1) {
       return (
-        <Button 
+        <Button
           title="Get Started"
           containerStyle={styles.buttonContainer}
           onPress={completeOnboarding}
         />
       );
     }
-    
+
     return (
-      <Button 
+      <Button
         title="Next"
         containerStyle={styles.buttonContainer}
         onPress={() => {
@@ -86,13 +88,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.skipButton}
-        onPress={completeOnboarding}
-      >
+      <TouchableOpacity style={styles.skipButton} onPress={completeOnboarding}>
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
-      
+
       <FlatList
         ref={flatListRef}
         data={onboardingData}
@@ -112,7 +111,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         }}
         viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
       />
-      
+
       <View style={styles.pagination}>
         {onboardingData.map((_, index) => {
           const inputRange = [
@@ -120,19 +119,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             index * width,
             (index + 1) * width,
           ];
-          
+
           const dotWidth = scrollX.interpolate({
             inputRange,
             outputRange: [10, 20, 10],
-            extrapolate: 'clamp',
+            extrapolate: "clamp",
           });
-          
+
           const opacity = scrollX.interpolate({
             inputRange,
             outputRange: [0.3, 1, 0.3],
-            extrapolate: 'clamp',
+            extrapolate: "clamp",
           });
-          
+
           return (
             <Animated.View
               key={index}
@@ -141,10 +140,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           );
         })}
       </View>
-      
-      <View style={styles.buttonWrapper}>
-        {renderNextButton()}
-      </View>
+
+      <View style={styles.buttonWrapper}>{renderNextButton()}</View>
     </View>
   );
 }
@@ -152,13 +149,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   slide: {
     width,
     height: height * 0.7,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   imageText: {
@@ -167,46 +164,46 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   description: {
     fontSize: 16,
-    textAlign: 'center',
-    color: '#666',
+    textAlign: "center",
+    color: "#666",
     paddingHorizontal: 30,
   },
   pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 30,
   },
   dot: {
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#6366f1',
+    backgroundColor: "#6366f1",
     marginHorizontal: 5,
   },
   buttonWrapper: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 50,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   buttonContainer: {
     width: width * 0.8,
     marginTop: 20,
   },
   skipButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 50,
     right: 20,
     zIndex: 1,
   },
   skipText: {
     fontSize: 16,
-    color: '#6366f1',
-    fontWeight: 'bold',
+    color: "#6366f1",
+    fontWeight: "bold",
   },
 });

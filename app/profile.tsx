@@ -1,14 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Session } from '@supabase/supabase-js';
-import { Button } from '@rneui/themed';
-import { supabase } from '../lib/supabase';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Session } from "@supabase/supabase-js";
+import { Button } from "@rneui/themed";
+import { supabase } from "../lib/supabase";
 
-type ProfileScreenProps = NativeStackScreenProps<RootStackParamList, 'Profile'>;
-
-export default function ProfileScreen({ navigation }: ProfileScreenProps) {
+export default function ProfileScreen() {
   const [session, setSession] = React.useState<Session | null>(null);
 
   React.useEffect(() => {
@@ -16,11 +12,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       setSession(session);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -28,7 +24,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error('Error signing out:', error.message);
+      console.error("Error signing out:", error.message);
     } else {
       // Navigation not needed here as auth state change will trigger App.tsx redirects
     }
@@ -37,11 +33,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.welcomeText}>Welcome to Baby Steps!</Text>
-      
+
       <View style={styles.profileCard}>
         <Text style={styles.profileLabel}>Signed in as:</Text>
         <Text style={styles.profileEmail}>{session?.user?.email}</Text>
-        
+
         <Button
           title="Sign Out"
           onPress={handleSignOut}
@@ -56,23 +52,23 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   welcomeText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 40,
-    textAlign: 'center',
+    textAlign: "center",
   },
   profileCard: {
-    width: '90%',
-    backgroundColor: '#f5f5f5',
+    width: "90%",
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -80,20 +76,20 @@ const styles = StyleSheet.create({
   },
   profileLabel: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   profileEmail: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 30,
     marginTop: 5,
   },
   signOutButton: {
-    backgroundColor: '#6366f1',
+    backgroundColor: "#6366f1",
     paddingHorizontal: 30,
     borderRadius: 8,
   },
   signOutButtonText: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
