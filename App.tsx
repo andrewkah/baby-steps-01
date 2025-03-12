@@ -1,68 +1,92 @@
 import 'react-native-url-polyfill/auto'
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import Auth from './components/Auth'
-import Onboarding from './components/Onboarding'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { Session } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { resetOnboardingStatus } from './lib/utils'
 
+// Navigation imports
+import { NavigationContainer, DefaultTheme, NavigationState } from '@react-navigation/native'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { RootStackParamList } from './navigation/types'
+
+// Screen imports
+import AuthScreen from './screens/AuthScreen'
+import OnboardingScreen from './screens/OnboardingScreen'
+import ProfileScreen from './screens/ProfileScreen'
+
 // Determine if we're in development mode
 const isDev = process.env.NODE_ENV === 'development'
+
+const Stack = createNativeStackNavigator<RootStackParamList>()
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Add a function to check onboarding status
+  const checkOnboardingStatus = async () => {
+    try {
+      const value = await AsyncStorage.getItem('@onboarding_completed')
+      setShowOnboarding(value !== 'true')
+    } catch (error) {
+      console.error('Failed to get onboarding status', error)
+      setShowOnboarding(true)
+    }
+  };
+  
+  // Add a navigation state change handler
+  const handleNavigationStateChange = (state: NavigationState | undefined) => {
+    // When navigation state changes, re-check onboarding status
+    // This ensures App.tsx picks up AsyncStorage changes from child components
+    if (state) {
+      checkOnboardingStatus();
+    }
+  };
 
   useEffect(() => {
-    // Check if onboarding has been completed
-    const checkOnboardingStatus = async () => {
-      try {
-        const value = await AsyncStorage.getItem('@onboarding_completed')
-        setShowOnboarding(value !== 'true')
-      } catch (error) {
-        console.error('Failed to get onboarding status', error)
-        setShowOnboarding(true) // Default to showing onboarding if error
-      }
+    const initApp = async () => {
+      await checkOnboardingStatus();
+
+      // Check Supabase session
+      const { data } = await supabase.auth.getSession()
+      setSession(data.session)
+      
+      setIsLoading(false)
     }
 
-    // Check Supabase session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    initApp()
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-
-    checkOnboardingStatus()
+    // Cleanup subscription
+    return () => {
+      data.subscription.unsubscribe()
+    }
   }, [])
 
-  // Show loading while we're determining if onboarding should be shown
-  if (showOnboarding === null) {
+  // Show loading while we're determining app state
+  if (isLoading) {
     return <View style={styles.container}><Text>Loading...</Text></View>
   }
 
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false)
-  }
-
   return (
-    <View style={styles.container}>
-      {showOnboarding ? (
-        <Onboarding onComplete={handleOnboardingComplete} />
-      ) : (
-        <>
-          <Auth />
-          {session && session.user && (
-            <View style={styles.userInfo}>
-              <Text>Logged in as:</Text>
-              <Text>{session.user.email}</Text>
-            </View>
+    <>
+      <NavigationContainer onStateChange={handleNavigationStateChange}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {showOnboarding ? (
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          ) : session ? (
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+          ) : (
+            <Stack.Screen name="Auth" component={AuthScreen} />
           )}
-        </>
-      )}
+        </Stack.Navigator>
+      </NavigationContainer>
       
       {isDev && (
         <TouchableOpacity 
@@ -75,17 +99,15 @@ export default function App() {
           <Text style={styles.devButtonText}>Reset Onboarding</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  userInfo: {
-    marginTop: 16,
-    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   devButton: {
     position: 'absolute',
@@ -95,6 +117,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
+    zIndex: 100,
   },
   devButtonText: {
     color: 'white',

@@ -43,14 +43,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
   
-  const completeOnboarding = async () => {
-    try {
-      // Save that onboarding is completed
-      await AsyncStorage.setItem('@onboarding_completed', 'true');
-      onComplete();
-    } catch (error) {
-      console.error('Failed to save onboarding status', error);
-    }
+  const completeOnboarding = () => {
+    onComplete();
   };
   
   const renderItem = ({ item }: { item: typeof onboardingData[0] }) => {
