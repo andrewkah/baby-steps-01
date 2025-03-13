@@ -96,6 +96,13 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
+        name="forgot-password"
+        options={{
+          title: "Forgot password",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="onboarding"
         options={{
           title: "Welcome",
