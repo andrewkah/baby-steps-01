@@ -291,8 +291,8 @@ export default function OnboardingScreen() {
         className="flex-1"
       />
 
-      {/* Fun, bouncy pagination dots */}
-      <View className="flex-row justify-center my-6">
+      {/* Improved pagination dots with consistent shapes */}
+      <View className="flex-row justify-center items-center my-6">
         {onboardingData.map((_, index) => {
           const inputRange = [
             (index - 1) * width,
@@ -300,22 +300,17 @@ export default function OnboardingScreen() {
             (index + 1) * width,
           ];
 
-          // Instead of animating width directly, we'll animate scaleX
-          const scaleX = scrollX.interpolate({
+          // Instead of scaling in X/Y separately which distorts the shape,
+          // use a uniform scale that maintains the circular shape
+          const scale = scrollX.interpolate({
             inputRange,
-            outputRange: [0.4, 3, 0.4], // Scale factors instead of absolute widths
-            extrapolate: "clamp",
-          });
-
-          const scaleY = scrollX.interpolate({
-            inputRange,
-            outputRange: [1, 1.3, 1], // Slight height increase
+            outputRange: [0.8, 1.6, 0.8], // Scale factor for dots
             extrapolate: "clamp",
           });
 
           const opacity = scrollX.interpolate({
             inputRange,
-            outputRange: [0.3, 1, 0.3],
+            outputRange: [0.5, 1, 0.5],
             extrapolate: "clamp",
           });
 
@@ -327,19 +322,36 @@ export default function OnboardingScreen() {
               ? "bg-secondary-500"
               : "bg-accent-500";
 
-          // Use a fixed base width for the dot
+          // Add border to make dots more visually distinct
+          const borderColor =
+            index === 0
+              ? "border-primary-200"
+              : index === 1
+              ? "border-secondary-200"
+              : "border-accent-200";
+
+          // Active dot styling
+          const isActive = index === currentIndex;
+
           return (
             <Animated.View
               key={index}
-              className={`mx-2 rounded-full ${dotColor} w-3 h-3`}
+              className={`mx-3 rounded-full ${dotColor} border-2 ${borderColor} ${
+                isActive ? "shadow" : ""
+              }`}
               style={{
+                width: isActive ? 20 : 12,
+                height: isActive ? 20 : 12,
                 opacity,
-                transform: [
-                  { scaleX },
-                  { scaleY },
-                  // Apply overall scaling if this is the current dot
-                  ...(index === currentIndex ? [{ scale: scaleValue }] : []),
-                ],
+                transform: [{ scale }],
+                // Additional shadow styling for active dot
+                ...(isActive && {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 3,
+                  elevation: 3,
+                }),
               }}
             />
           );
