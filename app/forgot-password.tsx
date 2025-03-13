@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
-  Text,
   Alert,
   TouchableOpacity,
   Animated,
@@ -11,6 +10,7 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
+import { Text } from "@/components/StyledText";
 import { supabase } from "../lib/supabase";
 import { useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
@@ -164,7 +164,7 @@ export default function ForgotPassword() {
                 transform: [{ translateY }, { scale: scaleValue }],
               }}
             >
-              <Text className="text-3xl font-bold text-accent-700 ps-3">
+              <Text variant="bold" className="text-3xl  text-accent-700 ps-3 pt-3">
                 Forgot Your Password?
               </Text>
               <Text className="text-lg text-center text-neutral-600 mt-3 px-8">
@@ -203,7 +203,7 @@ export default function ForgotPassword() {
               <>
                 {/* Email Input */}
                 <View className="mb-8">
-                  <Text className="text-accent-700 font-bold mb-3 text-lg">
+                  <Text className="text-accent-700  mb-3 text-lg">
                     Your Email
                   </Text>
                   <View className="flex-row items-center bg-accent-50 rounded-2xl px-5 py-4 border-2 border-accent-100">
@@ -218,7 +218,10 @@ export default function ForgotPassword() {
                       autoCapitalize="none"
                       keyboardType="email-address"
                       placeholderTextColor="#a0aec0"
-                      style={{ textDecorationLine: "none" }}
+                      style={{
+                        textDecorationLine: "none",
+                        fontFamily: "Atma-Regular",
+                      }}
                     />
                   </View>
                 </View>
@@ -232,7 +235,7 @@ export default function ForgotPassword() {
                   disabled={loading}
                   activeOpacity={0.8}
                 >
-                  <Text className="text-white font-bold text-xl">
+                  <Text variant="bold" className="text-white  text-xl">
                     {loading ? "Sending..." : "Send Reset Link"}
                   </Text>
                 </TouchableOpacity>
@@ -249,7 +252,7 @@ export default function ForgotPassword() {
                   className="bg-accent-500 py-4 rounded-xl items-center shadow-md w-full"
                   onPress={() => router.replace("/login")}
                 >
-                  <Text className="text-white font-bold text-xl">
+                  <Text variant="bold" className="text-white  text-xl">
                     Back to Login
                   </Text>
                 </TouchableOpacity>
@@ -269,7 +272,7 @@ export default function ForgotPassword() {
                     color="#3399ff"
                     style={{ marginRight: 6 }}
                   />
-                  <Text className="text-primary-600 font-bold text-base">
+                  <Text variant="bold" className="text-primary-600  text-base">
                     Back to Login
                   </Text>
                 </TouchableOpacity>

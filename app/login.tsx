@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
-  Text,
   Alert,
   TouchableOpacity,
-  Image,
   Animated,
   StatusBar,
   KeyboardAvoidingView,
@@ -12,8 +10,8 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
+import { Text } from "@/components/StyledText";
 import { supabase } from "../lib/supabase";
-import { Button, Input } from "@rneui/themed";
 import { useRouter } from "expo-router";
 import { resetOnboardingStatus } from "@/lib/utils";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -154,7 +152,7 @@ export default function Auth() {
                 transform: [{ translateY }, { scale: scaleValue }],
               }}
             >
-              <Text className="text-4xl font-bold text-primary-600">
+              <Text variant="bold" className="text-4xl  text-primary-600 pt-3">
                 Welcome Back!
               </Text>
               <Text className="text-lg text-center text-neutral-600 mt-2">
@@ -185,9 +183,7 @@ export default function Auth() {
           >
             {/* Email Input - Redesigned */}
             <View className="mb-6">
-              <Text className="text-primary-700 font-bold mb-3 text-lg">
-                Email
-              </Text>
+              <Text className="text-primary-700  mb-3 text-lg">Email</Text>
               <View className="flex-row items-center bg-primary-50 rounded-2xl px-5 py-4 border-2 border-primary-100">
                 <View className="bg-primary-200 p-2 rounded-full">
                   <FontAwesome name="envelope" size={20} color="#3399ff" />
@@ -200,16 +196,17 @@ export default function Auth() {
                   autoCapitalize="none"
                   keyboardType="email-address"
                   placeholderTextColor="#a0aec0"
-                  style={{ textDecorationLine: "none" }} // Remove underline
+                  style={{
+                    textDecorationLine: "none",
+                    fontFamily: "Atma-Regular",
+                  }} 
                 />
               </View>
             </View>
 
             {/* Password Input - Redesigned */}
             <View className="mb-8">
-              <Text className="text-primary-700 font-bold mb-3 text-lg">
-                Password
-              </Text>
+              <Text className="text-primary-700  mb-3 text-lg">Password</Text>
               <View className="flex-row items-center bg-primary-50 rounded-2xl px-5 py-4 border-2 border-primary-100">
                 <View className="bg-primary-200 w-10 h-10 rounded-full flex items-center justify-center">
                   <FontAwesome name="lock" size={20} color="#3399ff" />
@@ -222,7 +219,10 @@ export default function Auth() {
                   onChangeText={setPassword}
                   autoCapitalize="none"
                   placeholderTextColor="#a0aec0"
-                  style={{ textDecorationLine: "none" }} // Remove underline
+                  style={{
+                    textDecorationLine: "none",
+                    fontFamily: "Atma-Regular",
+                  }} 
                 />
                 {/* Password visibility toggle button */}
                 <TouchableOpacity
@@ -247,7 +247,7 @@ export default function Auth() {
               disabled={loading}
               activeOpacity={0.8}
             >
-              <Text className="text-white font-bold text-xl">
+              <Text variant="bold" className="text-white  text-xl">
                 {loading ? "Signing In..." : "Sign In"}
               </Text>
             </TouchableOpacity>
@@ -258,14 +258,14 @@ export default function Auth() {
               <TouchableOpacity
                 onPress={() => router.replace("/forgot-password")}
               >
-                <Text className="text-secondary-600 font-bold text-base">
+                <Text variant="bold" className="text-secondary-600  text-base">
                   Forgot password?
                 </Text>
               </TouchableOpacity>
 
               {/* Sign Up Link */}
               <TouchableOpacity onPress={() => router.replace("/signup")}>
-                <Text className="text-primary-600 font-bold text-base">
+                <Text variant="bold" className="text-primary-600  text-base">
                   Create Account
                 </Text>
               </TouchableOpacity>

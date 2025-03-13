@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import {
   View,
-  Text,
   Dimensions,
   Animated,
   TouchableOpacity,
@@ -11,6 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Text } from "@/components/StyledText";
 
 const { width, height } = Dimensions.get("window");
 
@@ -197,7 +197,7 @@ export default function OnboardingScreen() {
         </Animated.View>
 
         {/* Title with playful styling */}
-        <Text className={`text-3xl font-bold mb-4 ${item.textColor}`}>
+        <Text variant="bold" className={`text-3xl pt-3  mb-4 ${item.textColor}`}>
           {item.title}
         </Text>
 
@@ -217,7 +217,7 @@ export default function OnboardingScreen() {
           className="w-64 h-16 bg-success-500 rounded-full flex-row items-center justify-center shadow-lg"
           onPress={handleOnboardingComplete}
         >
-          <Text className="text-white text-xl font-bold mr-2">Let's Play!</Text>
+          <Text variant="bold" className="text-white text-xl mr-2">Let's Play!</Text>
           <Text className="text-2xl">🎮</Text>
         </TouchableOpacity>
       );
@@ -235,7 +235,7 @@ export default function OnboardingScreen() {
           }
         }}
       >
-        <Text className="text-white text-xl font-bold mr-2">Next</Text>
+        <Text variant="bold" className="text-white text-xl  mr-2">Next</Text>
         <Text className="text-2xl">👉</Text>
       </TouchableOpacity>
     );
@@ -255,7 +255,7 @@ export default function OnboardingScreen() {
 
       {/* App title at the top - with more padding to account for status bar */}
       <SafeAreaView className="w-full items-center pb-4">
-        <Text className="text-2xl text-primary-600 font-bold mt-4">
+        <Text variant="bold" className="text-2xl text-primary-600  mt-4">
           Baby Steps
         </Text>
         <Text className="text-base text-neutral-600">Learn & Play!</Text>
@@ -266,7 +266,7 @@ export default function OnboardingScreen() {
         className="absolute top-16 right-6 bg-white/80 py-2 px-5 rounded-full z-10 shadow-sm"
         onPress={handleOnboardingComplete}
       >
-        <Text className="text-primary-600 font-bold">Skip</Text>
+        <Text className="text-primary-600">Skip</Text>
       </TouchableOpacity>
 
       {/* Slides */}

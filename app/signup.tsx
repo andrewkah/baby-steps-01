@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
-  Text,
   Alert,
   TouchableOpacity,
   Animated,
@@ -11,6 +10,7 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
+import { Text } from "@/components/StyledText";
 import { supabase } from "../lib/supabase";
 import { useRouter } from "expo-router";
 import { FontAwesome } from "@expo/vector-icons";
@@ -152,7 +152,7 @@ export default function SignUp() {
                 transform: [{ translateY }, { scale: scaleValue }],
               }}
             >
-              <Text className="text-4xl font-bold text-secondary-600">
+              <Text variant="bold" className="text-4xl text-secondary-600 pt-3">
                 Join the Fun!
               </Text>
               <Text className="text-lg text-center text-neutral-600 mt-2">
@@ -183,9 +183,7 @@ export default function SignUp() {
           >
             {/* Email Input */}
             <View className="mb-5">
-              <Text className="text-secondary-700 font-bold mb-3 text-lg">
-                Email
-              </Text>
+              <Text className="text-secondary-700 mb-3 text-lg">Email</Text>
               <View className="flex-row items-center bg-secondary-50 rounded-2xl px-5 py-4 border-2 border-secondary-100">
                 <View className="bg-secondary-200 w-10 h-10 rounded-full flex items-center justify-center">
                   <FontAwesome name="envelope" size={20} color="#ffb347" />
@@ -198,16 +196,17 @@ export default function SignUp() {
                   autoCapitalize="none"
                   keyboardType="email-address"
                   placeholderTextColor="#a0aec0"
-                  style={{ textDecorationLine: "none" }}
+                  style={{
+                    textDecorationLine: "none",
+                    fontFamily: "Atma-Regular",
+                  }}
                 />
               </View>
             </View>
 
             {/* Password Input */}
             <View className="mb-5">
-              <Text className="text-secondary-700 font-bold mb-3 text-lg">
-                Password
-              </Text>
+              <Text className="text-secondary-700 mb-3 text-lg">Password</Text>
               <View className="flex-row items-center bg-secondary-50 rounded-2xl px-5 py-4 border-2 border-secondary-100">
                 <View className="bg-secondary-200 w-10 h-10 rounded-full flex items-center justify-center">
                   <FontAwesome name="lock" size={20} color="#ffb347" />
@@ -220,7 +219,10 @@ export default function SignUp() {
                   onChangeText={setPassword}
                   autoCapitalize="none"
                   placeholderTextColor="#a0aec0"
-                  style={{ textDecorationLine: "none" }}
+                  style={{
+                    textDecorationLine: "none",
+                    fontFamily: "Atma-Regular",
+                  }}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
@@ -237,7 +239,7 @@ export default function SignUp() {
 
             {/* Confirm Password Input */}
             <View className="mb-8">
-              <Text className="text-secondary-700 font-bold mb-3 text-lg">
+              <Text className="text-secondary-700 mb-3 text-lg">
                 Confirm Password
               </Text>
               <View className="flex-row items-center bg-secondary-50 rounded-2xl px-5 py-4 border-2 border-secondary-100">
@@ -252,7 +254,10 @@ export default function SignUp() {
                   onChangeText={setConfirmPassword}
                   autoCapitalize="none"
                   placeholderTextColor="#a0aec0"
-                  style={{ textDecorationLine: "none" }}
+                  style={{
+                    textDecorationLine: "none",
+                    fontFamily: "Atma-Regular",
+                  }}
                 />
               </View>
             </View>
@@ -266,7 +271,7 @@ export default function SignUp() {
               disabled={loading}
               activeOpacity={0.8}
             >
-              <Text className="text-white font-bold text-xl">
+              <Text variant="bold" className="text-white  text-xl">
                 {loading ? "Creating Account..." : "Create Account"}
               </Text>
             </TouchableOpacity>
@@ -283,7 +288,7 @@ export default function SignUp() {
                   color="#3399ff"
                   style={{ marginRight: 6 }}
                 />
-                <Text className="text-primary-600 font-bold text-base">
+                <Text variant="bold" className="text-primary-600  text-base">
                   Back to Login
                 </Text>
               </TouchableOpacity>

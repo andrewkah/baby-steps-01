@@ -61,7 +61,7 @@ export default function Index() {
     } else if (session) {
       router.replace("/profile");
     } else {
-      router.replace("/auth");
+      router.replace("/login");
     }
   }, [isLoading, showOnboarding, session, segments]);
 
