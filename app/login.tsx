@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Button, Input } from "@rneui/themed";
 import { useRouter } from "expo-router";
@@ -64,6 +64,11 @@ export default function Auth() {
           disabled={loading}
           onPress={() => resetOnboardingStatus()}
         />
+      </View>
+      <View>
+        <TouchableOpacity onPress={() => router.replace("/forgot-password")}>
+          <Text className="m-4 text-red-500">Forgot password?</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

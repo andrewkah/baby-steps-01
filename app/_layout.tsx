@@ -5,6 +5,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Session } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, usePathname } from "expo-router";
+import "@/global.css";
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
