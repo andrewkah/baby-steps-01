@@ -4,14 +4,13 @@ import { supabase } from "../lib/supabase";
 import { View, Text, StyleSheet } from "react-native";
 import { Session } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useSegments, usePathname } from "expo-router";
+import { useRouter, usePathname } from "expo-router";
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const segments = useSegments();
   const pathname = usePathname();
 
   // Add a function to check onboarding status
@@ -59,7 +58,7 @@ export default function RootLayout() {
       } else if (session) {
         router.replace("/profile");
       } else {
-        router.replace("/auth");
+        router.replace("/login");
       }
     }
   }, [isLoading, showOnboarding, session, pathname]);
@@ -82,9 +81,16 @@ export default function RootLayout() {
         }}
       />
       <Stack.Screen
-        name="auth"
+        name="login"
         options={{
           title: "Sign In",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="signup"
+        options={{
+          title: "Sign Up",
           headerShown: false,
         }}
       />
