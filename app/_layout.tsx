@@ -135,9 +135,25 @@ export default function RootLayout() {
         name="profile"
         options={{
           title: "Profile",
-          headerShown: true,
+          headerShown: false,
         }}
+        
       />
+      <Stack.Screen
+        name="CalendarTrackingPage"
+        options={{
+          title: "Dashboard",
+          headerShown: false,
+        }}
+        
+      />
+      <Stack.Screen
+        name="parent-gate"
+        options={{
+          title: "Parent Gate",
+          headerShown: false,
+        }}
+        />
     </Stack>
   );
 }
