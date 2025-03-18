@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   Image,
   TouchableOpacity,
   StyleSheet,
@@ -14,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Speech from 'expo-speech';
+import { Text } from "@/components/StyledText";
 
 
 // Define types

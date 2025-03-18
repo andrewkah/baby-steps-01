@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useLayoutEffect } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { Session } from "@supabase/supabase-js";
 import { Button } from "@rneui/themed";
 import { supabase } from "../../lib/supabase";
@@ -11,7 +11,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 export default function ProfileScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const router = useRouter();
-  const [sound, setSound] = useState<any>(null); // State for managing the audio
   const soundRef = useRef<any>(null); // Ref to store the sound object
   // Function to start background song
   
