@@ -156,15 +156,7 @@ export default function RootLayout() {
           gestureEnabled: false,
         }}
       />
-      <Stack.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          headerShown: false,
-        }}
-        
-      />
-      <Stack.Screen
+          <Stack.Screen
         name="CalendarTrackingPage"
         options={{
           title: "Dashboard",
