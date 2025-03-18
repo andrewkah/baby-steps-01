@@ -68,39 +68,6 @@ const AfricanThemeGameInterface: React.FC = () => {
     },
   ];
 
-  // Navigation items with African theme
-  const navigationItems: NavItem[] = [
-    {
-      id: 'games',
-      icon: require('../assets/icons/game.png'),
-      label: 'Games',
-    },
-    {
-      id: 'coloring',
-      icon: require('../assets/icons/coloring.png'),
-      label: 'Coloring',
-    },
-    {
-      id: 'quizz',
-      icon: require('../assets/icons/quizz.png'),
-      label: 'Quizz',
-    },
-    {
-      id: 'Logic',
-      icon: require('../assets/icons/logic.png'),
-      label: 'Logic',
-    },
-    {
-      id: 'Nature',
-      icon: require('../assets/icons/nature.png'),
-      label: 'Nature',
-    },
-    {
-      id: 'museum',
-      icon: require('../assets/icons/museum.png'),
-      label: 'museum',
-    },
-  ];
   const handleParentalPress = () => {
     Speech.speak("For parents only", {
       language: 'en',
@@ -182,28 +149,7 @@ const AfricanThemeGameInterface: React.FC = () => {
             </ScrollView>
           </View>
         </View>
-        
-        {/* Bottom navigation */}
-        <View style={styles.bottomNav}>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.navItemsContainer}
-            >
-              {navigationItems.map((item) => (
-                <TouchableOpacity 
-                  key={item.id}
-                  style={[
-                    styles.navItem,
-                    selectedNavItem === item.id && styles.navItemSelected
-                  ]}
-                  onPress={() => setSelectedNavItem(item.id)}
-                >
-                  <Image source={item.icon} style={styles.navIcon} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+       
 
       </ImageBackground>
     </SafeAreaView>
@@ -349,6 +295,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#FFD700',
+    marginTop:3,
   },
   parentIcon: {
     width: 20,
@@ -361,7 +308,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   cardsContainer: {
-    paddingVertical: 10,
+    paddingVertical: 15,
   },
   card: {
     backgroundColor: 'white',
@@ -402,46 +349,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(123, 90, 240, 0.85)',
-    paddingHorizontal: 15,
-    alignItems: 'center',
-    // borderTopWidth: 2,
-    // borderTopColor: '#FFD700',
-  },
-  navItemsContainer: {
-    paddingHorizontal: 10,
-    minWidth: '100%',
-    flexGrow: 1,
-    justifyContent: 'center', // Centers horizontally
-    alignItems: 'center',     // Centers vertically
-  },
-  navItem: {
-    backgroundColor: 'rgba(90, 60, 190, 0.9)',
-    alignItems: 'center',
-    paddingHorizontal:5,
-    marginHorizontal: 5,
-    borderTopEndRadius: 15,
-    borderTopStartRadius: 15,
-    height:40
-  },
-  navItemSelected: {
-    backgroundColor: 'rgba(90, 60, 190, 0.9)',
-    marginTop:0,
-    borderColor: '#FFD700',
-    borderWidth: 2,
-  },
-  
-  navIcon: {
-    width: 30,
-    height: 30,
-    paddingHorizontal:10
-  },
-  navLabel: {
-    color: 'white',
-    fontSize: 12,
-  },
+
+
+
 });
 
 export default AfricanThemeGameInterface;

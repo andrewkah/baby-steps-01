@@ -25,7 +25,7 @@ export default function ParentGate() {
         if (newInput === correctPin) {
           router.replace("/CalendarTrackingPage");
         } else {
-          alert("Incorrect PIN!");
+          // no alert message for incorrect pin since we have to allow children to continue seemlessly
           router.replace("/profile");
         }
       }

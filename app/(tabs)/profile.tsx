@@ -2,12 +2,11 @@ import React, { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Session } from "@supabase/supabase-js";
 import { Button } from "@rneui/themed";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import { useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
-import AfricanThemeGameInterface from './AfricanThemeGameInterface';
+import AfricanThemeGameInterface from '../AfricanThemeGameInterface';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av'; // Import the audio module
 
 export default function ProfileScreen() {
   const [session, setSession] = useState<Session | null>(null);
@@ -15,20 +14,7 @@ export default function ProfileScreen() {
   const [sound, setSound] = useState<any>(null); // State for managing the audio
   const soundRef = useRef<any>(null); // Ref to store the sound object
   // Function to start background song
-  const playBackgroundMusic = async () => {
-    if (soundRef.current) {
-      await soundRef.current.unloadAsync(); // Stop the previous sound instance
-    }
-
-    const { sound } = await Audio.Sound.createAsync(
-      
-      require('../assets/audio/background-music.mp3'), // Ensure your audio file is in the correct path
-      { shouldPlay: true, isLooping: true }
-    );
-    await sound.setVolumeAsync(0.2); // Set the volume to a low level (e.g., 0.2)
-
-    soundRef.current = sound;
-  };
+  
     // Function to stop background music
     const stopBackgroundMusic = async () => {
       if (soundRef.current) {
@@ -62,14 +48,6 @@ export default function ProfileScreen() {
 
     return () => subscription.unsubscribe();
   }, []);
-  useEffect(() => {
-    playBackgroundMusic(); // Start playing music when the component is mounted
-
-    return () => {
-      stopBackgroundMusic(); // Stop the music when navigating away from the page
-    };
-  }, []);
-
   
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
