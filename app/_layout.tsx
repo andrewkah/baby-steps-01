@@ -8,6 +8,7 @@ import { useRouter, usePathname } from "expo-router";
 import { useFonts } from "expo-font"; 
 import { SplashScreen } from "expo-router";
 import { Audio } from 'expo-av'; // Import Audio from expo-av
+import "@/global.css"
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
