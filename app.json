@@ -1,28 +1,59 @@
 {
   "expo": {
-    "name": "auth-expt",
-    "slug": "auth-expt",
+    "name": "expo-baby",
+    "slug": "expo-baby",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/images/icon.png",
+    "scheme": "babysteps",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "fonts": [
+      {
+        "asset": "./assets/fonts/Atma-Bold.ttf"
+      },
+      {
+        "asset": "./assets/fonts/Atma-Light.ttf"
+      },
+      {
+        "asset": "./assets/fonts/Atma-Medium.ttf"
+      },
+      {
+        "asset": "./assets/fonts/Atma-Regular.ttf"
+      },
+      {
+        "asset": "./assets/fonts/Atma-SemiBold.ttf"
+      }
+    ]
   }
 }
