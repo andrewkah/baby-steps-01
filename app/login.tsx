@@ -199,7 +199,7 @@ export default function Auth() {
                   style={{
                     textDecorationLine: "none",
                     fontFamily: "Atma-Regular",
-                  }} 
+                  }}
                 />
               </View>
             </View>
@@ -222,7 +222,7 @@ export default function Auth() {
                   style={{
                     textDecorationLine: "none",
                     fontFamily: "Atma-Regular",
-                  }} 
+                  }}
                 />
                 {/* Password visibility toggle button */}
                 <TouchableOpacity
@@ -282,6 +282,15 @@ export default function Auth() {
               <Text className="text-neutral-600 font-bold">
                 Reset Onboarding
               </Text>
+            </TouchableOpacity>
+          </View>
+          <View className="mt-8 mx-6">
+            <TouchableOpacity
+              className="bg-muted-200 py-3 rounded-xl items-center"
+              onPress={() => router.replace("/reset-password")}
+              disabled={loading}
+            >
+              <Text className="text-orange-600 font-bold">Reset Password</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

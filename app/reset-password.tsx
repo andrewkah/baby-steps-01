@@ -1,26 +1,32 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
+  StyleSheet,
   View,
-  Alert,
-  TouchableOpacity,
+  TextInput,
   Animated,
-  StatusBar,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Alert,
+  StatusBar,
   ScrollView,
-  TextInput,
 } from "react-native";
 import { Text } from "@/components/StyledText";
+import { FontAwesome } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { useRouter } from "expo-router";
-import { FontAwesome } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Linking from "expo-linking";
 
-export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
+export default function ResetPassword() {
   const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [passwordSent, setPasswordSent] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   // Animation values
   const bounceValue = useRef(new Animated.Value(0)).current;
@@ -87,25 +93,6 @@ export default function ForgotPassword() {
     ).start();
   }, []);
 
-  async function resetPassword() {
-    if (!email) {
-      Alert.alert("Oops!", "Please enter your email address.");
-      return;
-    }
-
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `babysteps://reset-password`,
-    });
-
-    if (error) {
-      Alert.alert("Oops!", error.message);
-    } else {
-      setResetSent(true);
-    }
-    setLoading(false);
-  }
-
   // Animation transformations
   const translateY = floatValue.interpolate({
     inputRange: [0, 1],
@@ -127,18 +114,112 @@ export default function ForgotPassword() {
     outputRange: ["0deg", "360deg"],
   });
 
+  // Handle deep link when the app is opened from the reset password email
+  useEffect(() => {
+    const handleDeepLink = (url: string) => {
+      if (!url) return;
+
+      // Parse the URL
+      const { queryParams } = Linking.parse(url);
+
+      if (queryParams && queryParams.access_token) {
+        if (typeof queryParams.access_token === 'string') {
+          setAccessToken(queryParams.access_token);
+        }
+        console.log(
+          "Received access token from deep link:",
+          queryParams.access_token
+        );
+
+        // You might want to verify the token here
+        // This depends on your specific authentication flow
+      }
+    };
+
+    const getInitialURL = async () => {
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl) {
+        handleDeepLink(initialUrl);
+      }
+    };
+    
+    getInitialURL();
+    const linkingListener = Linking.addEventListener("url", (event) => {
+      handleDeepLink(event.url);
+    });
+
+   return () => {
+     linkingListener.remove();
+   };
+  }, []);
+  
+  const handleResetPassword = async () => {
+    if (!password || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Update the user's password
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (error) {
+        throw error;
+      } else {
+        setPasswordSent(true);
+      }
+      
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error.message || "An error occurred while resetting your password"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkUserSession = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      // No active session, redirect to login
+      Alert.alert(
+        "Error",
+        "Your reset link has expired. Please request a new one."
+      );
+      router.replace("/forgot-password");
+    }
+  };
+
+  
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-accent-50"
+      className="flex-1 bg-orange-100"
     >
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle="dark-content"
       />
-
-      <SafeAreaView className="flex-1">
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
@@ -146,17 +227,16 @@ export default function ForgotPassword() {
           {/* Decorative elements */}
           <View className="absolute top-10 left-8">
             <Animated.View
-              className="w-12 h-12 rounded-full bg-accent-200 opacity-50"
+              className="w-12 h-12 rounded-full bg-orange-200 opacity-50"
               style={{ transform: [{ translateY: bounceDot1 }] }}
             />
           </View>
           <View className="absolute top-20 right-12">
             <Animated.View
-              className="w-8 h-8 rounded-full bg-accent-300 opacity-60"
+              className="w-8 h-8 rounded-full bg-orange-300 opacity-60"
               style={{ transform: [{ translateY: bounceDot2 }] }}
             />
           </View>
-
           {/* Header */}
           <View className="items-center mt-12 mb-4">
             <Animated.View
@@ -164,11 +244,14 @@ export default function ForgotPassword() {
                 transform: [{ translateY }, { scale: scaleValue }],
               }}
             >
-              <Text variant="bold" className="text-3xl  text-accent-700 ps-3 pt-3">
-                Forgot Your Password?
+              <Text
+                variant="bold"
+                className="text-3xl  text-orange-500 ps-3 pt-3"
+              >
+                Reset Password
               </Text>
               <Text className="text-lg text-center text-neutral-600 mt-3 px-8">
-                No worries! We'll send a reset link to your email.
+                Enter your new password
               </Text>
             </Animated.View>
           </View>
@@ -181,9 +264,9 @@ export default function ForgotPassword() {
                 transform: [{ translateY }, { scale: scaleValue }],
               }}
             >
-              {!resetSent ? (
+              {!passwordSent ? (
                 <Animated.View style={{ transform: [{ rotate: spin }] }}>
-                  <FontAwesome name="key" size={60} color="#b559e6" />
+                  <FontAwesome name="lock" size={60} color="#b559e6" />
                 </Animated.View>
               ) : (
                 <Text className="text-[60px]">✉️</Text>
@@ -191,32 +274,31 @@ export default function ForgotPassword() {
             </Animated.View>
           </View>
 
-          {/* Form */}
+          {/* {Form} */}
           <Animated.View
-            className="mx-6 bg-white p-6 rounded-3xl shadow-md border-2 border-accent-100"
+            className="mx-6 bg-white p-6 rounded-3xl shadow-md border-2 border-orange-100"
             style={{
               transform: [{ scale: scaleValue }],
               opacity: scaleValue,
             }}
           >
-            {!resetSent ? (
+            {!passwordSent ? (
               <>
-                {/* Email Input */}
-                <View className="mb-8">
-                  <Text className="text-accent-700  mb-3 text-lg">
-                    Your Email
+                <View className="mb-5">
+                  <Text className="text-orange-700  mb-3 text-lg">
+                    New Password
                   </Text>
-                  <View className="flex-row items-center bg-accent-50 rounded-2xl px-5 py-4 border-2 border-accent-100">
-                    <View className="bg-accent-200 w-10 h-10 rounded-full flex items-center justify-center">
-                      <FontAwesome name="envelope" size={20} color="#b559e6" />
+                  <View className="flex-row items-center bg-orange-50 rounded-2xl px-5 py-4 border-2 border-orange-100">
+                    <View className="bg-orange-200 w-10 h-10 rounded-full flex items-center justify-center">
+                      <FontAwesome name="lock" size={20} color="#b559e6" />
                     </View>
                     <TextInput
                       className="flex-1 ml-4 text-base text-neutral-800"
-                      placeholder="parent@email.com"
-                      value={email}
-                      onChangeText={setEmail}
+                      placeholder="Enter new password"
+                      value={password}
+                      onChangeText={setPassword}
                       autoCapitalize="none"
-                      keyboardType="email-address"
+                      secureTextEntry
                       placeholderTextColor="#a0aec0"
                       style={{
                         textDecorationLine: "none",
@@ -226,17 +308,39 @@ export default function ForgotPassword() {
                   </View>
                 </View>
 
-                {/* Reset Button */}
+                <View className="mb-5">
+                  <Text className="text-orange-700  mb-3 text-lg">
+                    Confirm New Password
+                  </Text>
+                  <View className="flex-row items-center bg-orange-50 rounded-2xl px-5 py-4 border-2 border-orange-100">
+                    <View className="bg-orange-200 w-10 h-10 rounded-full flex items-center justify-center">
+                      <FontAwesome name="lock" size={20} color="#b559e6" />
+                    </View>
+                    <TextInput
+                      className="flex-1 ml-4 text-base text-neutral-800"
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry
+                      autoCapitalize="none"
+                      placeholderTextColor="#a0aec0"
+                      style={{
+                        textDecorationLine: "none",
+                        fontFamily: "Atma-Regular",
+                      }}
+                    />
+                  </View>
+                </View>
                 <TouchableOpacity
-                  className={`bg-accent-500 py-4 rounded-xl items-center shadow-md ${
+                  className={`bg-orange-500 py-4 rounded-xl items-center shadow-md ${
                     loading ? "opacity-70" : ""
                   }`}
-                  onPress={resetPassword}
+                  onPress={handleResetPassword}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
                   <Text variant="bold" className="text-white  text-xl">
-                    {loading ? "Sending..." : "Send Reset Link"}
+                    {loading ? "Updating..." : "Reset Password"}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -245,11 +349,11 @@ export default function ForgotPassword() {
               <View className="items-center py-4">
                 <View className="bg-success-100 p-4 rounded-2xl mb-4 w-full">
                   <Text className="text-success-700 text-center text-base">
-                    Reset link sent! Check your email inbox or spam for instructions.
+                    Your new password has been set.
                   </Text>
                 </View>
                 <TouchableOpacity
-                  className="bg-accent-500 py-4 rounded-xl items-center shadow-md w-full"
+                  className="bg-orange-500 py-4 rounded-xl items-center shadow-md w-full"
                   onPress={() => router.replace("/login")}
                 >
                   <Text variant="bold" className="text-white  text-xl">
@@ -258,9 +362,8 @@ export default function ForgotPassword() {
                 </TouchableOpacity>
               </View>
             )}
-
             {/* Back to Login */}
-            {!resetSent && (
+            {!passwordSent && (
               <View className="mt-8 items-center">
                 <TouchableOpacity
                   className="flex-row items-center"
@@ -280,7 +383,7 @@ export default function ForgotPassword() {
             )}
           </Animated.View>
         </ScrollView>
-      </SafeAreaView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
