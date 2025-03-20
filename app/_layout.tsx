@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { View, Text, StyleSheet } from "react-native";
 import { Session } from "@supabase/supabase-js";
@@ -17,7 +17,8 @@ export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sound, setSound] = useState<Audio.Sound | null>(null); // State to manage audio
+  const soundRef = useRef<Audio.Sound | null>(null); // Use ref instead of state for sound
+  const isMusicInitialized = useRef(false); // Track if music has been initialized
   const router = useRouter();
   const pathname = usePathname();
 
@@ -43,12 +44,42 @@ export default function RootLayout() {
 
   // Audio setup for playing background music
   const playBackgroundMusic = async () => {
-    const { sound } = await Audio.Sound.createAsync(
-      require('../assets/audio/background-music.mp3'),
-      { shouldPlay: true, isLooping: true} 
-    );
-    await sound.setVolumeAsync(0.2); 
-    setSound(sound);
+    // Only initialize music if it hasn't been initialized yet
+    if (isMusicInitialized.current) return;
+    
+    try {
+      // Configure audio mode first
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+        shouldDuckAndroid: true, // Lower volume when notifications occur
+      });
+      
+      const { sound } = await Audio.Sound.createAsync(
+        require('../assets/audio/background-music.mp3'),
+        { 
+          shouldPlay: true, 
+          isLooping: true,
+          volume: 0.2 // Set volume during creation
+        }
+      );
+      
+      // Store the sound in the ref
+      soundRef.current = sound;
+      isMusicInitialized.current = true;
+      
+      // Add status update listener to handle interruptions
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && !status.isPlaying && isMusicInitialized.current) {
+          // If music stops unexpectedly but should be playing, restart it
+          sound.playAsync();
+        }
+      });
+      
+      console.log("Background music started successfully");
+    } catch (error) {
+      console.error("Error playing background music:", error);
+    }
   };
 
   useEffect(() => {
@@ -71,7 +102,17 @@ export default function RootLayout() {
     // Cleanup subscription
     return () => {
       data.subscription.unsubscribe();
-      sound?.unloadAsync(); // Unload the sound when the component unmounts
+    };
+  }, []);
+
+  // Cleanup sound when component unmounts
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync();
+        soundRef.current = null;
+        isMusicInitialized.current = false;
+      }
     };
   }, []);
 
@@ -83,15 +124,9 @@ export default function RootLayout() {
 
   // Start playing the background music when the component is ready
   useEffect(() => {
-    if (!isLoading && fontsLoaded) {
-      playBackgroundMusic(); // Start background music when the app is initialized
+    if (!isLoading && fontsLoaded && !isMusicInitialized.current) {
+      playBackgroundMusic(); // Start background music only once
     }
-
-    return () => {
-      if (sound) {
-        sound.stopAsync(); // Stop music when the component unmounts
-      }
-    };
   }, [isLoading, fontsLoaded]);
 
   // Handle routing based on authentication and onboarding state
@@ -164,13 +199,28 @@ export default function RootLayout() {
         }}
         
       />
+          <Stack.Screen
+        name="AfricanThemeGameInterface"
+        options={{
+          title: "",
+          headerShown: false,
+        }}
+        
+      />
       <Stack.Screen
         name="parent-gate"
         options={{
           title: "Parent Gate",
           headerShown: false,
         }}
-        />
+      />
+      <Stack.Screen
+        name="tester"
+        options={{
+          title: "Testing",
+          headerShown: false,
+        }}
+      />
         <Stack.Screen
         name="(tabs)"
         options={{

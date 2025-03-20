@@ -1,11 +1,12 @@
 import { Tabs } from 'expo-router';
 import { Image } from 'react-native';
+import React from 'react';
 
 type NavItem = {
-    id: string;
-    icon: any; // Could be `ImageSourcePropType` if you want to be more specific
-    label: string;
-  };
+  id: string;
+  icon: any;
+  label: string;
+};
   
 // Your navigation items
 const navigationItems: NavItem[] = [
@@ -25,9 +26,9 @@ const navigationItems: NavItem[] = [
     label: 'Quizz',
   },
   {
-    id: 'logic',
+    id: 'Stories',
     icon: require('../../assets/icons/logic.png'),
-    label: 'Logic',
+    label: 'Stories',
   },
   {
     id: 'nature',
@@ -48,18 +49,16 @@ export default function TabLayout() {
         tabBarStyle: {
             backgroundColor: 'rgba(123, 90, 240, 0.85)', 
             borderTopWidth: 0, 
-            gap:10,
-            paddingHorizontal:120
-          },
+            gap: 10,
+            paddingHorizontal: 120
+        },
         tabBarItemStyle: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        
+            justifyContent: 'center',
+            alignItems: 'center',
         },      
         tabBarActiveTintColor: 'rgba(90, 60, 190, 0.9)',
-        tabBarInactiveTintColor:  '#fff',
-    
-        }}>
+        tabBarInactiveTintColor: '#fff',
+    }}>
       {navigationItems.map((item) => (
         <Tabs.Screen
           key={item.id}

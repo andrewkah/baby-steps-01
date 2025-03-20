@@ -1,14 +1,9 @@
 import React, { Component } from 'react'
 import { Text, View } from 'react-native'
 
-export class nature extends Component {
-  render() {
-    return (
-      <View>
-        <Text> textInComponent </Text>
-      </View>
-    )
-  }
+import AfricanThemeGameInterface from '../AfricanThemeGameInterface';
+
+export default function ColoringTab() {
+  return <AfricanThemeGameInterface />;
 }
 
-export default nature

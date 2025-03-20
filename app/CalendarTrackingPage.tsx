@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
@@ -26,6 +25,8 @@ import { useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from "@expo/vector-icons";
+import { Text } from "@/components/StyledText";
+
 
 // Define types
 type DayType = {
@@ -42,6 +43,14 @@ type ActivityType = {
   time: string;
   color?: string;
   highlight?: boolean;
+};
+
+// Define navigation item type with proper route typing
+type NavigationItem = {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  route: string;
 };
 
 const CalendarTrackingPage: React.FC = () => {
@@ -112,7 +121,7 @@ const CalendarTrackingPage: React.FC = () => {
     },
   ];
 
-   const navigationItems = [
+   const navigationItems: NavigationItem[] = [
     { id: 'stats', name: 'Stats', icon: <StatsIcon />, route: '/stats' },
     { id: 'scope', name: 'Scope', icon: <ScopeIcon />, route: '/scope' },
     { id: 'certificates', name: 'Certificates', icon: <CertificatesIcon />, route: '/certificates' },
@@ -126,8 +135,11 @@ const CalendarTrackingPage: React.FC = () => {
       setSelectedDate(date);
     }
   };
+  
+  // Fixed navigation handler with type assertion
   const handleNavigation = (route: string) => {
-    router.push(route); // Navigate to the respective page
+    // Use type assertion to tell TypeScript this is a valid route
+    router.push(route as any);
   };
 
   // Handle month navigation
@@ -269,8 +281,11 @@ useEffect(() => {
       {/* Bottom Navigation */}
       <View style={styles.bottomNavigation}>
         {navigationItems.map((item) => (
-          <TouchableOpacity key={item.id} style={styles.navItem}             onPress={() => handleNavigation(item.route)} // Link to the page based on the route
->
+          <TouchableOpacity 
+            key={item.id} 
+            style={styles.navItem}
+            onPress={() => handleNavigation(item.route)}
+          >
             <View style={styles.navIcon}>{item.icon}</View>
             <Text style={styles.navText}>{item.name}</Text>
           </TouchableOpacity>

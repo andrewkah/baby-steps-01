@@ -3,7 +3,7 @@ import { Text, View } from 'react-native'
 
 import AfricanThemeGameInterface from '../AfricanThemeGameInterface';
 
-export default function quizz() {
+export default function logic() {
   return <AfricanThemeGameInterface />;
 }
 
