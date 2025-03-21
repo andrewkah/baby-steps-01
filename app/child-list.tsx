@@ -249,7 +249,7 @@ export default function ChildListScreen() {
         {/* Main content */}
         {loading ? (
           <View className="flex-1 justify-center items-center">
-            <FontAwesome5 name="child" size={50} color="#6366f1" />
+            <FontAwesome5 name="child" size={150} color="#6366f1" />
             <Text variant="medium" className="mt-5 text-base text-neutral-500">
               Loading profiles...
             </Text>
