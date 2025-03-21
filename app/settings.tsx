@@ -41,7 +41,7 @@ export default function SettingsScreen() {
       </TouchableOpacity>
 
       {/* Add Child Profile */}
-      <TouchableOpacity style={styles.option} onPress={() => router.push("/(onboarding)/gender")}>
+      <TouchableOpacity style={styles.option} onPress={() => router.push("/child-list")}>
         <Ionicons name="person-add" size={28} color="#10B981" />
         <Text style={styles.optionText}>Add Child Profile</Text>
       </TouchableOpacity>
