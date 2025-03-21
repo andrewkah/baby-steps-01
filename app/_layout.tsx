@@ -5,10 +5,10 @@ import { View, Text, StyleSheet } from "react-native";
 import { Session } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, usePathname } from "expo-router";
-import { useFonts } from "expo-font"; 
+import { useFonts } from "expo-font";
 import { SplashScreen } from "expo-router";
-import { Audio } from 'expo-av'; // Import Audio from expo-av
-import "@/global.css"
+import { Audio } from "expo-av"; // Import Audio from expo-av
+import "@/global.css";
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -46,7 +46,7 @@ export default function RootLayout() {
   const playBackgroundMusic = async () => {
     // Only initialize music if it hasn't been initialized yet
     if (isMusicInitialized.current) return;
-    
+
     try {
       // Configure audio mode first
       await Audio.setAudioModeAsync({
@@ -54,28 +54,32 @@ export default function RootLayout() {
         staysActiveInBackground: true,
         shouldDuckAndroid: true, // Lower volume when notifications occur
       });
-      
+
       const { sound } = await Audio.Sound.createAsync(
-        require('../assets/audio/background-music.mp3'),
-        { 
-          shouldPlay: true, 
+        require("../assets/audio/background-music.mp3"),
+        {
+          shouldPlay: true,
           isLooping: true,
-          volume: 0.2 // Set volume during creation
+          volume: 0.2, // Set volume during creation
         }
       );
-      
+
       // Store the sound in the ref
       soundRef.current = sound;
       isMusicInitialized.current = true;
-      
+
       // Add status update listener to handle interruptions
       sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && !status.isPlaying && isMusicInitialized.current) {
+        if (
+          status.isLoaded &&
+          !status.isPlaying &&
+          isMusicInitialized.current
+        ) {
           // If music stops unexpectedly but should be playing, restart it
           sound.playAsync();
         }
       });
-      
+
       console.log("Background music started successfully");
     } catch (error) {
       console.error("Error playing background music:", error);
@@ -138,7 +142,7 @@ export default function RootLayout() {
       if (showOnboarding) {
         router.replace("/onboarding");
       } else if (session) {
-        router.replace("/profile");
+        router.replace("/child-list");
       } else {
         router.replace("/login");
       }
@@ -191,21 +195,26 @@ export default function RootLayout() {
           gestureEnabled: false,
         }}
       />
-          <Stack.Screen
+      <Stack.Screen
+        name="child-list"
+        options={{
+          title: "List",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="CalendarTrackingPage"
         options={{
           title: "Dashboard",
           headerShown: false,
         }}
-        
       />
-          <Stack.Screen
+      <Stack.Screen
         name="AfricanThemeGameInterface"
         options={{
           title: "",
           headerShown: false,
         }}
-        
       />
       <Stack.Screen
         name="parent-gate"
@@ -221,13 +230,13 @@ export default function RootLayout() {
           headerShown: false,
         }}
       />
-        <Stack.Screen
+      <Stack.Screen
         name="(tabs)"
         options={{
           title: "Tabs",
           headerShown: false,
         }}
-        />
+      />
     </Stack>
   );
 }
