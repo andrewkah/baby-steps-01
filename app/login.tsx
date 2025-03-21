@@ -82,7 +82,7 @@ export default function Auth() {
     if (error) {
       Alert.alert("Oops!", error.message);
     } else {
-      router.replace("/profile");
+      router.replace("./(tabs)/profile");
     }
 
     setLoading(false);
