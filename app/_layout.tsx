@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native"; // Remove StyleSheet
 import { Session } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, usePathname } from "expo-router";
@@ -158,93 +158,22 @@ export default function RootLayout() {
     <Stack
       screenOptions={{
         headerTitleStyle: { fontFamily: "Atma-Medium" }, // Use Atma for headers
+        headerShown: false, // Set headerShown false globally
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="login"
-        options={{
-          title: "Sign In",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="signup"
-        options={{
-          title: "Sign Up",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="forgot-password"
-        options={{
-          title: "Forgot password",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="onboarding"
-        options={{
-          title: "Welcome",
-          headerShown: false,
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen
-        name="child-list"
-        options={{
-          title: "List",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="CalendarTrackingPage"
-        options={{
-          title: "Dashboard",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="AfricanThemeGameInterface"
-        options={{
-          title: "",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="parent-gate"
-        options={{
-          title: "Parent Gate",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="tester"
-        options={{
-          title: "Testing",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="(tabs)"
-        options={{
-          title: "Tabs",
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="signup" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="child-list" />
+      <Stack.Screen name="add-child" />
+      <Stack.Screen name="parent" />
+      <Stack.Screen name="CalendarTrackingPage" />
+      <Stack.Screen name="AfricanThemeGameInterface" />
+      <Stack.Screen name="parent-gate" />
+      <Stack.Screen name="tester" />
+      <Stack.Screen name="(tabs)" />
     </Stack>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});

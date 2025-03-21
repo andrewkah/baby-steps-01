@@ -114,7 +114,7 @@ export default function ChildListScreen() {
   });
 
   const navigateToAddChild = () => {
-    router.push("/add-child");
+    router.push("/parent/add-child/gender");
   };
 
   const navigateToProfile = (childId: string) => {
