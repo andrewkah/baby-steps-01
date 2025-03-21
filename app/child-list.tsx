@@ -104,8 +104,6 @@ export default function ChildListScreen() {
       */
     } catch (error) {
       console.error("Error fetching profiles:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -172,68 +170,10 @@ export default function ChildListScreen() {
     </Animated.View>
   );
 
-  // Render empty state with call to action
-  const renderEmptyState = () => (
-    <Animated.View
-      className="flex-1 justify-center items-center p-5"
-      style={{ transform: [{ scale: scaleValue }] }}
-    >
-      {/* Decorative floating elements */}
-      <Animated.View
-        className="absolute w-[120px] h-[120px] rounded-full bg-primary-100/30 top-[10%] left-[10%]"
-        style={{ transform: [{ translateY }] }}
-      />
-      <Animated.View
-        className="absolute w-[80px] h-[80px] rounded-full bg-secondary-100/30 bottom-[15%] right-[10%]"
-        style={{
-          transform: [{ translateY: Animated.multiply(translateY, 1.2) }],
-        }}
-      />
-      <Animated.View
-        className="absolute w-[60px] h-[60px] rounded-full bg-accent-100/30 top-[30%] right-[20%]"
-        style={{
-          transform: [{ translateY: Animated.multiply(translateY, 0.8) }],
-        }}
-      />
-
-      {/* Empty state content */}
-      <View className="w-full items-center bg-white p-6 rounded-3xl shadow-md">
-        <Text variant="bold" className="text-[80px] mb-4">
-          👶
-        </Text>
-        <Text
-          variant="bold"
-          className="text-2xl text-neutral-800 mb-3 text-center"
-        >
-          No Child Profiles Yet
-        </Text>
-        <Text className="text-base text-neutral-500 text-center mb-6 leading-6">
-          Add your child's profile to start their personalized learning
-          adventure!
-        </Text>
-
-        <TouchableOpacity
-          className="flex-row bg-primary-500 py-4 px-6 rounded-full items-center justify-center w-full shadow-lg"
-          onPress={navigateToAddChild}
-          activeOpacity={0.8}
-        >
-          <FontAwesome5 name="plus" size={18} color="#fff" />
-          <Text variant="bold" className="text-white text-base ml-2">
-            Add Child Profile
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
-
   return (
     <>
       {/* Status Bar - Added for visibility */}
-      <StatusBar
-        translucent
-        backgroundColor="white"
-        barStyle="dark-content"
-      />
+      <StatusBar translucent backgroundColor="white" barStyle="dark-content" />
 
       <SafeAreaView className="flex-1 bg-primary-50" edges={["top"]}>
         {/* Header */}
@@ -281,7 +221,60 @@ export default function ChildListScreen() {
                 </View>
               </>
             ) : (
-              renderEmptyState()
+              <Animated.View
+                className="flex-1 justify-center items-center p-5"
+                style={{ transform: [{ scale: scaleValue }] }}
+              >
+                {/* Decorative floating elements */}
+                <Animated.View
+                  className="absolute w-[120px] h-[120px] rounded-full bg-primary-100/30 top-[10%] left-[10%]"
+                  style={{ transform: [{ translateY }] }}
+                />
+                <Animated.View
+                  className="absolute w-[80px] h-[80px] rounded-full bg-secondary-100/30 bottom-[15%] right-[10%]"
+                  style={{
+                    transform: [
+                      { translateY: Animated.multiply(translateY, 1.2) },
+                    ],
+                  }}
+                />
+                <Animated.View
+                  className="absolute w-[60px] h-[60px] rounded-full bg-accent-100/30 top-[30%] right-[20%]"
+                  style={{
+                    transform: [
+                      { translateY: Animated.multiply(translateY, 0.8) },
+                    ],
+                  }}
+                />
+
+                {/* Empty state content */}
+                <View className="w-full items-center bg-white p-6 rounded-3xl shadow-md">
+                  <Text variant="bold" className="text-[80px] mb-4">
+                    👶
+                  </Text>
+                  <Text
+                    variant="bold"
+                    className="text-2xl text-neutral-800 mb-3 text-center"
+                  >
+                    No Child Profiles Yet
+                  </Text>
+                  <Text className="text-base text-neutral-500 text-center mb-6 leading-6">
+                    Add your child's profile to start their personalized
+                    learning adventure!
+                  </Text>
+
+                  <TouchableOpacity
+                    className="flex-row bg-primary-500 py-4 px-6 rounded-full items-center justify-center w-full shadow-lg"
+                    onPress={navigateToAddChild}
+                    activeOpacity={0.8}
+                  >
+                    <FontAwesome5 name="plus" size={18} color="#fff" />
+                    <Text variant="bold" className="text-white text-base ml-2">
+                      Add Child Profile
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
             )}
           </>
         )}
