@@ -1,57 +1,133 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import React from "react";
+import { View, TouchableOpacity, StatusBar, Image } from "react-native";
+import { useRouter } from "expo-router";
+import { Text } from "@/components/StyledText";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function YourChildIsOurPriorityScreen() {
   const router = useRouter();
 
+  const handleBack = () => {
+    router.push("/parent/add-child/activities");
+  };
+
   const navigateToNextScreen = () => {
-    // Navigate to the next screen (e.g., "Can your kid match numbers to objects?")
-    router.push('/knowledge'); // Replace '/next-screen' with your actual route
+    router.push("/parent/add-child/knowledge");
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your Child is Our Priority</Text>
-      <Text style={styles.message}>
-        At BabySteps, we understand the importance of fostering your child’s growth and development. We are committed to providing content and activities that are tailored to their learning journey, helping them grow in a healthy and positive environment.
-      </Text>
+    <>
+      <StatusBar
+        translucent
+        backgroundColor="white"
+        barStyle="dark-content"
+      />
 
-      <TouchableOpacity onPress={navigateToNextScreen} style={styles.nextButton}>
-        <Text style={styles.nextButtonText}>Next</Text>
-      </TouchableOpacity>
-    </View>
+      <SafeAreaView className="flex-1 bg-primary-50">
+        {/* Header with back button */}
+        <View className="flex-row items-center p-4 bg-white border-b border-gray-200">
+          <TouchableOpacity
+            onPress={handleBack}
+            className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center"
+          >
+            <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
+          </TouchableOpacity>
+          <Text
+            variant="bold"
+            className="flex-1 text-center text-xl text-primary-800 mr-10"
+          >
+            Our Promise
+          </Text>
+        </View>
+
+        {/* Decorative elements */}
+        <View className="absolute w-[100px] h-[100px] rounded-full bg-primary-100/30 top-[15%] left-[5%] -z-10" />
+        <View className="absolute w-[80px] h-[80px] rounded-full bg-secondary-100/30 bottom-[15%] right-[10%] -z-10" />
+        <View className="absolute w-[60px] h-[60px] rounded-full bg-accent-100/30 top-[35%] right-[20%] -z-10" />
+
+        {/* Main content */}
+        <View className="flex-1 justify-center px-6">
+          <View className="bg-white p-6 rounded-3xl shadow-md">
+            {/* Illustrated header image */}
+            <View className="items-center mb-6">
+              <View className="w-40 h-40 rounded-full bg-primary-100 items-center justify-center mb-4">
+                <Text className="text-[70px]">👨‍👩‍👧‍👦</Text>
+              </View>
+            </View>
+
+            <Text
+              variant="bold"
+              className="text-2xl text-center text-primary-800 mb-4"
+            >
+              Your Child is Our Priority
+            </Text>
+
+            <Text className="text-base text-center text-neutral-600 mb-6 leading-6">
+              At BabySteps, we understand the importance of fostering your
+              child's growth and development. We are committed to providing
+              content and activities that are tailored to their learning
+              journey, helping them grow in a healthy and positive environment.
+            </Text>
+
+            {/* Key points with icons */}
+            <View className="mb-6">
+              <View className="flex-row items-center mb-3">
+                <View className="w-10 h-10 rounded-full bg-secondary-100 items-center justify-center mr-3">
+                  <Text className="text-xl">🔒</Text>
+                </View>
+                <Text className="flex-1 text-sm text-neutral-700">
+                  <Text variant="bold">Safe Environment:</Text> Child-friendly
+                  content with no ads
+                </Text>
+              </View>
+
+              <View className="flex-row items-center mb-3">
+                <View className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mr-3">
+                  <Text className="text-xl">🧠</Text>
+                </View>
+                <Text className="flex-1 text-sm text-neutral-700">
+                  <Text variant="bold">Educational Focus:</Text> Activities
+                  designed by child development experts
+                </Text>
+              </View>
+
+              <View className="flex-row items-center">
+                <View className="w-10 h-10 rounded-full bg-accent-100 items-center justify-center mr-3">
+                  <Text className="text-xl">💗</Text>
+                </View>
+                <Text className="flex-1 text-sm text-neutral-700">
+                  <Text variant="bold">Personalized Journey:</Text> Content
+                  adapts to your child's progress
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Footer with next button */}
+        <View className="p-6 bg-white border-t border-gray-200">
+          <TouchableOpacity
+            className="py-4 rounded-full items-center justify-center shadow-md overflow-hidden"
+            onPress={navigateToNextScreen}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={["#6366f1", "#8b5cf6"]}
+              start={[0, 0]}
+              end={[1, 0]}
+              className="absolute inset-0"
+            />
+            <View className="flex-row items-center">
+              <Text variant="bold" className="text-white text-lg mr-2">
+                Continue
+              </Text>
+              <FontAwesome5 name="arrow-right" size={16} color="white" />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  message: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 40,
-    color: '#666',
-  },
-  nextButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  nextButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
