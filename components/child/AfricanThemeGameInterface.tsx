@@ -489,7 +489,7 @@ const AfricanThemeGameInterface: React.FC = () => {
                 contentContainerClassName="py-4 pb-8"
               >
                 {/* Start card */}
-                <View className="bg-white/15 rounded-2xl p-4 mt-5 mr-2.5 w-[200px] ">
+                <View className="bg-white/15 rounded-2xl p-4 mt-5 mr-2.5 w-[200px] mb-6">
                   <Text variant="bold" className="text-white text-2xl">
                     Start
                   </Text>
@@ -506,7 +506,7 @@ const AfricanThemeGameInterface: React.FC = () => {
                 {learningCards.map((card) => (
                   <TouchableOpacity
                     key={card.id}
-                    className="bg-white rounded-2xl w-[250px]  mr-4 overflow-hidden shadow-md border-2 border-[#FFD700]"
+                    className="bg-white rounded-2xl w-[250px]  mr-4 overflow-hidden shadow-md border-2 border-[#FFD700] mb-4"
                     activeOpacity={0.7}
                     onPress={() => handleCardPress(card)}
                   >
