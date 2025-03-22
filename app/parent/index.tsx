@@ -119,7 +119,7 @@ const ParentDashboard = () => {
             <View className="flex-row">
               <TouchableOpacity
                 className="w-10 h-10 rounded-full bg-purple-100 items-center justify-center mr-3"
-                onPress={() => router.push("/settings")}
+                onPress={() => router.push("/parent/settings")}
               >
                 <Ionicons name="settings-outline" size={22} color="#7b5af0" />
               </TouchableOpacity>
