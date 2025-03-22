@@ -9,6 +9,12 @@ export default function OnboardingLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="parent-gate"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
