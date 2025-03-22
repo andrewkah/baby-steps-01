@@ -33,7 +33,7 @@ export default function ParentGate() {
 
       if (newInput.length === 3) {
         if (newInput === correctPin) {
-          router.replace("/CalendarTrackingPage");
+          router.replace("/parent");
         } else {
           // No alert for incorrect PIN, just redirect back
           router.replace("/child/(tabs)/profile");
