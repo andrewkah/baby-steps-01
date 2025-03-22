@@ -106,7 +106,7 @@ const AfricanThemeGameInterface: React.FC = () => {
             id: "logic",
             title: "Logic",
             image: require("@/assets/images/african-logic.png"),
-            description: "Solve puzzles inspired by African traditions",
+            description: "Solve puzzles inspired by popular Buganda heritage sites",
             targetPage: "tester", // For now, all point to tester, but you can change this later
           },
           {
@@ -117,11 +117,11 @@ const AfricanThemeGameInterface: React.FC = () => {
             targetPage: "tester",
           },
           {
-            id: "focus",
-            title: "Focus",
+            id: "words",
+            title: "Words",
             image: require("@/assets/images/african-focus.png"),
-            description: "Improve concentration with Adinkra symbols",
-            targetPage: "tester",
+            description: "Fill in the missing letters to complete the word",
+            targetPage: "child/games/wordgame",
           },
           {
             id: "numbers",
