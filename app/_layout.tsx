@@ -1,13 +1,15 @@
+"use client";
+
 import { Stack } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
-import { View, Text } from "react-native"; // Remove StyleSheet
-import { Session } from "@supabase/supabase-js";
+import { AppState, type AppStateStatus } from "react-native"; // Add AppState
+import type { Session } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, usePathname } from "expo-router";
 import { useFonts } from "expo-font";
 import { SplashScreen } from "expo-router";
-import { Audio } from "expo-av"; // Import Audio from expo-av
+import { Audio } from "expo-av";
 import "@/global.css";
 
 // Prevent the splash screen from auto-hiding
@@ -17,8 +19,9 @@ export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const soundRef = useRef<Audio.Sound | null>(null); // Use ref instead of state for sound
-  const isMusicInitialized = useRef(false); // Track if music has been initialized
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const isMusicInitialized = useRef(false);
+  const appState = useRef(AppState.currentState); // Track app state
   const router = useRouter();
   const pathname = usePathname();
 
@@ -51,7 +54,7 @@ export default function RootLayout() {
       // Configure audio mode first
       await Audio.setAudioModeAsync({
         playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
+        staysActiveInBackground: false, // Changed to false to stop in background
         shouldDuckAndroid: true, // Lower volume when notifications occur
       });
 
@@ -73,7 +76,8 @@ export default function RootLayout() {
         if (
           status.isLoaded &&
           !status.isPlaying &&
-          isMusicInitialized.current
+          isMusicInitialized.current &&
+          appState.current === "active" // Only auto-restart if app is active
         ) {
           // If music stops unexpectedly but should be playing, restart it
           sound.playAsync();
@@ -84,6 +88,44 @@ export default function RootLayout() {
     } catch (error) {
       console.error("Error playing background music:", error);
     }
+  };
+
+  // Handle app state changes
+  const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+    if (
+      appState.current.match(/inactive|background/) &&
+      nextAppState === "active"
+    ) {
+      // App has come to the foreground
+      console.log("App has come to the foreground!");
+      // Resume audio if it was initialized before
+      if (isMusicInitialized.current && soundRef.current) {
+        try {
+          await soundRef.current.playAsync();
+          console.log("Background music resumed");
+        } catch (error) {
+          console.error("Error resuming background music:", error);
+        }
+      }
+    } else if (
+      appState.current === "active" &&
+      nextAppState.match(/inactive|background/)
+    ) {
+      // App has gone to the background
+      console.log("App has gone to the background!");
+      // Pause audio
+      if (soundRef.current) {
+        try {
+          await soundRef.current.pauseAsync();
+          console.log("Background music paused");
+        } catch (error) {
+          console.error("Error pausing background music:", error);
+        }
+      }
+    }
+
+    // Update the AppState
+    appState.current = nextAppState;
   };
 
   useEffect(() => {
@@ -103,9 +145,16 @@ export default function RootLayout() {
       setSession(session);
     });
 
+    // Set up AppState event listener
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
     // Cleanup subscription
     return () => {
       data.subscription.unsubscribe();
+      subscription.remove(); // Remove AppState listener
     };
   }, []);
 
