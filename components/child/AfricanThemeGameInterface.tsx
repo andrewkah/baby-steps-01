@@ -10,12 +10,13 @@ import {
   Easing,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { useRouter, usePathname } from "expo-router";
+import { useRouter, usePathname, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Speech from "expo-speech";
 import { Text } from "@/components/StyledText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { useCallback } from 'react';
 
 // Define types
 type LearningCard = {
@@ -51,8 +52,29 @@ const AfricanThemeGameInterface: React.FC = () => {
     }
     
     lockOrientation();
-
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log("AfricanThemeGameInterface focused - locking to landscape");
+      const lockToLandscape = async () => {
+        try {
+          await ScreenOrientation.lockAsync(
+            ScreenOrientation.OrientationLock.LANDSCAPE
+          );
+        } catch (error) {
+          console.error("Failed to lock orientation:", error);
+        }
+      };
+
+      lockToLandscape();
+
+      return () => {
+        // No cleanup needed here as we want to keep landscape 
+        // when navigating to games
+      };
+    }, [])
+  );
 
   // Set up animation
   useEffect(() => {
