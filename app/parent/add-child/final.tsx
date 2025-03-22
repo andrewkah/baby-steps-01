@@ -36,7 +36,7 @@ export default function FinalScreen() {
   }, []);
 
   const handleContinue = () => {
-    router.push("/(tabs)/profile");
+    router.push("/child/(tabs)/profile");
   };
 
   return (

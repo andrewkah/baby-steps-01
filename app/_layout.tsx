@@ -222,7 +222,7 @@ export default function RootLayout() {
       <Stack.Screen name="AfricanThemeGameInterface" />
       <Stack.Screen name="parent-gate" />
       <Stack.Screen name="tester" />
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="child/(tabs)" />
     </Stack>
   );
 }

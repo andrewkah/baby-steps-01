@@ -52,35 +52,35 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: 'logic',
             title: 'Logic',
-            image: require('../assets/images/african-logic.png'),
+            image: require('@/assets/images/african-logic.png'),
             description: 'Solve puzzles inspired by African traditions',
             targetPage: 'tester', // For now, all point to tester, but you can change this later
           },
           {
             id: 'patterns',
             title: 'Patterns',
-            image: require('../assets/images/african-patterns.png'),
+            image: require('@/assets/images/african-patterns.png'),
             description: 'Learn about beautiful Kente cloth patterns',
             targetPage: 'tester',
           },
           {
             id: 'focus',
             title: 'Focus',
-            image: require('../assets/images/african-focus.png'),
+            image: require('@/assets/images/african-focus.png'),
             description: 'Improve concentration with Adinkra symbols',
             targetPage: 'tester',
           },
           {
             id: 'numbers',
             title: 'Numbers',
-            image: require('../assets/images/numbers.png'),
+            image: require('@/assets/images/numbers.png'),
             description: 'Count with traditional African number systems',
             targetPage: 'tester',
           },
           {
             id: 'words',
             title: 'Words',
-            image: require('../assets/images/stories.png'),
+            image: require('@/assets/images/stories.png'),
             description: 'Learn through African folktales and proverbs',
             targetPage: 'tester',
           },
@@ -93,35 +93,35 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: 'animals',
             title: 'Animals',
-            image: require('../assets/images/animals.jpg'),
+            image: require('@/assets/images/animals.jpg'),
             description: 'Color African wildlife animals',
             targetPage: 'tester',
           },
           {
             id: 'shapes',
             title: 'Shapes',
-            image: require('../assets/images/shapes.jpg'),
+            image: require('@/assets/images/shapes.jpg'),
             description: 'Color different shapes',
             targetPage: 'tester',
           },
           {
             id: 'masks',
             title: 'Masks',
-            image: require('../assets/images/mask.jpg'),
+            image: require('@/assets/images/mask.jpg'),
             description: 'Color traditional African masks',
             targetPage: 'tester',
           },
           {
             id: 'landscapes',
             title: 'Landscapes',
-            image: require('../assets/images/landscape.jpg'),
+            image: require('@/assets/images/landscape.jpg'),
             description: 'Color beautiful African landscapes',
             targetPage: 'tester',
           },
           {
             id: 'clothing',
             title: 'Clothing',
-            image: require('../assets/images/clothing.jpg'),
+            image: require('@/assets/images/clothing.jpg'),
             description: 'Color traditional African clothing',
             targetPage: 'tester',
           },
@@ -134,42 +134,42 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: 'kintu',
             title: 'Kintu',
-            image: require('../assets/images/kintu.jpg'),
+            image: require('@/assets/images/kintu.jpg'),
             description: 'Learn about Kintu, the first person on Earth according to Buganda mythology',
             targetPage: 'tester',
           },
           {
             id: 'mwanga',
             title: 'Kabaka Mwanga',
-            image: require('../assets/images/mwanga.jpg'),
+            image: require('@/assets/images/mwanga.jpg'),
             description: 'Discover the story of Kabaka Mwanga II of Buganda',
             targetPage: 'tester',
           },
           {
             id: 'kasubi',
             title: 'Kasubi Tombs',
-            image: require('../assets/images/kasubi.jpg'),
+            image: require('@/assets/images/kasubi.jpg'),
             description: 'Explore the UNESCO World Heritage Site of Kasubi Tombs',
             targetPage: 'tester',
           },
           {
             id: 'buganda-kingdom',
             title: 'Buganda Kingdom',
-            image: require('../assets/images/buganda-kingdom.jpg'),
+            image: require('@/assets/images/buganda-kingdom.jpg'),
             description: 'Learn about the history of the Buganda Kingdom',
             targetPage: 'tester',
           },
           {
             id: 'kabaka-trail',
             title: 'Kabaka Trail',
-            image: require('../assets/images/kabaka-trail.jpg'),
+            image: require('@/assets/images/kabaka-trail.jpg'),
             description: 'Follow the historical trail of the Kabakas of Buganda',
             targetPage: 'tester',
           },
           {
             id: 'buganda-culture',
             title: 'Buganda Culture',
-            image: require('../assets/images/culture.jpg'),
+            image: require('@/assets/images/culture.jpg'),
             description: 'Discover the rich cultural heritage of Buganda',
             targetPage: 'tester',
           },
@@ -182,35 +182,35 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: 'history',
             title: 'History',
-            image: require('../assets/images/history.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/history.jpg'), // Replace with appropriate image
             description: 'Test your knowledge of African history',
             targetPage: 'tester',
           },
           {
             id: 'geography',
             title: 'Geography',
-            image: require('../assets/images/geography.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/geography.jpg'), // Replace with appropriate image
             description: 'Quiz about African countries and landmarks',
             targetPage: 'tester',
           },
           {
             id: 'culture',
             title: 'Culture',
-            image: require('../assets/images/culture.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/culture.jpg'), // Replace with appropriate image
             description: 'Learn about diverse African cultures',
             targetPage: 'tester',
           },
           {
             id: 'wildlife',
             title: 'Wildlife',
-            image: require('../assets/images/wildlife.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/wildlife.jpg'), // Replace with appropriate image
             description: 'Test your knowledge of African animals',
             targetPage: 'tester',
           },
           {
             id: 'languages',
             title: 'Languages',
-            image: require('../assets/images/language.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/language.jpg'), // Replace with appropriate image
             description: 'Learn words from different African languages',
             targetPage: 'tester',
           },
@@ -223,35 +223,35 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: 'savanna',
             title: 'Savanna',
-            image: require('../assets/images/savannah.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/savannah.jpg'), // Replace with appropriate image
             description: 'Explore the African savanna ecosystem',
             targetPage: 'tester',
           },
           {
             id: 'rainforest',
             title: 'Rainforest',
-            image: require('../assets/images/rainforest.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/rainforest.jpg'), // Replace with appropriate image
             description: 'Discover the Congo rainforest',
             targetPage: 'tester',
           },
           {
             id: 'desert',
             title: 'Desert',
-            image: require('../assets/images/desert.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/desert.jpg'), // Replace with appropriate image
             description: 'Learn about the Sahara and Kalahari deserts',
             targetPage: 'tester',
           },
           {
             id: 'mountains',
             title: 'Mountains',
-            image: require('../assets/images/mountain.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/mountain.jpg'), // Replace with appropriate image
             description: 'Explore African mountains like Kilimanjaro',
             targetPage: 'tester',
           },
           {
             id: 'rivers',
             title: 'Rivers',
-            image: require('../assets/images/river.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/river.jpg'), // Replace with appropriate image
             description: 'Learn about the Nile, Congo, and other major rivers',
             targetPage: 'tester',
           },
@@ -264,35 +264,35 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: 'artifacts',
             title: 'Artifacts',
-            image: require('../assets/images/artifacts.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/artifacts.jpg'), // Replace with appropriate image
             description: 'Explore ancient African artifacts',
             targetPage: 'tester',
           },
           {
             id: 'art',
             title: 'Art',
-            image: require('../assets/images/art.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/art.jpg'), // Replace with appropriate image
             description: 'Discover traditional and contemporary African art',
             targetPage: 'tester',
           },
           {
             id: 'instruments',
             title: 'Instruments',
-            image: require('../assets/images/drum.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/drum.jpg'), // Replace with appropriate image
             description: 'Learn about traditional African musical instruments',
             targetPage: 'tester',
           },
           {
             id: 'textiles',
             title: 'Textiles',
-            image: require('../assets/images/textile.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/textile.jpg'), // Replace with appropriate image
             description: 'Explore the rich tradition of African textiles',
             targetPage: 'tester',
           },
           {
             id: 'sculptures',
             title: 'Sculptures',
-            image: require('../assets/images/sculpture.jpg'), // Replace with appropriate image
+            image: require('@/assets/images/sculpture.jpg'), // Replace with appropriate image
             description: 'View famous African sculptures and carvings',
             targetPage: 'tester',
           },
@@ -305,35 +305,35 @@ const AfricanThemeGameInterface: React.FC = () => {
             {
               id: 'logic',
               title: 'Logic',
-              image: require('../assets/images/african-logic.png'),
+              image: require('@/assets/images/african-logic.png'),
               description: 'Solve puzzles inspired by African traditions',
               targetPage: 'tester',
             },
             {
               id: 'patterns',
               title: 'Patterns',
-              image: require('../assets/images/african-patterns.png'),
+              image: require('@/assets/images/african-patterns.png'),
               description: 'Learn about beautiful Kente cloth patterns',
               targetPage: 'tester',
             },
             {
               id: 'focus',
               title: 'Focus',
-              image: require('../assets/images/african-focus.png'),
+              image: require('@/assets/images/african-focus.png'),
               description: 'Improve concentration with Adinkra symbols',
               targetPage: 'tester',
             },
             {
               id: 'numbers',
               title: 'Numbers',
-              image: require('../assets/images/numbers.png'),
+              image: require('@/assets/images/numbers.png'),
               description: 'Count with traditional African number systems',
               targetPage: 'tester',
             },
             {
               id: 'stories',
               title: 'Stories',
-              image: require('../assets/images/stories.png'),
+              image: require('@/assets/images/stories.png'),
               description: 'Learn through African folktales and proverbs',
               targetPage: 'tester',
             },
@@ -361,7 +361,7 @@ const AfricanThemeGameInterface: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       <ImageBackground 
-        source={require('../assets/images/gameBackground.png')} 
+        source={require('@/assets/images/gameBackground.png')} 
         style={styles.backgroundImage}
       >
         {/* Main content area */}
@@ -369,7 +369,7 @@ const AfricanThemeGameInterface: React.FC = () => {
           {/* Left sidebar */}
           <View style={styles.profileContainer}>
             <Image 
-              source={require('../assets/images/african-avatar.png')} 
+              source={require('@/assets/images/african-avatar.png')} 
               style={styles.avatar} 
             />
             <View>
