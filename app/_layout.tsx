@@ -1,14 +1,16 @@
+"use client";
+
 import { Stack } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
-import { View, Text, StyleSheet } from "react-native";
-import { Session } from "@supabase/supabase-js";
+import { AppState, type AppStateStatus } from "react-native"; // Add AppState
+import type { Session } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, usePathname } from "expo-router";
-import { useFonts } from "expo-font"; 
+import { useFonts } from "expo-font";
 import { SplashScreen } from "expo-router";
-import { Audio } from 'expo-av'; // Import Audio from expo-av
-import "@/global.css"
+import { Audio } from "expo-av";
+import "@/global.css";
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -17,8 +19,9 @@ export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const soundRef = useRef<Audio.Sound | null>(null); // Use ref instead of state for sound
-  const isMusicInitialized = useRef(false); // Track if music has been initialized
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const isMusicInitialized = useRef(false);
+  const appState = useRef(AppState.currentState); // Track app state
   const router = useRouter();
   const pathname = usePathname();
 
@@ -46,40 +49,83 @@ export default function RootLayout() {
   const playBackgroundMusic = async () => {
     // Only initialize music if it hasn't been initialized yet
     if (isMusicInitialized.current) return;
-    
+
     try {
       // Configure audio mode first
       await Audio.setAudioModeAsync({
         playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
+        staysActiveInBackground: false, // Changed to false to stop in background
         shouldDuckAndroid: true, // Lower volume when notifications occur
       });
-      
+
       const { sound } = await Audio.Sound.createAsync(
-        require('../assets/audio/background-music.mp3'),
-        { 
-          shouldPlay: true, 
+        require("../assets/audio/background-music.mp3"),
+        {
+          shouldPlay: true,
           isLooping: true,
-          volume: 0.2 // Set volume during creation
+          volume: 0.2, // Set volume during creation
         }
       );
-      
+
       // Store the sound in the ref
       soundRef.current = sound;
       isMusicInitialized.current = true;
-      
+
       // Add status update listener to handle interruptions
       sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && !status.isPlaying && isMusicInitialized.current) {
+        if (
+          status.isLoaded &&
+          !status.isPlaying &&
+          isMusicInitialized.current &&
+          appState.current === "active" // Only auto-restart if app is active
+        ) {
           // If music stops unexpectedly but should be playing, restart it
           sound.playAsync();
         }
       });
-      
+
       console.log("Background music started successfully");
     } catch (error) {
       console.error("Error playing background music:", error);
     }
+  };
+
+  // Handle app state changes
+  const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+    if (
+      appState.current.match(/inactive|background/) &&
+      nextAppState === "active"
+    ) {
+      // App has come to the foreground
+      console.log("App has come to the foreground!");
+      // Resume audio if it was initialized before
+      if (isMusicInitialized.current && soundRef.current) {
+        try {
+          await soundRef.current.playAsync();
+          console.log("Background music resumed");
+        } catch (error) {
+          console.error("Error resuming background music:", error);
+        }
+      }
+    } else if (
+      appState.current === "active" &&
+      nextAppState.match(/inactive|background/)
+    ) {
+      // App has gone to the background
+      console.log("App has gone to the background!");
+      // Pause audio
+      if (soundRef.current) {
+        try {
+          await soundRef.current.pauseAsync();
+          console.log("Background music paused");
+        } catch (error) {
+          console.error("Error pausing background music:", error);
+        }
+      }
+    }
+
+    // Update the AppState
+    appState.current = nextAppState;
   };
 
   useEffect(() => {
@@ -99,9 +145,16 @@ export default function RootLayout() {
       setSession(session);
     });
 
+    // Set up AppState event listener
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
     // Cleanup subscription
     return () => {
       data.subscription.unsubscribe();
+      subscription.remove(); // Remove AppState listener
     };
   }, []);
 
@@ -136,9 +189,9 @@ export default function RootLayout() {
     // Only redirect if we're on the root ("/") to avoid redirect loops
     if (pathname === "/") {
       if (showOnboarding) {
-        router.replace("/onboarding");
+        router.replace("/");
       } else if (session) {
-        router.replace("/profile");
+        router.replace("/parent");
       } else {
         router.replace("/login");
       }
@@ -154,88 +207,20 @@ export default function RootLayout() {
     <Stack
       screenOptions={{
         headerTitleStyle: { fontFamily: "Atma-Medium" }, // Use Atma for headers
+        headerShown: false, // Set headerShown false globally
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="login"
-        options={{
-          title: "Sign In",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="signup"
-        options={{
-          title: "Sign Up",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="forgot-password"
-        options={{
-          title: "Forgot password",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="onboarding"
-        options={{
-          title: "Welcome",
-          headerShown: false,
-          gestureEnabled: false,
-        }}
-      />
-          <Stack.Screen
-        name="CalendarTrackingPage"
-        options={{
-          title: "Dashboard",
-          headerShown: false,
-        }}
-        
-      />
-          <Stack.Screen
-        name="AfricanThemeGameInterface"
-        options={{
-          title: "",
-          headerShown: false,
-        }}
-        
-      />
-      <Stack.Screen
-        name="parent-gate"
-        options={{
-          title: "Parent Gate",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="tester"
-        options={{
-          title: "Testing",
-          headerShown: false,
-        }}
-      />
-        <Stack.Screen
-        name="(tabs)"
-        options={{
-          title: "Tabs",
-          headerShown: false,
-        }}
-        />
+      <Stack.Screen name="index" options={{ gestureEnabled: false }} />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="signup" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="child-list" />
+      <Stack.Screen name="add-child" />
+      <Stack.Screen name="parent" />
+      <Stack.Screen name="CalendarTrackingPage" />
+      <Stack.Screen name="AfricanThemeGameInterface" />
+      <Stack.Screen name="tester" />
+      <Stack.Screen name="child/(tabs)" />
     </Stack>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});

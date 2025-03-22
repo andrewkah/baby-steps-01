@@ -26,7 +26,7 @@ import {
   CertificatesIcon,
   RankingsIcon,
   SettingsIcon,
-} from '../assets/icons/RankingIcons';
+} from '../../assets/icons/RankingIcons';
 
 // Define types
 type TabType = 'Learners' | 'Friends' | 'Towns' | 'Teams';

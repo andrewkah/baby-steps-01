@@ -20,7 +20,7 @@ import {
   CertificatesIcon,
   RankingsIcon,
   SettingsIcon,
-} from '../assets/icons/ActivityIcons';
+} from '../../assets/icons/ActivityIcons';
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as ScreenOrientation from 'expo-screen-orientation';

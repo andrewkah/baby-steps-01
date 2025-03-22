@@ -1,38 +1,18 @@
-import React, { useEffect, useState, useRef, useLayoutEffect } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import React, {
+  useEffect,
+  useState,
+} from "react";
+import { View, StyleSheet } from "react-native";
 import { Session } from "@supabase/supabase-js";
-import { Button } from "@rneui/themed";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
-import * as ScreenOrientation from "expo-screen-orientation";
-import AfricanThemeGameInterface from '../AfricanThemeGameInterface';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AfricanThemeGameInterface from "@/components/child/AfricanThemeGameInterface";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const router = useRouter();
-  const soundRef = useRef<any>(null); // Ref to store the sound object
-  // Function to start background song
   
-    // Function to stop background music
-    const stopBackgroundMusic = async () => {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync();
-      }
-    };
-  // Lock screen orientation to landscape as soon as the component is mounted
-  useLayoutEffect(() => {
-    const lockToLandscape = async () => {
-      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT);
-    };
-
-    lockToLandscape(); // Lock to landscape immediately
-
-    // Optionally unlock the orientation on unmount or when leaving the screen
-    return () => {
-      ScreenOrientation.unlockAsync();
-    };
-  }, []); // Run only once when the component mounts
 
   useEffect(() => {
     // Fetch session details
@@ -47,7 +27,7 @@ export default function ProfileScreen() {
 
     return () => subscription.unsubscribe();
   }, []);
-  
+
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -109,21 +89,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   settingsButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   pressing: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     top: 10,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 10,
     padding: 10,
   },
   settingsText: {
-    color: '#FF6F61',
+    color: "#FF6F61",
     fontSize: 8,
     marginTop: 4,
   },
