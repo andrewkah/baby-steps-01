@@ -82,7 +82,7 @@ export default function Auth() {
     if (error) {
       Alert.alert("Oops!", error.message);
     } else {
-      router.replace("/child-list");
+      router.replace("/parent");
     }
 
     setLoading(false);

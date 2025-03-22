@@ -191,7 +191,7 @@ export default function RootLayout() {
       if (showOnboarding) {
         router.replace("/");
       } else if (session) {
-        router.replace("/child-list");
+        router.replace("/parent");
       } else {
         router.replace("/login");
       }
