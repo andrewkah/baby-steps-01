@@ -150,7 +150,7 @@ const ParentDashboard = () => {
                     className="bg-purple-50 rounded-xl p-4 w-[150px] shadow-sm"
                     onPress={() =>
                       router.push({
-                        pathname: "/parent/child-detail" as any,
+                        pathname: "/parent/child-detail/1" as any,
                         params: { childId: child.id },
                       })
                     }
