@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, Dimensions, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Dimensions, Animated, Modal } from 'react-native';
 import { Audio } from 'expo-av';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Ionicons } from "@expo/vector-icons";
+import { gameLevels } from './utils/wordgamewords'; // Import game levels
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -23,16 +24,26 @@ type LetterPosition = {
   destHeight: number;
 };
 
+type GameLevel = {
+  word: string;
+  question: string;
+  firstLetter: string;
+};
+
 const WordGame: React.FC = () => {
   // State variables
-  const [currentWord, setCurrentWord] = useState<string>('KANZU');
-  const [displayWord, setDisplayWord] = useState<string>('K____');
-  const [currentQuestion, setCurrentQuestion] = useState<string>('Traditional attire in Buganda culture');
-  const [letters, setLetters] = useState<string[]>(['A', 'N', 'Z', 'U', 'B', 'L', 'R', 'T', 'S', 'M']);
+  const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(0);
+  const [currentWord, setCurrentWord] = useState<string>('');
+  const [displayWord, setDisplayWord] = useState<string>('');
+  const [currentQuestion, setCurrentQuestion] = useState<string>('');
+  const [letters, setLetters] = useState<string[]>([]);
   const [selectedLetters, setSelectedLetters] = useState<string[]>([]);
   const [correctSound, setCorrectSound] = useState<Audio.Sound | undefined>();
   const [wrongSound, setWrongSound] = useState<Audio.Sound | undefined>();
+  const [successSound, setSuccessSound] = useState<Audio.Sound | undefined>();
   const [animatingLetter, setAnimatingLetter] = useState<LetterPosition | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
   
   // Animation values
   const letterScale = useState(new Animated.Value(1))[0];
@@ -50,7 +61,63 @@ const WordGame: React.FC = () => {
   
   const router = useRouter();
   
-  // Updated useEffect to lock screen orientation
+  // Function to generate random letters for choices
+  const generateLetterChoices = (word: string): string[] => {
+    // Remove the first letter which is always given
+    const wordLetters = word.slice(1).split('');
+    
+    // Create array of unique letters from the word
+    const uniqueLetters = Array.from(new Set(wordLetters));
+    
+    // Add some random letters to make it challenging
+    const alphabetLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const remainingCount = 10 - uniqueLetters.length;
+    
+    // Filter out letters that are already in uniqueLetters
+    const availableLetters = alphabetLetters.filter(letter => !uniqueLetters.includes(letter));
+    
+    // Randomly select remaining letters
+    const randomLetters = [];
+    for (let i = 0; i < remainingCount && availableLetters.length > 0; i++) {
+      const randomIndex = Math.floor(Math.random() * availableLetters.length);
+      randomLetters.push(availableLetters[randomIndex]);
+      availableLetters.splice(randomIndex, 1);
+    }
+    
+    // Combine and shuffle
+    const allLetters = [...uniqueLetters, ...randomLetters];
+    return allLetters.sort(() => Math.random() - 0.5);
+  };
+  
+  // Load current level
+  const loadLevel = (levelIndex: number) => {
+    if (levelIndex >= gameLevels.length) {
+      setIsGameCompleted(true);
+      return;
+    }
+    
+    const level = gameLevels[levelIndex];
+    const word = level.word;
+    const firstLetter = level.firstLetter || word[0];
+    
+    // Create display word with first letter shown
+    let initialDisplay = firstLetter;
+    for (let i = 1; i < word.length; i++) {
+      initialDisplay += '_';
+    }
+    
+    setCurrentWord(word);
+    setDisplayWord(initialDisplay);
+    setCurrentQuestion(level.question);
+    setLetters(generateLetterChoices(word));
+    setSelectedLetters([firstLetter]); // First letter is already selected
+    
+    // Reset refs
+    letterRefs.current = {};
+    wordSlotRefs.current = {};
+  };
+  
+  // Updated useEffect to lock screen orientation and load the first level
   useEffect(() => {
     // Lock to landscape orientation
     async function setLandscapeOrientation() {
@@ -61,22 +128,38 @@ const WordGame: React.FC = () => {
     async function loadSounds() {
       const correctSoundObject = new Audio.Sound();
       const wrongSoundObject = new Audio.Sound();
+      const successSoundObject = new Audio.Sound();
       
       try {
-        await correctSoundObject.loadAsync(require('@/assets/sounds/correct.mp3'));
-        await wrongSoundObject.loadAsync(require('@/assets/sounds/wrong.mp3'));
+        // Add error handling for each sound file
+        try {
+          await correctSoundObject.loadAsync(require('@/assets/sounds/correct.mp3'));
+          setCorrectSound(correctSoundObject);
+        } catch (error) {
+          console.log('Could not load correct sound:', error);
+        }
         
-        setCorrectSound(correctSoundObject);
-        setWrongSound(wrongSoundObject);
+        try {
+          await wrongSoundObject.loadAsync(require('@/assets/sounds/wrong.mp3'));
+          setWrongSound(wrongSoundObject);
+        } catch (error) {
+          console.log('Could not load wrong sound:', error);
+        }
+        
+        try {
+          await successSoundObject.loadAsync(require('@/assets/sounds/correct.mp3'));
+          setSuccessSound(successSoundObject);
+        } catch (error) {
+          console.log('Could not load success sound:', error);
+        }
       } catch (error) {
-        console.error('Error loading sounds', error);
+        console.error('Error in sound loading process', error);
       }
     }
     
     setLandscapeOrientation();
     loadSounds();
-    
-    wordSlotRefs.current[0] = wordSlotRefs.current[0] || null;
+    loadLevel(0);
     
     return () => {
       // Reset orientation when component unmounts
@@ -84,8 +167,18 @@ const WordGame: React.FC = () => {
       
       if (correctSound) correctSound.unloadAsync();
       if (wrongSound) wrongSound.unloadAsync();
+      if (successSound) successSound.unloadAsync();
     };
   }, []);
+  
+  // Move to next level
+  const goToNextLevel = () => {
+    const nextLevelIndex = currentLevelIndex + 1;
+    setCurrentLevelIndex(nextLevelIndex);
+    setShowSuccessModal(false);
+    setSelectedLetters([]);
+    loadLevel(nextLevelIndex);
+  };
   
   // Animation logic
   const animateLetterToWord = (letter: string, letterIndex: number, destinationIndex: number) => {
@@ -165,7 +258,14 @@ const WordGame: React.FC = () => {
     
     setDisplayWord(newDisplay);
     
+    // Check if word is complete
     if (!newDisplay.includes('_')) {
+      // Play success sound
+      if (successSound) {
+        successSound.replayAsync();
+      }
+      
+      // Animate word bounce
       Animated.spring(bounceValue, {
         toValue: 1,
         friction: 3,
@@ -174,7 +274,8 @@ const WordGame: React.FC = () => {
       }).start(() => {
         setTimeout(() => {
           bounceValue.setValue(0);
-        }, 1500);
+          setShowSuccessModal(true);
+        }, 1000);
       });
     }
   };
@@ -230,6 +331,13 @@ const WordGame: React.FC = () => {
         <Ionicons name="arrow-back" size={24} color="#7b5af0" />
       </TouchableOpacity>
 
+      {/* Level indicator */}
+      <View className="absolute top-4 right-4 z-10 bg-white/80 px-3 py-1 rounded-full">
+        <Text className="text-lg font-semibold text-[#7b5af0]">
+          Level {currentLevelIndex + 1}/{gameLevels.length}
+        </Text>
+      </View>
+
       {/* Top bar with coin and question */}
       <View className="flex-row justify-between items-center px-5 pt-2.5 pb-1">
         {/* Question text */}
@@ -274,19 +382,10 @@ const WordGame: React.FC = () => {
               ] 
             }}
           >
-            {/* First letter */}
-            <View 
-              className="w-12 h-12 justify-center items-center mx-1"
-              ref={ref => wordSlotRefs.current[0] = ref}
-            >
-              <Text className="text-4xl font-bold text-[#5D3A00]">{displayWord[0]}</Text>
-            </View>
-            
-            {/* Remaining letters */}
-            {displayWord.slice(1).split('').map((char, index) => (
+            {displayWord.split('').map((char, index) => (
               <View 
                 key={index} 
-                ref={ref => wordSlotRefs.current[index + 1] = ref}
+                ref={ref => wordSlotRefs.current[index] = ref}
                 className="w-12 h-12 justify-center items-center mx-1 relative"
               >
                 <Text className="text-4xl font-bold text-[#5D3A00]">{char !== '_' ? char : ''}</Text>
@@ -357,6 +456,58 @@ const WordGame: React.FC = () => {
           </Text>
         </Animated.View>
       )}
+      
+      {/* Success Modal */}
+      <Modal
+        transparent={true}
+        visible={showSuccessModal}
+        animationType="fade"
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white rounded-2xl p-6 w-2/3 items-center">
+            <Text className="text-3xl font-bold text-[#7b5af0] mb-4">Good Job!</Text>
+            <Text className="text-xl text-gray-700 mb-6 text-center">
+              You correctly guessed the word: {currentWord}
+            </Text>
+            
+            <TouchableOpacity 
+              className="bg-[#7b5af0] py-3 px-6 rounded-full"
+              onPress={goToNextLevel}
+            >
+              <Text className="text-white text-xl font-bold">
+                {isGameCompleted ? "Play Again" : "Next Level"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Game Completed Modal */}
+      <Modal
+        transparent={true}
+        visible={isGameCompleted}
+        animationType="fade"
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white rounded-2xl p-6 w-2/3 items-center">
+            <Text className="text-3xl font-bold text-[#7b5af0] mb-4">Congratulations!</Text>
+            <Text className="text-xl text-gray-700 mb-6 text-center">
+              You have completed all levels!
+            </Text>
+            
+            <TouchableOpacity 
+              className="bg-[#7b5af0] py-3 px-6 rounded-full"
+              onPress={() => {
+                setIsGameCompleted(false);
+                setCurrentLevelIndex(0);
+                loadLevel(0);
+              }}
+            >
+              <Text className="text-white text-xl font-bold">Play Again</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
