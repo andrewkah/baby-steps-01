@@ -8,6 +8,7 @@ import {
   ScrollView,
   Animated,
   Easing,
+  BackHandler, // Add this import
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useRouter, usePathname, useFocusEffect } from "expo-router";
@@ -123,6 +124,17 @@ const AfricanThemeGameInterface: React.FC = () => {
       bounceSequence.stop();
     };
   }, []);
+
+  // Add this effect to handle hardware back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Navigate to parent gate instead of default back behavior
+      router.push('/child/parent-gate');
+      return true; // Prevents default back behavior
+    });
+
+    return () => backHandler.remove(); // Clean up on unmount
+  }, [router]);
 
   // Get the current path to determine which tab we're on
   const pathname = usePathname();
