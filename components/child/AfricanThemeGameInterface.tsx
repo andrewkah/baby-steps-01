@@ -403,7 +403,7 @@ const AfricanThemeGameInterface: React.FC = () => {
       pitch: 1,
       rate: 1,
     });
-    router.push("/parent-gate");
+    router.push("/parent/parent-gate");
   };
 
   // Updated function to navigate to the card's target page with type assertion

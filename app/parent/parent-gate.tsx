@@ -26,7 +26,7 @@ export default function ParentGate() {
           router.replace("/CalendarTrackingPage");
         } else {
           // no alert message for incorrect pin since we have to allow children to continue seemlessly
-          router.replace("/profile");
+          router.replace("/child/(tabs)/profile");
         }
       }
     }
@@ -50,7 +50,7 @@ export default function ParentGate() {
         <Text style={styles.hint}>{correctPin.split('').join(' ')}</Text>
         <Text style={styles.parentsOnly}>Parents only...</Text>
         <Image 
-          source={require('../assets/images/lock-icon.png')} 
+          source={require('@/assets/images/lock-icon.png')} 
           style={styles.lockImage} 
         />
         <View style={styles.inputBoxes}>
