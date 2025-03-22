@@ -189,7 +189,7 @@ export default function RootLayout() {
     // Only redirect if we're on the root ("/") to avoid redirect loops
     if (pathname === "/") {
       if (showOnboarding) {
-        router.replace("/onboarding");
+        router.replace("/");
       } else if (session) {
         router.replace("/child-list");
       } else {
@@ -210,11 +210,10 @@ export default function RootLayout() {
         headerShown: false, // Set headerShown false globally
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen name="index" options={{ gestureEnabled: false }} />
       <Stack.Screen name="login" />
       <Stack.Screen name="signup" />
       <Stack.Screen name="forgot-password" />
-      <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
       <Stack.Screen name="child-list" />
       <Stack.Screen name="add-child" />
       <Stack.Screen name="parent" />

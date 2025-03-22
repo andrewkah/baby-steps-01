@@ -161,14 +161,14 @@ export default function SettingsScreen() {
               iconColor="#F87171"
               iconType="fontawesome"
               text="Learning Progress"
-              action={() => router.push("/child-progress")}
+              action={() => router.push("/parent/child-progress")}
             />
             <SettingItem
               icon="medal"
               iconColor="#FBBF24"
               iconType="fontawesome"
               text="Achievements & Rewards"
-              action={() => router.push("/achievements")}
+              action={() => router.push("/parent/achievements")}
               last
             />
           </View>
