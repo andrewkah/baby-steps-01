@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Speech from "expo-speech";
 import { Text } from "@/components/StyledText";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 // Define types
 type LearningCard = {
@@ -40,6 +41,18 @@ const AfricanThemeGameInterface: React.FC = () => {
   // Animation values for avatar
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Lock to landscape orientation
+    async function lockOrientation() {
+      await ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.LANDSCAPE
+      );
+    }
+    
+    lockOrientation();
+
+  }, []);
 
   // Set up animation
   useEffect(() => {

@@ -4,6 +4,7 @@ import { Audio } from 'expo-av';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { Ionicons } from "@expo/vector-icons";
 
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -222,6 +223,13 @@ const WordGame: React.FC = () => {
     <View ref={containerRef} className="flex-1 bg-[#9DE7A9] p-2.5">
       <StatusBar style="auto" />
       
+      <TouchableOpacity 
+        className="absolute top-4 left-4 z-10 bg-white/80 p-2 rounded-full"
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+      </TouchableOpacity>
+
       {/* Top bar with coin and question */}
       <View className="flex-row justify-between items-center px-5 pt-2.5 pb-1">
         {/* Question text */}
