@@ -10,7 +10,7 @@ export default function GenderScreen() {
   const router = useRouter();
 
   const handleBack = () => {
-    router.push("/child-list");
+    router.back();
   };
 
   const handleNext = () => {
@@ -25,11 +25,7 @@ export default function GenderScreen() {
 
   return (
     <>
-      <StatusBar
-        translucent
-        backgroundColor="white"
-        barStyle="dark-content"
-      />
+      <StatusBar translucent backgroundColor="white" barStyle="dark-content" />
 
       <SafeAreaView className="flex-1 bg-primary-50">
         {/* Header with back button */}

@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { Image, View } from "react-native";
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Text } from "@/components/StyledText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -45,9 +45,7 @@ const navigationItems: NavItem[] = [
 ];
 
 export default function TabLayout() {
-  // Get safe area insets to handle notches and home indicators
   const insets = useSafeAreaInsets();
-
   return (
     <Tabs
       screenOptions={{
@@ -77,10 +75,9 @@ export default function TabLayout() {
         // Active color is gold to match African theme
         tabBarActiveTintColor: "#FFD700",
         tabBarInactiveTintColor: "#fff",
-       
+
         tabBarShowLabel: true,
       }}
-     
     >
       {navigationItems.map((item) => (
         <Tabs.Screen
@@ -90,7 +87,7 @@ export default function TabLayout() {
             tabBarLabel: ({ focused, color }) => (
               <Text
                 variant={focused ? "bold" : "regular"}
-                className={`${focused ? 'text-[#FFD700]' : 'text-white'}`}
+                className={`${focused ? "text-[#FFD700]" : "text-white"}`}
                 style={{ textAlign: "center", marginBottom: 4 }}
               >
                 {item.label}
@@ -100,7 +97,7 @@ export default function TabLayout() {
               <View className="items-center justify-center">
                 <View className="relative">
                   {focused && (
-                    <View 
+                    <View
                       className="bg-[#FFD700]"
                       style={{ width: size + 10 }}
                     />
@@ -112,7 +109,7 @@ export default function TabLayout() {
                       height: size,
                       tintColor: color,
                       resizeMode: "contain",
-                      transform: [{ scale: focused ? 1.1 : 0.9 }]
+                      transform: [{ scale: focused ? 1.1 : 0.9 }],
                     }}
                   />
                 </View>

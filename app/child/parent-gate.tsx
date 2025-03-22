@@ -33,7 +33,7 @@ export default function ParentGate() {
 
       if (newInput.length === 3) {
         if (newInput === correctPin) {
-          router.replace("/parent");
+          router.push("/parent");
         } else {
           // No alert for incorrect PIN, just redirect back
           router.replace("/child/(tabs)/profile");
@@ -127,7 +127,7 @@ export default function ParentGate() {
                           onPress={() => handleDigitPress(digit)}
                           activeOpacity={0.7}
                         >
-                          <Text variant="bold" className="text-white text-3xl">
+                          <Text variant="bold" className="text-white text-3xl pt-3">
                             {digit}
                           </Text>
                         </TouchableOpacity>
@@ -152,7 +152,7 @@ export default function ParentGate() {
                           onPress={() => handleDigitPress(digit)}
                           activeOpacity={0.7}
                         >
-                          <Text variant="bold" className="text-white text-3xl">
+                          <Text variant="bold" className="text-white text-3xl pt-3">
                             {digit}
                           </Text>
                         </TouchableOpacity>
@@ -179,7 +179,7 @@ export default function ParentGate() {
                           onPress={() => handleDigitPress(digit)}
                           activeOpacity={0.7}
                         >
-                          <Text variant="bold" className="text-white text-3xl">
+                          <Text variant="bold" className="text-white text-3xl pt-3">
                             {digit}
                           </Text>
                         </TouchableOpacity>

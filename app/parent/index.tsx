@@ -1,11 +1,10 @@
-import React, { useState, useLayoutEffect } from "react";
+import React  from "react";
 import { View, ScrollView, TouchableOpacity, Dimensions } from "react-native";
 import { Text } from "@/components/StyledText";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
-import * as ScreenOrientation from "expo-screen-orientation";
 
 // Mock data for children profiles
 const childProfiles = [
@@ -33,8 +32,6 @@ const childProfiles = [
 
 const ParentDashboard = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("overview");
-  const windowWidth = Dimensions.get("window").width;
 
   // Activity mock data
   const recentActivities = [
@@ -81,20 +78,6 @@ const ParentDashboard = () => {
   // Calculate maximum minutes for chart scaling
   const maxMinutes = Math.max(...weeklyInsights.map((day) => day.minutes));
 
-  // Lock screen orientation to portrait
-  useLayoutEffect(() => {
-    const lockToPortrait = async () => {
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.PORTRAIT_UP
-      );
-    };
-
-    lockToPortrait();
-
-    return () => {
-      ScreenOrientation.unlockAsync();
-    };
-  }, []);
 
   return (
     <>
@@ -136,8 +119,6 @@ const ParentDashboard = () => {
               </TouchableOpacity>
             </View>
           </View>
-
-          
 
           {/* Main content */}
           <ScrollView className="flex-1 p-4 pb-8">
