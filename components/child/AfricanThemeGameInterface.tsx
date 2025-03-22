@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Image,
@@ -6,6 +6,8 @@ import {
   Dimensions,
   ImageBackground,
   ScrollView,
+  Animated,
+  Easing,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useRouter, usePathname } from "expo-router";
@@ -34,6 +36,58 @@ const AfricanThemeGameInterface: React.FC = () => {
   const [selectedNavItem, setSelectedNavItem] = useState<string>("home");
   const [learningCards, setLearningCards] = useState<LearningCard[]>([]);
   const router = useRouter();
+
+  // Animation values for avatar
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+
+  // Set up animation
+  useEffect(() => {
+    // Create combined animation sequence
+    const pulseSequence = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const bounceSequence = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: -3,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 0,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    // Start animations
+    pulseSequence.start();
+    bounceSequence.start();
+
+    return () => {
+      // Clean up animations
+      pulseSequence.stop();
+      bounceSequence.stop();
+    };
+  }, []);
 
   // Get the current path to determine which tab we're on
   const pathname = usePathname();
@@ -376,10 +430,17 @@ const AfricanThemeGameInterface: React.FC = () => {
           <View className="flex-1 flex-row bg-[#7b5af0d9]">
             {/* Left sidebar - Profile */}
             <View className="flex-row items-center gap-2.5 absolute pt-8 left-5">
-              <Image
-                source={require("@/assets/images/african-avatar.png")}
-                className="w-[70px] h-[70px] rounded-full border-3 border-[#FFD700]"
-              />
+              {/* animated avatar */}
+              <Animated.View
+                style={{
+                  transform: [{ scale: pulseAnim }, { translateY: bounceAnim }],
+                }}
+              >
+                <Image
+                  source={require("@/assets/images/african-avatar.png")}
+                  className="w-[70px] h-[70px] rounded-full border-3 border-[#FFD700]"
+                />
+              </Animated.View>
               <View className="pl-3">
                 <Text variant="bold" className="text-white text-lg mt-2">
                   Learner
