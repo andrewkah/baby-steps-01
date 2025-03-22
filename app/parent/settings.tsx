@@ -160,17 +160,10 @@ export default function SettingsScreen() {
               icon="chart-line"
               iconColor="#F87171"
               iconType="fontawesome"
-              text="Learning Progress"
+              text="Learning Progress & Achievements"
               action={() => router.push("/parent/child-progress")}
             />
-            <SettingItem
-              icon="medal"
-              iconColor="#FBBF24"
-              iconType="fontawesome"
-              text="Achievements & Rewards"
-              action={() => router.push("/parent/achievements")}
-              last
-            />
+           
           </View>
 
           {/* App Settings Section */}
