@@ -1,217 +1,209 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  StatusBar,
-  ActivityIndicator,
-  TouchableOpacity,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { Text } from "@/components/StyledText";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+"use client"
 
-export default function FinalScreen() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
+import { useState, useEffect } from "react"
+import { View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native"
+import { useUser } from "@/context/UserContext"
+import { useRouter } from "expo-router"
+import { Text } from "@/components/StyledText"
+import { FontAwesome5 } from "@expo/vector-icons"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { LinearGradient } from "expo-linear-gradient"
 
-  // Simulate loading process with progress, but don't redirect automatically
+export default function SubmitScreen() {
+  const router = useRouter()
+  const { name, gender, age, reason, addChildProfile } = useUser()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prevProgress) => {
-        const newProgress = prevProgress + 0.1;
-        return newProgress > 1 ? 1 : newProgress;
-      });
-    }, 300);
+    const submitData = async () => {
+      try {
+        setIsLoading(true)
+        // Simulate a slight delay for better UX
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await addChildProfile()
+        setIsSuccess(true)
+      } catch (err) {
+        console.error("Error submitting profile:", err)
+        setError("Failed to save profile. Please try again.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-      // Removed automatic navigation
-    }, 4000);
+    submitData()
+  }, [])
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, []);
+  const handleBack = () => {
+    router.push("/parent/add-child/mindCapacity")
+  }
 
   const handleContinue = () => {
-    router.push("/child/(tabs)/profile");
-  };
+    router.push("/child-list")
+  }
 
   return (
     <>
-      <StatusBar
-        translucent
-        backgroundColor="transparent"
-        barStyle="dark-content"
-      />
+      <StatusBar translucent backgroundColor="white" barStyle="dark-content" />
 
       <SafeAreaView className="flex-1 bg-primary-50">
+        {/* Header with back button */}
+        <View className="flex-row items-center p-4 bg-white border-b border-gray-200">
+          <TouchableOpacity
+            onPress={handleBack}
+            className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center"
+          >
+            <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
+          </TouchableOpacity>
+          <Text variant="bold" className="flex-1 text-center text-2xl text-primary-800 mr-10">
+            Saving Profile
+          </Text>
+        </View>
+
         {/* Decorative elements */}
-        <View className="absolute w-[100px] h-[100px] rounded-full bg-primary-100/30 top-[10%] left-[5%] -z-10" />
+        <View className="absolute w-[100px] h-[100px] rounded-full bg-primary-100/30 top-[15%] left-[5%] -z-10" />
         <View className="absolute w-[80px] h-[80px] rounded-full bg-secondary-100/30 bottom-[20%] right-[8%] -z-10" />
         <View className="absolute w-[60px] h-[60px] rounded-full bg-accent-100/30 top-[40%] right-[15%] -z-10" />
 
         {/* Main content */}
         <View className="flex-1 justify-center items-center px-6">
           <View className="bg-white p-8 rounded-3xl shadow-md items-center w-full max-w-[340px]">
-            {/* Animated icon */}
-            <View className="w-20 h-20 rounded-full bg-primary-100 items-center justify-center mb-6">
+            {/* Status icon */}
+            <View className="w-20 h-20 rounded-full items-center justify-center mb-6">
               {isLoading ? (
-                <FontAwesome5 name="magic" size={32} color="#3e4685" />
+                <View className="w-full h-full rounded-full bg-primary-100 items-center justify-center">
+                  <ActivityIndicator size="large" color="#3e4685" />
+                </View>
+              ) : isSuccess ? (
+                <View className="w-full h-full rounded-full bg-green-100 items-center justify-center">
+                  <FontAwesome5 name="check" size={32} color="#22c55e" />
+                </View>
               ) : (
-                <FontAwesome5 name="check-circle" size={32} color="#4ade80" />
+                <View className="w-full h-full rounded-full bg-red-100 items-center justify-center">
+                  <FontAwesome5 name="exclamation-triangle" size={32} color="#ef4444" />
+                </View>
               )}
             </View>
 
-            <Text
-              variant="bold"
-              className="text-2xl text-center text-primary-800 mb-4"
-            >
-              {isLoading
-                ? "Creating Your Personalized Learning Path"
-                : "Your Personalized Plan is Ready!"}
+            {/* Status message */}
+            <Text variant="bold" className="text-2xl text-center text-primary-800 mb-4">
+              {isLoading ? "Saving Profile" : isSuccess ? "Profile Saved!" : "Something Went Wrong"}
             </Text>
 
             <Text className="text-base text-center text-neutral-600 mb-8">
               {isLoading
-                ? "Please wait while we generate a custom path for your child based on their needs..."
-                : "We've created custom activities tailored to your child's development stage."}
+                ? `We're saving ${name}'s profile information...`
+                : isSuccess
+                  ? `${name}'s profile has been successfully created. You can now access personalized content.`
+                  : error || "An error occurred while saving the profile."}
             </Text>
 
-            {/* Custom progress indicator */}
-            {isLoading ? (
-              <View className="w-full mb-6">
-                {/* Custom progress bar */}
-                <View className="w-full h-2 bg-primary-100 rounded-full overflow-hidden">
-                  <View
-                    className="h-full bg-primary-500 rounded-full"
-                    style={{ width: `${progress * 100}%` }}
-                  />
-                </View>
-
-                {/* Loading steps */}
-                <View className="mt-4 w-full">
-                  <View className="flex-row items-center mb-2">
-                    <View
-                      className={`w-4 h-4 rounded-full mr-2 ${
-                        progress > 0.25 ? "bg-primary-500" : "bg-primary-200"
-                      }`}
-                    >
-                      {progress > 0.25 && (
-                        <FontAwesome5
-                          name="check"
-                          size={8}
-                          color="white"
-                          style={{ alignSelf: "center" }}
-                        />
-                      )}
-                    </View>
-                    <Text
-                      className={`text-xs ${
-                        progress > 0.25
-                          ? "text-primary-700"
-                          : "text-neutral-500"
-                      }`}
-                    >
-                      Analyzing preferences
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center mb-2">
-                    <View
-                      className={`w-4 h-4 rounded-full mr-2 ${
-                        progress > 0.5 ? "bg-primary-500" : "bg-primary-200"
-                      }`}
-                    >
-                      {progress > 0.5 && (
-                        <FontAwesome5
-                          name="check"
-                          size={8}
-                          color="white"
-                          style={{ alignSelf: "center" }}
-                        />
-                      )}
-                    </View>
-                    <Text
-                      className={`text-xs ${
-                        progress > 0.5 ? "text-primary-700" : "text-neutral-500"
-                      }`}
-                    >
-                      Creating activity plan
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center">
-                    <View
-                      className={`w-4 h-4 rounded-full mr-2 ${
-                        progress > 0.8 ? "bg-primary-500" : "bg-primary-200"
-                      }`}
-                    >
-                      {progress > 0.8 && (
-                        <FontAwesome5
-                          name="check"
-                          size={8}
-                          color="white"
-                          style={{ alignSelf: "center" }}
-                        />
-                      )}
-                    </View>
-                    <Text
-                      className={`text-xs ${
-                        progress > 0.8 ? "text-primary-700" : "text-neutral-500"
-                      }`}
-                    >
-                      Finalizing personalization
-                    </Text>
-                  </View>
-                </View>
-
-                <Text className="text-xs text-neutral-500 text-right mt-2">
-                  {Math.round(progress * 100)}% complete
+            {/* Profile summary (only show on success) */}
+            {isSuccess && (
+              <View className="bg-primary-50 p-4 rounded-xl w-full mb-6">
+                <Text variant="semibold" className="text-primary-800 mb-2">
+                  Profile Summary:
                 </Text>
-              </View>
-            ) : (
-              <View className="bg-green-50 p-4 rounded-xl border border-green-200 mb-6 w-full">
-                <Text variant="medium" className="text-green-700 text-center">
-                  All set! Ready to begin the journey.
-                </Text>
+                <View className="flex-row mb-1">
+                  <Text variant="medium" className="text-neutral-700 w-20">
+                    Name:
+                  </Text>
+                  <Text className="text-neutral-700 flex-1">{name}</Text>
+                </View>
+                <View className="flex-row mb-1">
+                  <Text variant="medium" className="text-neutral-700 w-20">
+                    Gender:
+                  </Text>
+                  <Text className="text-neutral-700 flex-1">
+                    {gender === "male" ? "Boy" : gender === "female" ? "Girl" : "Not specified"}
+                  </Text>
+                </View>
+                <View className="flex-row mb-1">
+                  <Text variant="medium" className="text-neutral-700 w-20">
+                    Age:
+                  </Text>
+                  <Text className="text-neutral-700 flex-1">{age || "Not specified"}</Text>
+                </View>
+                <View className="flex-row">
+                  <Text variant="medium" className="text-neutral-700 w-20">
+                    Focus:
+                  </Text>
+                  <Text className="text-neutral-700 flex-1">{reason || "Not specified"}</Text>
+                </View>
               </View>
             )}
 
             {/* Action buttons */}
-            <View className="w-full space-y-3">
-              {!isLoading && (
-                <TouchableOpacity
-                  className="py-3 rounded-xl bg-secondary-500 items-center mb-3"
-                  onPress={handleContinue}
-                >
-                  <Text variant="bold" className="text-white">
-                    Continue to Dashboard
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity
-                className="py-3 rounded-xl bg-gray-100 items-center"
-                onPress={() => router.push("/child-list")}
-              >
-                <Text variant="medium" className="text-primary-700">
-                  {isLoading ? "Skip" : "Maybe Later"}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {!isLoading && (
+              <View className="w-full">
+                {isSuccess ? (
+                  <TouchableOpacity
+                    className="py-4 rounded-full items-center justify-center overflow-hidden"
+                    onPress={handleContinue}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={["#6366f1", "#8b5cf6"]}
+                      start={[0, 0]}
+                      end={[1, 0]}
+                      className="absolute inset-0"
+                    />
+                    <Text variant="bold" className="text-white text-lg">
+                      Continue to Dashboard
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View className="space-y-3">
+                    <TouchableOpacity
+                      className="py-4 rounded-full bg-primary-500 items-center"
+                      onPress={() => {
+                        setIsLoading(true)
+                        setError(null)
+                        // Try again
+                        setTimeout(() => {
+                          addChildProfile()
+                            .then(() => {
+                              setIsSuccess(true)
+                              setIsLoading(false)
+                            })
+                            .catch((err) => {
+                              console.error("Error retrying:", err)
+                              setError("Failed to save profile. Please try again.")
+                              setIsLoading(false)
+                            })
+                        }, 1000)
+                      }}
+                    >
+                      <Text variant="bold" className="text-white">
+                        Try Again
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      className="py-4 rounded-full bg-gray-200 items-center"
+                      onPress={() => router.push("/child-list")}
+                    >
+                      <Text variant="medium" className="text-neutral-700">
+                        Skip for Now
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Tip at bottom */}
-        <View className="p-6 items-center">
-          <Text className="text-sm text-center text-neutral-500">
-            We're creating activities tailored to your child's development stage
-          </Text>
-        </View>
+        {/* Footer message */}
+        {isLoading && (
+          <View className="p-6 items-center">
+            <Text className="text-sm text-center text-neutral-500">
+              This may take a moment. Please don't close the app.
+            </Text>
+          </View>
+        )}
       </SafeAreaView>
     </>
-  );
+  )
 }
+

@@ -22,19 +22,7 @@ export default function OnboardingLayout() {
         }}
       />
       <Stack.Screen
-        name="CalendarTrackingPage"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
         name="child-progress"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="RankingsPage"
         options={{
           headerShown: false,
         }}

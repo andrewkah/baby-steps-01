@@ -154,7 +154,7 @@ const AfricanThemeGameInterface: React.FC = () => {
             title: "Logic",
             image: require("@/assets/images/african-logic.png"),
             description: "Solve puzzles inspired by popular Buganda heritage sites",
-            targetPage: "tester", // For now, all point to tester, but you can change this later
+            targetPage: "tester",
           },
           {
             id: "patterns",

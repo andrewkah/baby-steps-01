@@ -1,36 +1,38 @@
-import React, { useState, useEffect, useRef } from "react";
+"use client"
+
+import { useState, useEffect, useRef } from "react"
 import {
   View,
   TouchableOpacity,
-  Dimensions,
   Animated,
   FlatList,
   StatusBar, // Added StatusBar import
-} from "react-native";
-import { Text } from "@/components/StyledText";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { supabase } from "../lib/supabase";
-import { SafeAreaView } from "react-native-safe-area-context";
+} from "react-native"
+import { Text } from "@/components/StyledText"
+import { FontAwesome5 } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
+import { supabase } from "../lib/supabase"
+import { SafeAreaView } from "react-native-safe-area-context"
 
 // Define the child profile type
 type ChildProfile = {
-  id: string;
-  name: string;
-  age?: string;
-  avatar: string;
-  level?: number;
-  lastActivity?: string;
-};
+  id: string
+  parent_id: string
+  name: string
+  gender: string
+  age: string
+  reason: string
+  created_at: string
+}
 
 export default function ChildListScreen() {
-  const [profiles, setProfiles] = useState<ChildProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [profiles, setProfiles] = useState<ChildProfile[]>([])
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   // Animation values
-  const bounceValue = useRef(new Animated.Value(0)).current;
-  const scaleValue = useRef(new Animated.Value(0)).current;
+  const bounceValue = useRef(new Animated.Value(0)).current
+  const scaleValue = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     // Start animations
@@ -39,7 +41,7 @@ export default function ChildListScreen() {
       tension: 20,
       friction: 7,
       useNativeDriver: true,
-    }).start();
+    }).start()
 
     // Floating animation for decorative elements
     Animated.loop(
@@ -54,76 +56,62 @@ export default function ChildListScreen() {
           duration: 1500,
           useNativeDriver: true,
         }),
-      ])
-    ).start();
+      ]),
+    ).start()
 
     // Fetch child profiles
-    fetchProfiles();
-  }, []);
+    fetchProfiles()
+  }, [])
 
   const fetchProfiles = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
 
-      // Replace this with your actual data fetching logic from Supabase
-      const dummyProfiles: ChildProfile[] = [
-        // Uncomment these to test with profiles
-        {
-          id: "1",
-          name: "Esther",
-          age: "6 years",
-          avatar: "👧",
-          level: 3,
-          lastActivity: "2 hours ago",
-        },
-        {
-          id: "2",
-          name: "David",
-          age: "5 years",
-          avatar: "👦",
-          level: 2,
-          lastActivity: "Today",
-        },
-      ];
+      // Get the current user session
+      const { data: sessionData } = await supabase.auth.getSession()
 
-      // Simulate API delay
-      setTimeout(() => {
-        setProfiles(dummyProfiles);
-        setLoading(false);
-      }, 1000);
+      if (!sessionData.session) {
+        console.log("No active session found")
+        setLoading(false)
+        return
+      }
 
-      // Uncomment this when you have the actual Supabase query
-      /*
-      const { data, error } = await supabase
-        .from('child_profiles')
-        .select('*')
-        .eq('parent_id', yourParentId);
-        
-      if (error) throw error;
-      setProfiles(data || []);
-      */
+      const userId = sessionData.session.user.id
+
+      // Fetch child profiles from the 'children' table
+      const { data, error } = await supabase.from("children").select("*").eq("parent_id", userId)
+
+      if (error) {
+        console.error("Error fetching profiles:", error.message)
+        throw error
+      }
+
+      console.log("Fetched profiles:", data)
+      setProfiles(data || [])
+      setLoading(false)
     } catch (error) {
-      console.error("Error fetching profiles:", error);
+      console.error("Error in fetchProfiles:", error)
+      setLoading(false)
     }
-  };
+  }
 
   // Animation transformations
   const translateY = bounceValue.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -15],
-  });
+  })
 
   const navigateToAddChild = () => {
-    router.push("/parent/add-child/gender");
-  };
+    router.push("/parent/add-child/gender")
+  }
 
   const navigateToProfile = (childId: string) => {
     // Navigate to profile and pass the child ID
     router.push({
       pathname: "/child/(tabs)/profile",
       params: { childId },
-    });
-  };
+    })
+  }
 
   // Render a single child profile card
   const renderProfileCard = ({ item }: { item: ChildProfile }) => (
@@ -136,12 +124,13 @@ export default function ChildListScreen() {
         onPress={() => navigateToProfile(item.id)}
         activeOpacity={0.8}
       >
-        {/* Avatar with level badge */}
+        {/* Avatar with gender-based emoji */}
         <View className="relative w-[70px] h-[70px] rounded-full bg-primary-50 justify-center items-center mr-4">
-          <Text className="text-[36px]">{item.avatar}</Text>
+          <Text className="text-[36px]">{item.gender === "male" ? "👦" : item.gender === "female" ? "👧" : "👶"}</Text>
+          {/* Level badge - using a placeholder level for now */}
           <View className="absolute -bottom-1 -right-1 bg-primary-500 rounded-xl w-6 h-6 justify-center items-center border-2 border-white">
             <Text variant="bold" className="text-[10px] text-white">
-              Lv{item.level}
+              Lv1
             </Text>
           </View>
         </View>
@@ -153,12 +142,10 @@ export default function ChildListScreen() {
           </Text>
           <Text className="text-sm text-neutral-500 mb-2">{item.age}</Text>
 
-          {/* Last activity indicator */}
+          {/* Last activity indicator - using created_at for now */}
           <View className="flex-row items-center">
             <FontAwesome5 name="clock" size={12} color="#6366f1" />
-            <Text className="text-xs text-neutral-500 ml-1">
-              {item.lastActivity}
-            </Text>
+            <Text className="text-xs text-neutral-500 ml-1">{new Date(item.created_at).toLocaleDateString()}</Text>
           </View>
         </View>
 
@@ -168,7 +155,7 @@ export default function ChildListScreen() {
         </View>
       </TouchableOpacity>
     </Animated.View>
-  );
+  )
 
   return (
     <>
@@ -176,14 +163,20 @@ export default function ChildListScreen() {
       <StatusBar translucent backgroundColor="white" barStyle="dark-content" />
 
       <SafeAreaView className="flex-1 bg-primary-50" edges={["top"]}>
-        {/* Header */}
+        {/* Header with back button */}
         <View className="px-5 py-4 bg-white border-b border-gray-200">
-          <Text variant="bold" className="text-2xl text-primary-800">
-            Child Profiles
-          </Text>
-          <Text className="text-sm text-neutral-400 mt-1">
-            Personalized learning journeys
-          </Text>
+          <View className="flex-row items-center mb-2">
+            <TouchableOpacity
+              onPress={() => router.push("./parent/index")}
+              className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mr-3"
+            >
+              <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
+            </TouchableOpacity>
+            <Text variant="bold" className="text-2xl text-primary-800">
+              Child Profiles
+            </Text>
+          </View>
+          <Text className="text-sm text-neutral-400 mt-1 ml-1">Personalized learning journeys</Text>
         </View>
 
         {/* Main content */}
@@ -233,17 +226,13 @@ export default function ChildListScreen() {
                 <Animated.View
                   className="absolute w-[80px] h-[80px] rounded-full bg-secondary-100/30 bottom-[15%] right-[10%]"
                   style={{
-                    transform: [
-                      { translateY: Animated.multiply(translateY, 1.2) },
-                    ],
+                    transform: [{ translateY: Animated.multiply(translateY, 1.2) }],
                   }}
                 />
                 <Animated.View
                   className="absolute w-[60px] h-[60px] rounded-full bg-accent-100/30 top-[30%] right-[20%]"
                   style={{
-                    transform: [
-                      { translateY: Animated.multiply(translateY, 0.8) },
-                    ],
+                    transform: [{ translateY: Animated.multiply(translateY, 0.8) }],
                   }}
                 />
 
@@ -252,15 +241,12 @@ export default function ChildListScreen() {
                   <Text variant="bold" className="text-[80px] mb-4">
                     👶
                   </Text>
-                  <Text
-                    variant="bold"
-                    className="text-2xl text-neutral-800 mb-3 text-center"
-                  >
+                  <Text variant="bold" className="text-2xl text-neutral-800 mb-3 text-center">
                     No Child Profiles Yet
                   </Text>
                   <Text className="text-base text-neutral-500 text-center mb-6 leading-6">
-                    Add your child's profile to start their personalized
-                    learning adventure!
+                    You haven't added any child profiles yet. Create a profile to start your child's personalized
+                    learning journey!
                   </Text>
 
                   <TouchableOpacity
@@ -280,5 +266,6 @@ export default function ChildListScreen() {
         )}
       </SafeAreaView>
     </>
-  );
+  )
 }
+
