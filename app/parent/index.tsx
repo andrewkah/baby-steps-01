@@ -1,37 +1,79 @@
-import React  from "react";
-import { View, ScrollView, TouchableOpacity, Dimensions } from "react-native";
-import { Text } from "@/components/StyledText";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+"use client"
 
-// Mock data for children profiles
-const childProfiles = [
-  {
-    id: "1",
-    name: "Esther",
-    age: 6,
-    avatar: "👧",
-    level: 3,
-    progress: 0.65,
-    lastActive: "Today",
-    topSkill: "Reading",
-  },
-  {
-    id: "2",
-    name: "David",
-    age: 5,
-    avatar: "👦",
-    level: 2,
-    progress: 0.42,
-    lastActive: "Yesterday",
-    topSkill: "Numbers",
-  },
-];
+import { useState, useEffect } from "react"
+import { View, ScrollView, TouchableOpacity } from "react-native"
+import { Text } from "@/components/StyledText"
+import { useRouter } from "expo-router"
+import { StatusBar } from "expo-status-bar"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons"
+import { supabase } from "@/lib/supabase"
+
+type ChildProfile = {
+  id: string
+  name: string
+  gender: string
+  age: string
+  reason: string
+  created_at: string
+  // UI display properties with default values
+  level?: number
+  progress?: number
+  lastActive?: string
+  topSkill?: string
+  avatar?: string
+}
 
 const ParentDashboard = () => {
-  const router = useRouter();
+  const router = useRouter()
+  const [childProfiles, setChildProfiles] = useState<ChildProfile[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchChildProfiles()
+  }, [])
+
+  const fetchChildProfiles = async () => {
+    try {
+      setLoading(true)
+
+      // Get the current user session
+      const { data: sessionData } = await supabase.auth.getSession()
+
+      if (!sessionData.session) {
+        console.log("No active session found")
+        setLoading(false)
+        return
+      }
+
+      const userId = sessionData.session.user.id
+
+      // Fetch child profiles from the 'children' table
+      const { data, error } = await supabase.from("children").select("*").eq("parent_id", userId)
+
+      if (error) {
+        console.error("Error fetching profiles:", error.message)
+        throw error
+      }
+
+      // Transform the data to include UI display properties
+      const transformedData =
+        data?.map((child) => ({
+          ...child,
+          level: 1, // Default level
+          progress: Math.random() * 0.7 + 0.1, // Random progress between 10-80%
+          lastActive: "Today", // Default last active
+          topSkill: child.reason || "Learning", // Use reason as top skill or default
+          avatar: child.gender === "male" ? "👦" : child.gender === "female" ? "👧" : "👶",
+        })) || []
+
+      setChildProfiles(transformedData)
+      setLoading(false)
+    } catch (error) {
+      console.error("Error in fetchChildProfiles:", error)
+      setLoading(false)
+    }
+  }
 
   // Activity mock data
   const recentActivities = [
@@ -62,7 +104,7 @@ const ParentDashboard = () => {
       icon: "book",
       color: "#6C5CE7",
     },
-  ];
+  ]
 
   // Weekly insights data
   const weeklyInsights = [
@@ -73,20 +115,16 @@ const ParentDashboard = () => {
     { day: "Fri", minutes: 20 },
     { day: "Sat", minutes: 60 },
     { day: "Sun", minutes: 35 },
-  ];
+  ]
 
   // Calculate maximum minutes for chart scaling
-  const maxMinutes = Math.max(...weeklyInsights.map((day) => day.minutes));
-
+  const maxMinutes = Math.max(...weeklyInsights.map((day) => day.minutes))
 
   return (
     <>
       <StatusBar style="dark" />
 
-      <SafeAreaView
-        className="flex-1 bg-white"
-        edges={["right", "top", "left"]}
-      >
+      <SafeAreaView className="flex-1 bg-white" edges={["right", "top", "left"]}>
         <View className="flex-1">
           {/* Header */}
           <View className="flex-row justify-between items-center p-4 border-b border-gray-100">
@@ -94,9 +132,7 @@ const ParentDashboard = () => {
               <Text variant="bold" className="text-gray-800 text-2xl">
                 Parent Dashboard
               </Text>
-              <Text className="text-gray-500">
-                Monitor your children's learning journey
-              </Text>
+              <Text className="text-gray-500">Monitor your children's learning journey</Text>
             </View>
 
             <View className="flex-row">
@@ -111,11 +147,7 @@ const ParentDashboard = () => {
                 className="w-10 h-10 rounded-full bg-purple-100 items-center justify-center"
                 onPress={() => {}}
               >
-                <Ionicons
-                  name="notifications-outline"
-                  size={22}
-                  color="#7b5af0"
-                />
+                <Ionicons name="notifications-outline" size={22} color="#7b5af0" />
               </TouchableOpacity>
             </View>
           </View>
@@ -138,77 +170,74 @@ const ParentDashboard = () => {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerClassName="gap-4 pb-2"
-              >
-                {/* Child profile cards */}
-                {childProfiles.map((child) => (
+              {loading ? (
+                <View className="items-center justify-center py-4">
+                  <Text>Loading profiles...</Text>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-4 pb-2">
+                  {/* Child profile cards */}
+                  {childProfiles.length > 0
+                    ? childProfiles.map((child) => (
+                        <TouchableOpacity
+                          key={child.id}
+                          className="bg-purple-50 rounded-xl p-4 w-[150px] shadow-sm"
+                          onPress={() =>
+                            router.push({
+                              pathname: "/parent/child-detail/1" as any,
+                              params: { childId: child.id },
+                            })
+                          }
+                          activeOpacity={0.8}
+                        >
+                          <View className="items-center mb-2">
+                            <View className="relative">
+                              <View className="w-[60px] h-[60px] rounded-full bg-purple-100 items-center justify-center">
+                                <Text className="text-3xl">{child.avatar}</Text>
+                              </View>
+                              <View className="absolute -bottom-2 -right-2 bg-[#7b5af0] rounded-full w-6 h-6 items-center justify-center shadow-sm">
+                                <Text variant="bold" className="text-xs text-white">
+                                  {child.level}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+
+                          <Text variant="bold" className="text-gray-800 text-center mb-1">
+                            {child.name}
+                          </Text>
+                          <Text className="text-gray-500 text-xs text-center">{child.age}</Text>
+
+                          {/* Progress bar */}
+                          <View className="mt-3 bg-purple-100 h-2 rounded-full overflow-hidden">
+                            <View
+                              className="bg-[#7b5af0] h-full rounded-full"
+                              style={{ width: `${(child.progress || 0.1) * 100}%` }}
+                            />
+                          </View>
+                          <Text className="text-gray-500 text-xs text-right mt-1">
+                            {Math.round((child.progress || 0) * 100)}%
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    : null}
+
+                  {/* Add child card */}
                   <TouchableOpacity
-                    key={child.id}
-                    className="bg-purple-50 rounded-xl p-4 w-[150px] shadow-sm"
-                    onPress={() =>
-                      router.push({
-                        pathname: "/parent/child-detail/1" as any,
-                        params: { childId: child.id },
-                      })
-                    }
+                    className="bg-purple-50 rounded-xl p-4 w-[150px] items-center justify-center border-2 border-dashed border-purple-200 shadow-sm"
+                    onPress={() => router.push("/parent/add-child/gender")}
                     activeOpacity={0.8}
                   >
-                    <View className="items-center mb-2">
-                      <View className="relative">
-                        <View className="w-[60px] h-[60px] rounded-full bg-purple-100 items-center justify-center">
-                          <Text className="text-3xl">{child.avatar}</Text>
-                        </View>
-                        <View className="absolute -bottom-2 -right-2 bg-[#7b5af0] rounded-full w-6 h-6 items-center justify-center shadow-sm">
-                          <Text variant="bold" className="text-xs text-white">
-                            {child.level}
-                          </Text>
-                        </View>
-                      </View>
+                    <View className="w-[60px] h-[60px] rounded-full bg-purple-100 items-center justify-center mb-3">
+                      <Ionicons name="add" size={30} color="#7b5af0" />
                     </View>
-
-                    <Text
-                      variant="bold"
-                      className="text-gray-800 text-center mb-1"
-                    >
-                      {child.name}
+                    <Text variant="medium" className="text-gray-800 text-center">
+                      Add Child
                     </Text>
-                    <Text className="text-gray-500 text-xs text-center">
-                      {child.age} years old
-                    </Text>
-
-                    {/* Progress bar */}
-                    <View className="mt-3 bg-purple-100 h-2 rounded-full overflow-hidden">
-                      <View
-                        className="bg-[#7b5af0] h-full rounded-full"
-                        style={{ width: `${child.progress * 100}%` }}
-                      />
-                    </View>
-                    <Text className="text-gray-500 text-xs text-right mt-1">
-                      {Math.round(child.progress * 100)}%
-                    </Text>
+                    <Text className="text-gray-500 text-xs text-center mt-1">New profile</Text>
                   </TouchableOpacity>
-                ))}
-
-                {/* Add child card */}
-                <TouchableOpacity
-                  className="bg-purple-50 rounded-xl p-4 w-[150px] items-center justify-center border-2 border-dashed border-purple-200 shadow-sm"
-                  onPress={() => router.push("/parent/add-child/gender")}
-                  activeOpacity={0.8}
-                >
-                  <View className="w-[60px] h-[60px] rounded-full bg-purple-100 items-center justify-center mb-3">
-                    <Ionicons name="add" size={30} color="#7b5af0" />
-                  </View>
-                  <Text variant="medium" className="text-gray-800 text-center">
-                    Add Child
-                  </Text>
-                  <Text className="text-gray-500 text-xs text-center mt-1">
-                    New profile
-                  </Text>
-                </TouchableOpacity>
-              </ScrollView>
+                </ScrollView>
+              )}
             </View>
 
             {/* Recent activities section */}
@@ -221,37 +250,22 @@ const ParentDashboard = () => {
                 {recentActivities.map((activity, index) => (
                   <View
                     key={activity.id}
-                    className={`${
-                      index !== recentActivities.length - 1
-                        ? "border-b border-gray-100 pb-3 mb-3"
-                        : ""
-                    }`}
+                    className={`${index !== recentActivities.length - 1 ? "border-b border-gray-100 pb-3 mb-3" : ""}`}
                   >
                     <View className="flex-row">
                       <View
                         style={{ backgroundColor: `${activity.color}15` }}
                         className="w-10 h-10 rounded-full items-center justify-center mr-3"
                       >
-                        <FontAwesome5
-                          name={activity.icon}
-                          size={16}
-                          color={activity.color}
-                        />
+                        <FontAwesome5 name={activity.icon} size={16} color={activity.color} />
                       </View>
                       <View className="flex-1">
-                        <Text
-                          variant="medium"
-                          className="text-gray-800 text-sm"
-                        >
+                        <Text variant="medium" className="text-gray-800 text-sm">
                           {activity.childName} {activity.activity}
                         </Text>
                         <View className="flex-row justify-between">
-                          <Text className="text-gray-500 text-xs">
-                            {activity.time}
-                          </Text>
-                          <Text className="text-[#7b5af0] text-xs font-medium">
-                            {activity.score}
-                          </Text>
+                          <Text className="text-gray-500 text-xs">{activity.time}</Text>
+                          <Text className="text-[#7b5af0] text-xs font-medium">{activity.score}</Text>
                         </View>
                       </View>
                     </View>
@@ -293,9 +307,7 @@ const ParentDashboard = () => {
                   {weeklyInsights.map((day, index) => (
                     <View key={index} className="items-center flex-1">
                       <Text className="text-gray-500 text-xs">{day.day}</Text>
-                      <Text className="text-gray-700 text-xs mt-1">
-                        {day.minutes}m
-                      </Text>
+                      <Text className="text-gray-700 text-xs mt-1">{day.minutes}m</Text>
                     </View>
                   ))}
                 </View>
@@ -303,8 +315,7 @@ const ParentDashboard = () => {
                 <View className="flex-row items-center justify-between mt-5 pt-3 border-t border-gray-100">
                   <Text className="text-gray-800">Total this week:</Text>
                   <Text variant="bold" className="text-[#7b5af0]">
-                    {weeklyInsights.reduce((sum, day) => sum + day.minutes, 0)}{" "}
-                    minutes
+                    {weeklyInsights.reduce((sum, day) => sum + day.minutes, 0)} minutes
                   </Text>
                 </View>
               </View>
@@ -346,11 +357,7 @@ const ParentDashboard = () => {
                     activeOpacity={0.8}
                   >
                     <View className="w-12 h-12 rounded-full bg-purple-100 items-center justify-center mb-2">
-                      <FontAwesome5
-                        name={tool.icon}
-                        size={20}
-                        color="#7b5af0"
-                      />
+                      <FontAwesome5 name={tool.icon} size={20} color="#7b5af0" />
                     </View>
                     <Text variant="medium" className="text-gray-800">
                       {tool.label}
@@ -374,8 +381,7 @@ const ParentDashboard = () => {
                   Supporting your child's learning at home
                 </Text>
                 <Text className="text-gray-600 text-sm">
-                  Create a comfortable learning environment with minimal
-                  distractions and regular routines.
+                  Create a comfortable learning environment with minimal distractions and regular routines.
                 </Text>
                 <Text variant="medium" className="text-[#7b5af0] mt-2">
                   Read More
@@ -386,7 +392,8 @@ const ParentDashboard = () => {
         </View>
       </SafeAreaView>
     </>
-  );
-};
+  )
+}
 
-export default ParentDashboard;
+export default ParentDashboard
+

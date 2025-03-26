@@ -22,31 +22,7 @@ export default function OnboardingLayout() {
         }}
       />
       <Stack.Screen
-        name="parent-gate"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="achievements"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="calendarTrackingPage"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
         name="child-progress"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="rankings-page"
         options={{
           headerShown: false,
         }}

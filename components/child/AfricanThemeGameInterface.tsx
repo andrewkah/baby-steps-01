@@ -8,13 +8,16 @@ import {
   ScrollView,
   Animated,
   Easing,
+  BackHandler, // Add this import
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { useRouter, usePathname } from "expo-router";
+import { useRouter, usePathname, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Speech from "expo-speech";
 import { Text } from "@/components/StyledText";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ScreenOrientation from 'expo-screen-orientation';
+import { useCallback } from 'react';
 
 // Define types
 type LearningCard = {
@@ -40,6 +43,39 @@ const AfricanThemeGameInterface: React.FC = () => {
   // Animation values for avatar
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Lock to landscape orientation
+    async function lockOrientation() {
+      await ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.LANDSCAPE
+      );
+    }
+    
+    lockOrientation();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log("AfricanThemeGameInterface focused - locking to landscape");
+      const lockToLandscape = async () => {
+        try {
+          await ScreenOrientation.lockAsync(
+            ScreenOrientation.OrientationLock.LANDSCAPE
+          );
+        } catch (error) {
+          console.error("Failed to lock orientation:", error);
+        }
+      };
+
+      lockToLandscape();
+
+      return () => {
+        // No cleanup needed here as we want to keep landscape 
+        // when navigating to games
+      };
+    }, [])
+  );
 
   // Set up animation
   useEffect(() => {
@@ -89,6 +125,17 @@ const AfricanThemeGameInterface: React.FC = () => {
     };
   }, []);
 
+  // Add this effect to handle hardware back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Navigate to parent gate instead of default back behavior
+      router.push('/child/parent-gate');
+      return true; // Prevents default back behavior
+    });
+
+    return () => backHandler.remove(); // Clean up on unmount
+  }, [router]);
+
   // Get the current path to determine which tab we're on
   const pathname = usePathname();
   const tabId = pathname.split("/").pop() || "profile"; // Extract tab ID from path
@@ -106,8 +153,8 @@ const AfricanThemeGameInterface: React.FC = () => {
             id: "logic",
             title: "Logic",
             image: require("@/assets/images/african-logic.png"),
-            description: "Solve puzzles inspired by African traditions",
-            targetPage: "tester", // For now, all point to tester, but you can change this later
+            description: "Solve puzzles inspired by popular Buganda heritage sites",
+            targetPage: "tester",
           },
           {
             id: "patterns",
@@ -117,11 +164,11 @@ const AfricanThemeGameInterface: React.FC = () => {
             targetPage: "tester",
           },
           {
-            id: "focus",
-            title: "Focus",
+            id: "words",
+            title: "Words",
             image: require("@/assets/images/african-focus.png"),
-            description: "Improve concentration with Adinkra symbols",
-            targetPage: "tester",
+            description: "Fill in the missing letters to complete the word",
+            targetPage: "child/games/wordgame",
           },
           {
             id: "numbers",
