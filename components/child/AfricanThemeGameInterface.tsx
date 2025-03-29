@@ -157,6 +157,13 @@ const AfricanThemeGameInterface: React.FC = () => {
             targetPage: "tester",
           },
           {
+            id: "ball-train",
+            title: "Ball Train",
+            image: require("@/assets/images/ball-train.jpg"),
+            description: "Learn about light that makes us see things",
+            targetPage: "child/games/ball-trail",
+          },
+          {
             id: "patterns",
             title: "Patterns",
             image: require("@/assets/images/african-patterns.png"),
