@@ -198,6 +198,13 @@ const AfricanThemeGameInterface: React.FC = () => {
         setScreenTitle("Coloring");
         setLearningCards([
           {
+            id: "emblem",
+            title: "Buganda Emblem",
+            image: require("@/assets/images/emblem.png"),
+            description: "Buganda's emblem",
+            targetPage: "child/games/coloring/emblem",
+          },
+          {
             id: "king",
             title: "kings",
             image: require("@/assets/images/king.jpg"),
@@ -209,36 +216,23 @@ const AfricanThemeGameInterface: React.FC = () => {
             title: "Animals",
             image: require("@/assets/images/animals.jpg"),
             description: "Color African wildlife animals",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/animals",
           },
           {
             id: "shapes",
             title: "Shapes",
             image: require("@/assets/images/shapes.jpg"),
             description: "Color different shapes",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/shapes",
           },
           {
             id: "masks",
             title: "Masks",
             image: require("@/assets/images/mask.jpg"),
             description: "Color traditional African masks",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/mask",
           },
-          {
-            id: "landscapes",
-            title: "Landscapes",
-            image: require("@/assets/images/landscape.jpg"),
-            description: "Color beautiful African landscapes",
-            targetPage: "tester",
-          },
-          {
-            id: "clothing",
-            title: "Clothing",
-            image: require("@/assets/images/clothing.jpg"),
-            description: "Color traditional African clothing",
-            targetPage: "tester",
-          },
+
         ]);
         break;
 

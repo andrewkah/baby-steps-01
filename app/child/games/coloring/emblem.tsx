@@ -35,7 +35,7 @@ const COLORS = [
 const { width, height } = Dimensions.get("window")
 
 // Direct image import to ensure it works
-const COLORING_IMAGE = require("@/assets/images/king.png");
+const COLORING_IMAGE = require("@/assets/images/emblem.png");
 
 export default function ColoringGameScreen() {
   const insets = useSafeAreaInsets()
