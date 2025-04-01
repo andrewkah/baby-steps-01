@@ -21,12 +21,6 @@ interface Ball {
   id: number
 }
 
-// Generate a random color with high brightness for visibility on black
-const getRandomBrightColor = () => {
-  const hue = Math.floor(Math.random() * 360)
-  return `hsl(${hue}, 100%, 70%)`
-}
-
 // Array of vibrant colors for the balls
 const COLORS = [
   "#FF5252", // Red
@@ -127,7 +121,7 @@ export default function BallTrail() {
 
         const newScale = positionScale * speedScale
 
-        // Use Animated.spring for smoother movement
+        // Use Animated.timing for smoother movement
         Animated.timing(ball.position, {
           toValue: { x: newX, y: newY },
           duration: 16, // ~60fps
@@ -202,14 +196,14 @@ export default function BallTrail() {
           },
           duration: 500,
           useNativeDriver: false,
-          easing: Easing.outCubic,
+          easing: Easing.cubic, // Fixed: using cubic instead of outCubic
         }),
         // Then come back to center
         Animated.timing(ball.position, {
           toValue: { x: width / 2, y: height / 2 },
           duration: 800,
           useNativeDriver: false,
-          easing: Easing.outElastic(1, 0.5),
+          easing: Easing.elastic(1), // Fixed: using elastic instead of outElastic
         }),
       ]).start()
     })
@@ -218,11 +212,6 @@ export default function BallTrail() {
     setTimeout(() => {
       setIsExploding(false)
     }, 1300)
-  }
-
-  // Handle exit
-  const handleExit = () => {
-    router.push("/child/parent-gate")
   }
 
   return (
@@ -252,7 +241,7 @@ export default function BallTrail() {
       ))}
 
       {/* Exit button */}
-      <TouchableOpacity style={styles.exitButton} onPress={handleExit}>
+      <TouchableOpacity style={styles.exitButton} onPress={() => router.back()}>
         <Text style={styles.exitButtonText}>✕</Text>
       </TouchableOpacity>
 
@@ -283,15 +272,20 @@ const styles = StyleSheet.create({
   },
   exitButton: {
     position: "absolute",
-    top: 25,
-    left: 15,
+    top: 15,
+    left: 25,
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    zIndex: 10,
+    zIndex: 1000,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
   },
   exitButtonText: {
     color: "white",
