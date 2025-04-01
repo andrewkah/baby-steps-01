@@ -34,8 +34,8 @@ const COLORS = [
 
 const { width, height } = Dimensions.get("window")
 
-// Direct image import to ensure it works
-const COLORING_IMAGE = require("@/assets/images/cow.png");
+// Load image from local assets
+const COLORING_IMAGE = require("@/assets/images/cow.png")
 
 export default function ColoringGameScreen() {
   const insets = useSafeAreaInsets()
@@ -48,6 +48,7 @@ export default function ColoringGameScreen() {
   const [isDrawing, setIsDrawing] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const router = useRouter()
+
   // Log when paths change
   useEffect(() => {
     console.log(`Paths updated. Count: ${paths.length}`)
@@ -95,19 +96,10 @@ export default function ColoringGameScreen() {
     setBrushSize(size)
   }
 
-  // Handle exit game
-  const handleExit = () => {
-    // Navigation logic would go here
-    console.log("Exit game")
-    // For example: navigation.goBack() if using React Navigation
-  }
-
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Exit button */}
-      <TouchableOpacity style={styles.exitButton}         
-      onPress={() => router.back()}
-      >
+      <TouchableOpacity style={styles.exitButton} onPress={() => router.back()}>
         <Text style={styles.exitButtonText}>✕</Text>
       </TouchableOpacity>
 
@@ -116,7 +108,7 @@ export default function ColoringGameScreen() {
         <View style={styles.canvasContainer}>
           {/* Background Image as a full container */}
           <ImageBackground
-            source={{ uri: COLORING_IMAGE }}
+            source={COLORING_IMAGE}
             style={styles.backgroundImage}
             resizeMode="contain"
             onLoad={() => setImageLoaded(true)}

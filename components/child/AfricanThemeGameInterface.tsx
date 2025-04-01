@@ -214,7 +214,7 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: "animals",
             title: "Animals",
-            image: require("@/assets/images/animals.jpg"),
+            image: require("@/assets/images/cow.png"),
             description: "Color African wildlife animals",
             targetPage: "child/games/coloring/animals",
           },
@@ -228,7 +228,7 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: "masks",
             title: "Masks",
-            image: require("@/assets/images/mask.jpg"),
+            image: require("@/assets/images/mask.png"),
             description: "Color traditional African masks",
             targetPage: "child/games/coloring/mask",
           },
