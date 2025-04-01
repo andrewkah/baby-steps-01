@@ -198,6 +198,13 @@ const AfricanThemeGameInterface: React.FC = () => {
         setScreenTitle("Coloring");
         setLearningCards([
           {
+            id: "king",
+            title: "kings",
+            image: require("@/assets/images/king.jpg"),
+            description: "King's image",
+            targetPage: "child/games/coloring/king",
+          },
+          {
             id: "animals",
             title: "Animals",
             image: require("@/assets/images/animals.jpg"),
