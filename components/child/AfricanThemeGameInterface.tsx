@@ -150,6 +150,13 @@ const AfricanThemeGameInterface: React.FC = () => {
         setScreenTitle("Games");
         setLearningCards([
           {
+            id: "words",
+            title: "Words",
+            image: require("@/assets/images/african-focus.png"),
+            description: "Fill in the missing letters to complete the word",
+            targetPage: "child/games/wordgame",
+          },
+          {
             id: "logic",
             title: "Logic",
             image: require("@/assets/images/african-logic.png"),
@@ -171,26 +178,13 @@ const AfricanThemeGameInterface: React.FC = () => {
             targetPage: "tester",
           },
           {
-            id: "words",
-            title: "Words",
-            image: require("@/assets/images/african-focus.png"),
-            description: "Fill in the missing letters to complete the word",
-            targetPage: "child/games/wordgame",
-          },
-          {
             id: "numbers",
             title: "Numbers",
             image: require("@/assets/images/numbers.png"),
             description: "Count with traditional African number systems",
             targetPage: "tester",
           },
-          {
-            id: "words",
-            title: "Words",
-            image: require("@/assets/images/stories.png"),
-            description: "Learn through African folktales and proverbs",
-            targetPage: "tester",
-          },
+      
         ]);
         break;
 
