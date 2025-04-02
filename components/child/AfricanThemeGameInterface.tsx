@@ -48,7 +48,7 @@ const AfricanThemeGameInterface: React.FC = () => {
     // Lock to landscape orientation
     async function lockOrientation() {
       await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.LANDSCAPE
+        ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
       );
     }
     
