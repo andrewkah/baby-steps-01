@@ -40,7 +40,7 @@ export default function SubmitScreen() {
   }
 
   const handleContinue = () => {
-    router.push("/child-list")
+    router.push("/parent")
   }
 
   return (

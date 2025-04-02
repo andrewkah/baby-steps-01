@@ -44,24 +44,13 @@ const AfricanThemeGameInterface: React.FC = () => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    // Lock to landscape orientation
-    async function lockOrientation() {
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.LANDSCAPE
-      );
-    }
-    
-    lockOrientation();
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       console.log("AfricanThemeGameInterface focused - locking to landscape");
       const lockToLandscape = async () => {
         try {
           await ScreenOrientation.lockAsync(
-            ScreenOrientation.OrientationLock.LANDSCAPE
+            ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
           );
         } catch (error) {
           console.error("Failed to lock orientation:", error);
@@ -150,11 +139,25 @@ const AfricanThemeGameInterface: React.FC = () => {
         setScreenTitle("Games");
         setLearningCards([
           {
+            id: "words",
+            title: "Words",
+            image: require("@/assets/images/african-focus.png"),
+            description: "Fill in the missing letters to complete the word",
+            targetPage: "child/games/wordgame",
+          },
+          {
             id: "logic",
             title: "Logic",
             image: require("@/assets/images/african-logic.png"),
             description: "Solve puzzles inspired by popular Buganda heritage sites",
             targetPage: "tester",
+          },
+          {
+            id: "ball-train",
+            title: "Ball Train",
+            image: require("@/assets/images/ball-train.jpg"),
+            description: "Learn about light that makes us see things",
+            targetPage: "child/games/ball-trail",
           },
           {
             id: "patterns",
@@ -164,26 +167,13 @@ const AfricanThemeGameInterface: React.FC = () => {
             targetPage: "tester",
           },
           {
-            id: "words",
-            title: "Words",
-            image: require("@/assets/images/african-focus.png"),
-            description: "Fill in the missing letters to complete the word",
-            targetPage: "child/games/wordgame",
-          },
-          {
             id: "numbers",
             title: "Numbers",
             image: require("@/assets/images/numbers.png"),
             description: "Count with traditional African number systems",
             targetPage: "tester",
           },
-          {
-            id: "words",
-            title: "Words",
-            image: require("@/assets/images/stories.png"),
-            description: "Learn through African folktales and proverbs",
-            targetPage: "tester",
-          },
+      
         ]);
         break;
 
@@ -191,40 +181,41 @@ const AfricanThemeGameInterface: React.FC = () => {
         setScreenTitle("Coloring");
         setLearningCards([
           {
+            id: "emblem",
+            title: "Buganda Emblem",
+            image: require("@/assets/images/emblem.png"),
+            description: "Buganda's emblem",
+            targetPage: "child/games/coloring/emblem",
+          },
+          {
+            id: "king",
+            title: "kings",
+            image: require("@/assets/images/king.jpg"),
+            description: "King's image",
+            targetPage: "child/games/coloring/king",
+          },
+          {
             id: "animals",
             title: "Animals",
-            image: require("@/assets/images/animals.jpg"),
+            image: require("@/assets/images/cow.png"),
             description: "Color African wildlife animals",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/animals",
           },
           {
             id: "shapes",
             title: "Shapes",
             image: require("@/assets/images/shapes.jpg"),
             description: "Color different shapes",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/shapes",
           },
           {
             id: "masks",
             title: "Masks",
-            image: require("@/assets/images/mask.jpg"),
+            image: require("@/assets/images/mask.png"),
             description: "Color traditional African masks",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/mask",
           },
-          {
-            id: "landscapes",
-            title: "Landscapes",
-            image: require("@/assets/images/landscape.jpg"),
-            description: "Color beautiful African landscapes",
-            targetPage: "tester",
-          },
-          {
-            id: "clothing",
-            title: "Clothing",
-            image: require("@/assets/images/clothing.jpg"),
-            description: "Color traditional African clothing",
-            targetPage: "tester",
-          },
+
         ]);
         break;
 

@@ -162,8 +162,6 @@ const WordGame: React.FC = () => {
     loadLevel(0);
     
     return () => {
-      // Reset orientation when component unmounts
-      ScreenOrientation.unlockAsync();
       
       if (correctSound) correctSound.unloadAsync();
       if (wrongSound) wrongSound.unloadAsync();
