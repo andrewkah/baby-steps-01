@@ -44,24 +44,13 @@ const AfricanThemeGameInterface: React.FC = () => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    // Lock to landscape orientation
-    async function lockOrientation() {
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
-      );
-    }
-    
-    lockOrientation();
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       console.log("AfricanThemeGameInterface focused - locking to landscape");
       const lockToLandscape = async () => {
         try {
           await ScreenOrientation.lockAsync(
-            ScreenOrientation.OrientationLock.LANDSCAPE
+            ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
           );
         } catch (error) {
           console.error("Failed to lock orientation:", error);
