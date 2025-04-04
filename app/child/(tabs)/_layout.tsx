@@ -13,7 +13,7 @@ type NavItem = {
 // Your navigation items
 const navigationItems: NavItem[] = [
   {
-    id: "profile",
+    id: "index",
     icon: require("@/assets/icons/game.png"),
     label: "Games",
   },
