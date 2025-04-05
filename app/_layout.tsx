@@ -215,12 +215,7 @@ export default function RootLayout() {
       <Stack.Screen name="signup" />
       <Stack.Screen name="forgot-password" />
       <Stack.Screen name="child-list" />
-      <Stack.Screen name="add-child" />
       <Stack.Screen name="parent" />
-      <Stack.Screen name="CalendarTrackingPage" />
-      <Stack.Screen name="AfricanThemeGameInterface" />
-      <Stack.Screen name="tester" />
-      <Stack.Screen name="child/(tabs)" />
     </Stack>
   );
 }

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import { supabase } from '@/lib/supabase'; // Import Supabase client
 
 interface UserContextType {
   name: string;
@@ -11,6 +12,7 @@ interface UserContextType {
   setAge: (age: string) => void;
   setReason: (reason: string) => void;
   setOnboardingComplete: (status: boolean) => void;
+  addChildProfile: () => Promise<void>; // Function to add child profile
   userData: {
     name: string;
     gender: string;
@@ -39,6 +41,37 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setOnboardingComplete(data.isOnboardingComplete);
   };
 
+  // Add child profile to Supabase
+  const addChildProfile = async () => {
+    try {
+      const session = await supabase.auth.getSession(); // Get the current user session
+      if (!session.data.session) {
+        throw new Error('User is not authenticated');
+      }
+
+      const parent_id = session.data.session.user.id;
+
+      const { error } = await supabase.from('children').insert([
+        {
+          parent_id,
+          name,
+          gender,
+          age,
+          reason,
+        },
+      ]);
+
+      if (error) {
+        throw new Error(`Failed to add child profile: ${error.message}`);
+      }
+
+      console.log('Child profile added successfully!');
+      setOnboardingComplete(true); // Mark onboarding as complete
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <UserContext.Provider
       value={{
@@ -52,6 +85,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAge,
         setReason,
         setOnboardingComplete,
+        addChildProfile,
         setUserData,
         userData: { name, gender, age, reason, isOnboardingComplete }, // userData object
       }}

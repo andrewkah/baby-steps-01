@@ -8,13 +8,16 @@ import {
   ScrollView,
   Animated,
   Easing,
+  BackHandler, // Add this import
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { useRouter, usePathname } from "expo-router";
+import { useRouter, usePathname, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Speech from "expo-speech";
 import { Text } from "@/components/StyledText";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as ScreenOrientation from 'expo-screen-orientation';
+import { useCallback } from 'react';
 
 // Define types
 type LearningCard = {
@@ -40,6 +43,28 @@ const AfricanThemeGameInterface: React.FC = () => {
   // Animation values for avatar
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const bounceAnim = useRef(new Animated.Value(0)).current;
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log("AfricanThemeGameInterface focused - locking to landscape");
+      const lockToLandscape = async () => {
+        try {
+          await ScreenOrientation.lockAsync(
+            ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
+          );
+        } catch (error) {
+          console.error("Failed to lock orientation:", error);
+        }
+      };
+
+      lockToLandscape();
+
+      return () => {
+        // No cleanup needed here as we want to keep landscape 
+        // when navigating to games
+      };
+    }, [])
+  );
 
   // Set up animation
   useEffect(() => {
@@ -89,6 +114,17 @@ const AfricanThemeGameInterface: React.FC = () => {
     };
   }, []);
 
+  // Add this effect to handle hardware back button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Navigate to parent gate instead of default back behavior
+      router.push('/child/parent-gate');
+      return true; // Prevents default back behavior
+    });
+
+    return () => backHandler.remove(); // Clean up on unmount
+  }, [router]);
+
   // Get the current path to determine which tab we're on
   const pathname = usePathname();
   const tabId = pathname.split("/").pop() || "profile"; // Extract tab ID from path
@@ -103,11 +139,25 @@ const AfricanThemeGameInterface: React.FC = () => {
         setScreenTitle("Games");
         setLearningCards([
           {
+            id: "words",
+            title: "Words",
+            image: require("@/assets/images/african-focus.png"),
+            description: "Fill in the missing letters to complete the word",
+            targetPage: "child/games/wordgame",
+          },
+          {
             id: "logic",
             title: "Logic",
             image: require("@/assets/images/african-logic.png"),
-            description: "Solve puzzles inspired by African traditions",
-            targetPage: "tester", // For now, all point to tester, but you can change this later
+            description: "Solve puzzles inspired by popular Buganda heritage sites",
+            targetPage: "tester",
+          },
+          {
+            id: "ball-train",
+            title: "Ball Train",
+            image: require("@/assets/images/ball-train.jpg"),
+            description: "Learn about light that makes us see things",
+            targetPage: "child/games/ball-trail",
           },
           {
             id: "patterns",
@@ -117,26 +167,13 @@ const AfricanThemeGameInterface: React.FC = () => {
             targetPage: "tester",
           },
           {
-            id: "focus",
-            title: "Focus",
-            image: require("@/assets/images/african-focus.png"),
-            description: "Improve concentration with Adinkra symbols",
-            targetPage: "tester",
-          },
-          {
             id: "numbers",
             title: "Numbers",
             image: require("@/assets/images/numbers.png"),
             description: "Count with traditional African number systems",
             targetPage: "tester",
           },
-          {
-            id: "words",
-            title: "Words",
-            image: require("@/assets/images/stories.png"),
-            description: "Learn through African folktales and proverbs",
-            targetPage: "tester",
-          },
+      
         ]);
         break;
 
@@ -144,40 +181,41 @@ const AfricanThemeGameInterface: React.FC = () => {
         setScreenTitle("Coloring");
         setLearningCards([
           {
+            id: "emblem",
+            title: "Buganda Emblem",
+            image: require("@/assets/images/emblem.png"),
+            description: "Buganda's emblem",
+            targetPage: "child/games/coloring/emblem",
+          },
+          {
+            id: "king",
+            title: "kings",
+            image: require("@/assets/images/king.jpg"),
+            description: "King's image",
+            targetPage: "child/games/coloring/king",
+          },
+          {
             id: "animals",
             title: "Animals",
-            image: require("@/assets/images/animals.jpg"),
+            image: require("@/assets/images/cow.png"),
             description: "Color African wildlife animals",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/animals",
           },
           {
             id: "shapes",
             title: "Shapes",
             image: require("@/assets/images/shapes.jpg"),
             description: "Color different shapes",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/shapes",
           },
           {
             id: "masks",
             title: "Masks",
-            image: require("@/assets/images/mask.jpg"),
+            image: require("@/assets/images/mask.png"),
             description: "Color traditional African masks",
-            targetPage: "tester",
+            targetPage: "child/games/coloring/mask",
           },
-          {
-            id: "landscapes",
-            title: "Landscapes",
-            image: require("@/assets/images/landscape.jpg"),
-            description: "Color beautiful African landscapes",
-            targetPage: "tester",
-          },
-          {
-            id: "clothing",
-            title: "Clothing",
-            image: require("@/assets/images/clothing.jpg"),
-            description: "Color traditional African clothing",
-            targetPage: "tester",
-          },
+
         ]);
         break;
 
