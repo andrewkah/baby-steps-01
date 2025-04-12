@@ -360,36 +360,36 @@ const AfricanThemeGameInterface: React.FC = () => {
             title: "Artifacts",
             image: require("@/assets/images/artifacts.jpg"), // Replace with appropriate image
             description: "Explore ancient African artifacts",
-            targetPage: "tester",
+            targetPage: "child/games/museum/ArtifactsScreen",
           },
           {
             id: "art",
             title: "Art",
             image: require("@/assets/images/art.jpg"), // Replace with appropriate image
             description: "Discover traditional and contemporary African art",
-            targetPage: "tester",
+            targetPage: "child/games/museum/ArtScreen",
           },
           {
             id: "instruments",
             title: "Instruments",
             image: require("@/assets/images/drum.jpg"), // Replace with appropriate image
             description: "Learn about traditional African musical instruments",
-            targetPage: "tester",
+            targetPage: "child/games/museum/InstrumentsScreen",
           },
           {
             id: "textiles",
             title: "Textiles",
             image: require("@/assets/images/textile.jpg"), // Replace with appropriate image
             description: "Explore the rich tradition of African textiles",
-            targetPage: "tester",
+            targetPage: "child/games/museum/TextilesScreen",
           },
-          {
-            id: "sculptures",
-            title: "Sculptures",
-            image: require("@/assets/images/sculpture.jpg"), // Replace with appropriate image
-            description: "View famous African sculptures and carvings",
-            targetPage: "tester",
-          },
+          // {
+          //   id: "sculptures",
+          //   title: "Sculptures",
+          //   image: require("@/assets/images/sculpture.jpg"), // Replace with appropriate image
+          //   description: "View famous African sculptures and carvings",
+          //   targetPage: "child/games/museum/SculptureScreen",
+          // },
         ]);
         break;
       default:
@@ -441,7 +441,7 @@ const AfricanThemeGameInterface: React.FC = () => {
       pitch: 1,
       rate: 1,
     });
-    router.push("/child/parent-gate");
+    router.push("/child/parent-gate" as any);
   };
 
   // Updated function to navigate to the card's target page with type assertion
