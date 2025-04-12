@@ -23,19 +23,9 @@ const navigationItems: NavItem[] = [
     label: "Coloring",
   },
   {
-    id: "quizz",
-    icon: require("@/assets/icons/quizz.png"),
-    label: "Quizz",
-  },
-  {
     id: "Stories",
     icon: require("@/assets/icons/logic.png"),
     label: "Stories",
-  },
-  {
-    id: "nature",
-    icon: require("@/assets/icons/nature.png"),
-    label: "Nature",
   },
   {
     id: "museum",
