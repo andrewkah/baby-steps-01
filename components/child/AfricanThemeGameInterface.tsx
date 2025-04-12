@@ -81,10 +81,6 @@ const AfricanThemeGameInterface: React.FC = () => {
 
       lockToLandscape();
 
-      return () => {
-        // No cleanup needed here as we want to keep landscape 
-        // when navigating to games
-      };
     // Create combined animation sequence
     const pulseSequence = Animated.loop(
       Animated.sequence([
@@ -177,11 +173,11 @@ const AfricanThemeGameInterface: React.FC = () => {
             targetPage: "child/games/ball-trail",
           },
           {
-            id: "patterns",
-            title: "Patterns",
+            id: "learning",
+            title: "Learning",
             image: require("@/assets/images/african-patterns.png"),
-            description: "Learn about beautiful Kente cloth patterns",
-            targetPage: "tester",
+            description: "Learning common Luganda words and how they are used in sentences",
+            targetPage: "child/games/learninggame",
           },
           {
             id: "numbers",
