@@ -68,6 +68,23 @@ const AfricanThemeGameInterface: React.FC = () => {
 
   // Set up animation
   useEffect(() => {
+    console.log("AfricanThemeGameInterface arrived - locking to landscape");
+      const lockToLandscape = async () => {
+        try {
+          await ScreenOrientation.lockAsync(
+            ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
+          );
+        } catch (error) {
+          console.error("Failed to lock orientation:", error);
+        }
+      };
+
+      lockToLandscape();
+
+      return () => {
+        // No cleanup needed here as we want to keep landscape 
+        // when navigating to games
+      };
     // Create combined animation sequence
     const pulseSequence = Animated.loop(
       Animated.sequence([
@@ -170,8 +187,8 @@ const AfricanThemeGameInterface: React.FC = () => {
             id: "numbers",
             title: "Numbers",
             image: require("@/assets/images/numbers.png"),
-            description: "Count with traditional African number systems",
-            targetPage: "tester",
+            description: "Count with traditional Luganda number systems",
+            targetPage: "child/games/lugandacountinggame",
           },
       
         ]);
@@ -270,87 +287,87 @@ const AfricanThemeGameInterface: React.FC = () => {
         ]);
         break;
 
-      case "quizz":
-        setScreenTitle("Quizz");
-        setLearningCards([
-          {
-            id: "history",
-            title: "History",
-            image: require("@/assets/images/history.jpg"), // Replace with appropriate image
-            description: "Test your knowledge of African history",
-            targetPage: "tester",
-          },
-          {
-            id: "geography",
-            title: "Geography",
-            image: require("@/assets/images/geography.jpg"), // Replace with appropriate image
-            description: "Quiz about African countries and landmarks",
-            targetPage: "tester",
-          },
-          {
-            id: "culture",
-            title: "Culture",
-            image: require("@/assets/images/culture.jpg"), // Replace with appropriate image
-            description: "Learn about diverse African cultures",
-            targetPage: "tester",
-          },
-          {
-            id: "wildlife",
-            title: "Wildlife",
-            image: require("@/assets/images/wildlife.jpg"), // Replace with appropriate image
-            description: "Test your knowledge of African animals",
-            targetPage: "tester",
-          },
-          {
-            id: "languages",
-            title: "Languages",
-            image: require("@/assets/images/language.jpg"), // Replace with appropriate image
-            description: "Learn words from different African languages",
-            targetPage: "tester",
-          },
-        ]);
-        break;
+      // case "quizz":
+      //   setScreenTitle("Quizz");
+      //   setLearningCards([
+      //     {
+      //       id: "history",
+      //       title: "History",
+      //       image: require("@/assets/images/history.jpg"), // Replace with appropriate image
+      //       description: "Test your knowledge of African history",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "geography",
+      //       title: "Geography",
+      //       image: require("@/assets/images/geography.jpg"), // Replace with appropriate image
+      //       description: "Quiz about African countries and landmarks",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "culture",
+      //       title: "Culture",
+      //       image: require("@/assets/images/culture.jpg"), // Replace with appropriate image
+      //       description: "Learn about diverse African cultures",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "wildlife",
+      //       title: "Wildlife",
+      //       image: require("@/assets/images/wildlife.jpg"), // Replace with appropriate image
+      //       description: "Test your knowledge of African animals",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "languages",
+      //       title: "Languages",
+      //       image: require("@/assets/images/language.jpg"), // Replace with appropriate image
+      //       description: "Learn words from different African languages",
+      //       targetPage: "tester",
+      //     },
+      //   ]);
+      //   break;
 
-      case "nature":
-        setScreenTitle("Nature");
-        setLearningCards([
-          {
-            id: "savanna",
-            title: "Savanna",
-            image: require("@/assets/images/savannah.jpg"), // Replace with appropriate image
-            description: "Explore the African savanna ecosystem",
-            targetPage: "tester",
-          },
-          {
-            id: "rainforest",
-            title: "Rainforest",
-            image: require("@/assets/images/rainforest.jpg"), // Replace with appropriate image
-            description: "Discover the Congo rainforest",
-            targetPage: "tester",
-          },
-          {
-            id: "desert",
-            title: "Desert",
-            image: require("@/assets/images/desert.jpg"), // Replace with appropriate image
-            description: "Learn about the Sahara and Kalahari deserts",
-            targetPage: "tester",
-          },
-          {
-            id: "mountains",
-            title: "Mountains",
-            image: require("@/assets/images/mountain.jpg"), // Replace with appropriate image
-            description: "Explore African mountains like Kilimanjaro",
-            targetPage: "tester",
-          },
-          {
-            id: "rivers",
-            title: "Rivers",
-            image: require("@/assets/images/river.jpg"), // Replace with appropriate image
-            description: "Learn about the Nile, Congo, and other major rivers",
-            targetPage: "tester",
-          },
-        ]);
-        break;
+      // case "nature":
+      //   setScreenTitle("Nature");
+      //   setLearningCards([
+      //     {
+      //       id: "savanna",
+      //       title: "Savanna",
+      //       image: require("@/assets/images/savannah.jpg"), // Replace with appropriate image
+      //       description: "Explore the African savanna ecosystem",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "rainforest",
+      //       title: "Rainforest",
+      //       image: require("@/assets/images/rainforest.jpg"), // Replace with appropriate image
+      //       description: "Discover the Congo rainforest",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "desert",
+      //       title: "Desert",
+      //       image: require("@/assets/images/desert.jpg"), // Replace with appropriate image
+      //       description: "Learn about the Sahara and Kalahari deserts",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "mountains",
+      //       title: "Mountains",
+      //       image: require("@/assets/images/mountain.jpg"), // Replace with appropriate image
+      //       description: "Explore African mountains like Kilimanjaro",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "rivers",
+      //       title: "Rivers",
+      //       image: require("@/assets/images/river.jpg"), // Replace with appropriate image
+      //       description: "Learn about the Nile, Congo, and other major rivers",
+      //       targetPage: "tester",
+      //     },
+      //   ]);
+      //   break;
 
       case "museum":
         setScreenTitle("Museum");
@@ -421,7 +438,7 @@ const AfricanThemeGameInterface: React.FC = () => {
             id: "numbers",
             title: "Numbers",
             image: require("@/assets/images/numbers.png"),
-            description: "Count with traditional African number systems",
+            description: "Count with traditional Luganda number systems",
             targetPage: "tester",
           },
           {
