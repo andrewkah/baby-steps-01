@@ -66,7 +66,6 @@ const AfricanThemeGameInterface: React.FC = () => {
     }, [])
   );
 
-  // Set up animation
   useEffect(() => {
     console.log("AfricanThemeGameInterface arrived - locking to landscape");
       const lockToLandscape = async () => {
@@ -80,7 +79,11 @@ const AfricanThemeGameInterface: React.FC = () => {
       };
 
       lockToLandscape();
+    }, []);
 
+
+  // Set up animation
+  useEffect(() => {
     // Create combined animation sequence
     const pulseSequence = Animated.loop(
       Animated.sequence([
@@ -163,7 +166,7 @@ const AfricanThemeGameInterface: React.FC = () => {
             title: "Logic",
             image: require("@/assets/images/african-logic.png"),
             description: "Solve puzzles inspired by popular Buganda heritage sites",
-            targetPage: "tester",
+            targetPage: "child/games/puzzlegame",
           },
           {
             id: "ball-train",
