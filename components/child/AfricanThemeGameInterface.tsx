@@ -168,13 +168,13 @@ const AfricanThemeGameInterface: React.FC = () => {
             description: "Solve puzzles inspired by popular Buganda heritage sites",
             targetPage: "child/games/puzzlegame",
           },
-          {
-            id: "ball-train",
-            title: "Ball Train",
-            image: require("@/assets/images/ball-train.jpg"),
-            description: "Learn about light that makes us see things",
-            targetPage: "child/games/ball-trail",
-          },
+          // {
+          //   id: "ball-train",
+          //   title: "Ball Train",
+          //   image: require("@/assets/images/ball-train.jpg"),
+          //   description: "Learn about light that makes us see things",
+          //   targetPage: "child/games/ball-trail",
+          // },
           {
             id: "learning",
             title: "Learning",
@@ -244,7 +244,7 @@ const AfricanThemeGameInterface: React.FC = () => {
             image: require("@/assets/images/kintu.jpg"),
             description:
               "Learn about Kintu, the first person on Earth according to Buganda mythology",
-            targetPage: "tester",
+            targetPage: "child/stories/kintustory",
           },
           {
             id: "mwanga",
