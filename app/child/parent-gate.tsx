@@ -11,19 +11,17 @@ import { Text } from "@/components/StyledText";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useChild } from '@/context/ChildContext';
 
 export default function ParentGate() {
   const [input, setInput] = useState("");
   const [correctPin, setCorrectPin] = useState(generateRandomPin());
   const router = useRouter();
+  const { setActiveChild } = useChild();
 
   // Function to generate a random 3-digit PIN
   function generateRandomPin() {
-    let pin = "";
-    for (let i = 0; i < 3; i++) {
-      pin += Math.floor(Math.random() * 10);
-    }
-    return pin;
+    return Math.floor(Math.random() * 900 + 100).toString();
   }
 
   const handleDigitPress = (digit: string) => {
@@ -33,10 +31,11 @@ export default function ParentGate() {
 
       if (newInput.length === 3) {
         if (newInput === correctPin) {
+          setActiveChild(null); // Clear active child
           router.push("/parent");
         } else {
           // No alert for incorrect PIN, just redirect back
-          router.replace("/child/(tabs)/profile");
+          router.back(); // Using router.back() is safer than hardcoding a path
         }
       }
     }

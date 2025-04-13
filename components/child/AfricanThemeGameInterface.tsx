@@ -18,6 +18,7 @@ import { Text } from "@/components/StyledText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useCallback } from 'react';
+import { useChild } from '@/context/ChildContext';
 
 // Define types
 type LearningCard = {
@@ -39,6 +40,7 @@ const AfricanThemeGameInterface: React.FC = () => {
   const [selectedNavItem, setSelectedNavItem] = useState<string>("home");
   const [learningCards, setLearningCards] = useState<LearningCard[]>([]);
   const router = useRouter();
+  const { activeChild } = useChild();
 
   // Animation values for avatar
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -511,14 +513,14 @@ const AfricanThemeGameInterface: React.FC = () => {
               </Animated.View>
               <View className="pl-3">
                 <Text variant="bold" className="text-white text-lg mt-2">
-                  Learner
+                  {activeChild?.name || "Learner"}
                 </Text>
-                <Text className="text-white/80 text-sm">Age 9+</Text>
-                <View className="absolute -top-1.5 right-[60px] bg-[#FFD700] w-6 h-6 rounded-full justify-center items-center">
+                <Text className="text-white/80 text-sm">{activeChild ? `Age ${activeChild.age}` : "Age 9+"}</Text>
+                {/* <View className="absolute -top-1.5 right-[60px] bg-[#FFD700] w-6 h-6 rounded-full justify-center items-center">
                   <Text variant="bold" className="text-[#5A3CBE] text-sm">
                     1
                   </Text>
-                </View>
+                </View> */}
               </View>
             </View>
 

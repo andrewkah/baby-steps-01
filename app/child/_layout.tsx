@@ -2,13 +2,23 @@ import { Stack, useFocusEffect } from "expo-router";
 import React, { useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { useChild } from '@/context/ChildContext';
+import { useRouter } from 'expo-router';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { activeChild } = useChild();
+  const router = useRouter();
 
   // This will run both on initial mount AND when screen comes into focus
   useFocusEffect(
     useCallback(() => {
+      // Redirect to parent dashboard if no active child
+      if (!activeChild) {
+        router.replace('/parent');
+        return;
+      }
+
       console.log("Child tabs screen focused - locking to landscape");
       const lockToLandscape = async () => {
         try {
@@ -31,8 +41,13 @@ export default function TabLayout() {
 
         resetOrientation();
       };
-    }, [])
+    }, [activeChild])
   );
+
+  if (!activeChild) {
+    return null;
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen

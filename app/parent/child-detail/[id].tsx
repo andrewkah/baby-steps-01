@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { supabase } from "@/lib/supabase"
+import { useChild } from '@/context/ChildContext'
 
 // Define TypeScript interface for our child data
 interface ChildData {
@@ -22,6 +23,7 @@ export default function ChildDetailScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<{ childId: string }>()
   const childId = params.childId
+  const { setActiveChild } = useChild()
 
   const [childData, setChildData] = useState<ChildData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -57,6 +59,16 @@ export default function ChildDetailScreen() {
       setLoading(false)
     }
   }
+
+  const handleLaunchChildMode = () => {
+    if (childData) {
+      setActiveChild(childData);
+      router.push({
+        pathname: "/child" as any,
+        params: { active: childId },
+      });
+    }
+  };
 
   return (
     <>
@@ -105,12 +117,7 @@ export default function ChildDetailScreen() {
                     <View className="mt-2 flex-row">
                       <TouchableOpacity
                         className="bg-[#7b5af0] py-1 px-3 rounded-full mr-2"
-                        onPress={() =>
-                          router.push({
-                            pathname: "/child" as any,
-                            params: { active: childId },
-                          })
-                        }
+                        onPress={handleLaunchChildMode}
                       >
                         <Text className="text-white text-sm">Launch Child Mode</Text>
                       </TouchableOpacity>
