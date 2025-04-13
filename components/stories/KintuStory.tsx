@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, Animated, Modal } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, Animated, Modal, ScrollView } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +11,12 @@ interface StoryPage {
   text: string;
   image: any;
   altText: string;
+}
+
+interface StoryQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: number; // index of the correct option
 }
 
 const KintuStory: React.FC = () => {
@@ -66,8 +72,55 @@ const KintuStory: React.FC = () => {
   const [textSize, setTextSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [readingSpeed, setReadingSpeed] = useState<number>(0.8); // Default speed
   const [settingsVisible, setSettingsVisible] = useState<boolean>(false);
+  const [showQuestions, setShowQuestions] = useState<boolean>(false);
+  const [userAnswers, setUserAnswers] = useState<number[]>(Array(5).fill(-1));
+  const [quizCompleted, setQuizCompleted] = useState<boolean>(false);
+  const [score, setScore] = useState<number>(0);
   const readTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const storyQuestions: StoryQuestion[] = [
+    {
+      question: "Who was Kintu?",
+      options: ["A god of the sky", "The first person on Earth", "Nambi's brother", "Gulu's son"],
+      correctAnswer: 1
+    },
+    {
+      question: "Who fell in love with Kintu?",
+      options: ["Death", "Nambi", "Gulu", "A cow"],
+      correctAnswer: 1
+    },
+    {
+      question: "What tests did Gulu set for Kintu?",
+      options: [
+        "To find his cow and eat enormous amounts of food",
+        "To climb the tallest mountain",
+        "To defeat Death in battle",
+        "To create the sun and moon"
+      ],
+      correctAnswer: 0
+    },
+    {
+      question: "Why did Death follow Kintu and Nambi to Earth?",
+      options: [
+        "Because Gulu sent Death to watch over them",
+        "Because Death was jealous of their happiness",
+        "Because Nambi went back for chicken feed despite the warning",
+        "Because Kintu challenged Death to a race"
+      ],
+      correctAnswer: 2
+    },
+    {
+      question: "Who are the ancestors of the Baganda people according to this story?",
+      options: [
+        "Gulu and his children",
+        "Death and his followers",
+        "The termites who helped Kintu",
+        "Kintu and Nambi"
+      ],
+      correctAnswer: 3
+    }
+  ];
 
   // Load sounds
   useEffect(() => {
@@ -177,122 +230,264 @@ const KintuStory: React.FC = () => {
     }
   };
 
+  const handleAnswerSelection = (questionIndex: number, answerIndex: number) => {
+    const newAnswers = [...userAnswers];
+    newAnswers[questionIndex] = answerIndex;
+    setUserAnswers(newAnswers);
+  };
+
+  const handleQuizSubmit = () => {
+    let correctAnswers = 0;
+    storyQuestions.forEach((question, index) => {
+      if (userAnswers[index] === question.correctAnswer) {
+        correctAnswers++;
+      }
+    });
+    
+    setScore(correctAnswers);
+    setQuizCompleted(true);
+  };
+
+  const handleRestartQuiz = () => {
+    setUserAnswers(Array(storyQuestions.length).fill(-1));
+    setQuizCompleted(false);
+    setScore(0);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.contentContainer}>
-        {/* Add Back Button */}
-      <TouchableOpacity 
-        style={{
-          position: 'absolute',
-          top: 10,
-          left: 10,
-          zIndex: 10,
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          padding: 8,
-          borderRadius: 20,
-        }}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-      </TouchableOpacity>
+      {!showQuestions ? (
+        // Show original story UI
+        <View style={styles.contentContainer}>
+          {/* Back Button - keep existing code */}
+          <TouchableOpacity 
+            style={{
+              position: 'absolute',
+              top: 10,
+              left: 10,
+              zIndex: 10,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              padding: 8,
+              borderRadius: 20,
+            }}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+          </TouchableOpacity>
 
-        {/* Left Panel: Story Image */}
-        <Animated.View style={[styles.imageContainer, { opacity: fadeAnim }]}>
-          <Image 
-            source={storyPages[currentPage].image} 
-            style={styles.storyImage}
-            resizeMode="contain"
-            accessibilityLabel={storyPages[currentPage].altText}
-          />
-        </Animated.View>
-        
-        {/* Right Panel: Text and Controls */}
-        <View style={styles.rightPanel}>
-          {/* Settings button */}
-          <View style={styles.settingsButtonContainer}>
-            <TouchableOpacity 
-              style={styles.settingsButton}
-              onPress={() => setSettingsVisible(true)}
-              accessibilityLabel="Open settings"
-              accessibilityRole="button"
-            >
-              <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Story Text */}
-          <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
-            <Text style={styles.storyText}>
-              {words.map((word, index) => (
-                <Text 
-                  key={index}
-                  style={[
-                    styles.word,
-                    { fontSize: getTextSize() },
-                    index === highlightedIndex && styles.highlightedWord
-                  ]}
-                >
-                  {word}{' '}
-                </Text>
-              ))}
-            </Text>
+          {/* Left Panel: Story Image - keep existing code */}
+          <Animated.View style={[styles.imageContainer, { opacity: fadeAnim }]}>
+            <Image 
+              source={storyPages[currentPage].image} 
+              style={styles.storyImage}
+              resizeMode="contain"
+              accessibilityLabel={storyPages[currentPage].altText}
+            />
           </Animated.View>
           
-          {/* Navigation and Controls */}
-          <View style={styles.navRow}>
-            <TouchableOpacity 
-              style={[styles.navButton, currentPage === 0 && styles.disabledButton]}
-              onPress={() => handlePageTurn('prev')}
-              disabled={currentPage === 0}
-              accessibilityLabel="Previous page"
-              accessibilityRole="button"
-              accessibilityState={{ disabled: currentPage === 0 }}
-              accessibilityHint="Navigate to previous story page"
-            >
-              <Text style={styles.navButtonText}>←</Text>
-            </TouchableOpacity>
+          {/* Right Panel: Text and Controls - keep existing code */}
+          <View style={styles.rightPanel}>
+            {/* Settings button - keep existing code */}
+            <View style={styles.settingsButtonContainer}>
+              <TouchableOpacity 
+                style={styles.settingsButton}
+                onPress={() => setSettingsVisible(true)}
+                accessibilityLabel="Open settings"
+                accessibilityRole="button"
+              >
+                <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
+              </TouchableOpacity>
+            </View>
             
-            <TouchableOpacity 
-              style={styles.readButton}
-              onPress={readStory}
-              accessibilityLabel={isReading ? "Stop reading" : "Read to Me"}
-              accessibilityRole="button"
-              accessibilityHint={isReading ? "Stop the story narration" : "Start reading the story aloud"}
-            >
-              <Text style={styles.readButtonText}>
-                {isReading ? "Stop" : "Read to Me"}
+            {/* Story Text - keep existing code */}
+            <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
+              <Text style={styles.storyText}>
+                {words.map((word, index) => (
+                  <Text 
+                    key={index}
+                    style={[
+                      styles.word,
+                      { fontSize: getTextSize() },
+                      index === highlightedIndex && styles.highlightedWord
+                    ]}
+                  >
+                    {word}{' '}
+                  </Text>
+                ))}
               </Text>
-            </TouchableOpacity>
+            </Animated.View>
             
-            <TouchableOpacity 
-              style={[styles.navButton, currentPage === storyPages.length - 1 && styles.disabledButton]}
-              onPress={() => handlePageTurn('next')}
-              disabled={currentPage === storyPages.length - 1}
-              accessibilityLabel="Next page"
-              accessibilityRole="button"
-              accessibilityState={{ disabled: currentPage === storyPages.length - 1 }}
-              accessibilityHint="Navigate to next story page"
-            >
-              <Text style={styles.navButtonText}>→</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Page indicator */}
-          <View style={styles.pageIndicator}>
-            {storyPages.map((_, index) => (
-              <View 
-                key={index} 
-                style={[
-                  styles.pageIndicatorDot,
-                  index === currentPage && styles.currentPageDot
-                ]} 
-              />
-            ))}
+            {/* Navigation and Controls */}
+            <View style={styles.navRow}>
+              <TouchableOpacity 
+                style={[styles.navButton, currentPage === 0 && styles.disabledButton]}
+                onPress={() => handlePageTurn('prev')}
+                disabled={currentPage === 0}
+                accessibilityLabel="Previous page"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: currentPage === 0 }}
+                accessibilityHint="Navigate to previous story page"
+              >
+                <Text style={styles.navButtonText}>←</Text>
+              </TouchableOpacity>
+              
+              {currentPage === storyPages.length - 1 ? (
+                <TouchableOpacity 
+                  style={[styles.readButton, { backgroundColor: '#6495ED' }]}
+                  onPress={() => setShowQuestions(true)}
+                  accessibilityLabel="Take the quiz"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.readButtonText}>Take Quiz</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.readButton}
+                  onPress={readStory}
+                  accessibilityLabel={isReading ? "Stop reading" : "Read to Me"}
+                  accessibilityRole="button"
+                  accessibilityHint={isReading ? "Stop the story narration" : "Start reading the story aloud"}
+                >
+                  <Text style={styles.readButtonText}>
+                    {isReading ? "Stop" : "Read to Me"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity 
+                style={[styles.navButton, currentPage === storyPages.length - 1 && styles.disabledButton]}
+                onPress={() => handlePageTurn('next')}
+                disabled={currentPage === storyPages.length - 1}
+                accessibilityLabel="Next page"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: currentPage === storyPages.length - 1 }}
+                accessibilityHint="Navigate to next story page"
+              >
+                <Text style={styles.navButtonText}>→</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Page indicator - keep existing code */}
+            <View style={styles.pageIndicator}>
+              {storyPages.map((_, index) => (
+                <View 
+                  key={index} 
+                  style={[
+                    styles.pageIndicatorDot,
+                    index === currentPage && styles.currentPageDot
+                  ]} 
+                />
+              ))}
+            </View>
           </View>
         </View>
-      </View>
+      ) : (
+        // Updated Quiz UI with ScrollView
+        <View style={styles.questionsContainer}>
+          <TouchableOpacity 
+            style={{
+              position: 'absolute',
+              top: 10,
+              left: 10,
+              zIndex: 10,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              padding: 8,
+              borderRadius: 20,
+            }}
+            onPress={() => {
+              setShowQuestions(false);
+              if (quizCompleted) {
+                setQuizCompleted(false);
+                setUserAnswers(Array(storyQuestions.length).fill(-1));
+              }
+            }}
+          >
+            <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+          </TouchableOpacity>
 
-      {/* Settings Modal */}
+          <View style={styles.quizContent}>
+            <Text style={styles.quizTitle}>
+              {quizCompleted ? `Your Score: ${score}/${storyQuestions.length}` : "The Tale of Kintu - Quiz"}
+            </Text>
+            
+            <ScrollView 
+              style={styles.questionsScrollView}
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={styles.questionsScrollContent}
+            >
+              {!quizCompleted ? (
+                <>
+                  {storyQuestions.map((question, qIndex) => (
+                    <View key={qIndex} style={styles.questionContainer}>
+                      <Text style={styles.questionText}>{qIndex + 1}. {question.question}</Text>
+                      
+                      {question.options.map((option, oIndex) => (
+                        <TouchableOpacity
+                          key={oIndex}
+                          style={[
+                            styles.optionButton,
+                            userAnswers[qIndex] === oIndex && styles.selectedOption
+                          ]}
+                          onPress={() => handleAnswerSelection(qIndex, oIndex)}
+                        >
+                          <Text style={styles.optionText}>{option}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ))}
+                </>
+              ) : (
+                // Results view
+                <View style={styles.resultsContainer}>
+                  {storyQuestions.map((question, qIndex) => (
+                    <View key={qIndex} style={styles.resultQuestionContainer}>
+                      <Text style={styles.questionText}>{qIndex + 1}. {question.question}</Text>
+                      
+                      {question.options.map((option, oIndex) => (
+                        <View
+                          key={oIndex}
+                          style={[
+                            styles.resultOption,
+                            oIndex === question.correctAnswer && styles.correctOption,
+                            userAnswers[qIndex] === oIndex && userAnswers[qIndex] !== question.correctAnswer && styles.incorrectOption
+                          ]}
+                        >
+                          <Text style={styles.resultOptionText}>{option}</Text>
+                          {oIndex === question.correctAnswer && <Text style={styles.correctMark}>✓</Text>}
+                          {userAnswers[qIndex] === oIndex && userAnswers[qIndex] !== question.correctAnswer && <Text style={styles.incorrectMark}>✗</Text>}
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+            
+            {/* Submit or Try Again button outside ScrollView */}
+            {!quizCompleted ? (
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  userAnswers.includes(-1) && styles.disabledButton
+                ]}
+                onPress={handleQuizSubmit}
+                disabled={userAnswers.includes(-1)}
+              >
+                <Text style={styles.submitButtonText}>Submit Answers</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.submitButton, { marginTop: 20 }]}
+                onPress={handleRestartQuiz}
+              >
+                <Text style={styles.submitButtonText}>Try Again</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Settings Modal - keep existing code */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -635,6 +830,97 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  questionsContainer: {
+    flex: 1,
+    backgroundColor: '#F5E9BE',
+    padding: 20,
+  },
+  quizContent: {
+    backgroundColor: 'white',
+    marginTop: 50,
+    padding: 20,
+    borderRadius: 20,
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  quizTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#7b5af0',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  questionContainer: {
+    marginBottom: 20,
+  },
+  questionText: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: 10,
+  },
+  optionButton: {
+    backgroundColor: '#f0f0f0',
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 5,
+  },
+  selectedOption: {
+    backgroundColor: '#bbd6ff',
+  },
+  optionText: {
+    fontSize: 16,
+  },
+  submitButton: {
+    backgroundColor: '#FF6B95',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  submitButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  resultsContainer: {
+    marginTop: 10,
+  },
+  resultQuestionContainer: {
+    marginBottom: 20,
+  },
+  resultOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 5,
+    backgroundColor: '#f0f0f0',
+  },
+  correctOption: {
+    backgroundColor: '#d4edda',
+  },
+  incorrectOption: {
+    backgroundColor: '#f8d7da',
+  },
+  resultOptionText: {
+    fontSize: 16,
+  },
+  correctMark: {
+    color: 'green',
+    fontWeight: 'bold',
+  },
+  incorrectMark: {
+    color: 'red',
+    fontWeight: 'bold',
+  },
+  questionsScrollView: {
+    flex: 1,
+    marginBottom: 10,
+  },
+  questionsScrollContent: {
+    paddingBottom: 10,
   },
 });
 
