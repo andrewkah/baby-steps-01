@@ -66,6 +66,22 @@ const AfricanThemeGameInterface: React.FC = () => {
     }, [])
   );
 
+  useEffect(() => {
+    console.log("AfricanThemeGameInterface arrived - locking to landscape");
+      const lockToLandscape = async () => {
+        try {
+          await ScreenOrientation.lockAsync(
+            ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
+          );
+        } catch (error) {
+          console.error("Failed to lock orientation:", error);
+        }
+      };
+
+      lockToLandscape();
+    }, []);
+
+
   // Set up animation
   useEffect(() => {
     // Create combined animation sequence
@@ -150,28 +166,28 @@ const AfricanThemeGameInterface: React.FC = () => {
             title: "Logic",
             image: require("@/assets/images/african-logic.png"),
             description: "Solve puzzles inspired by popular Buganda heritage sites",
-            targetPage: "tester",
+            targetPage: "child/games/puzzlegame",
           },
           {
-            id: "ball-train",
-            title: "Ball Train",
+            id: "cards",
+            title: "Cards Matching",
             image: require("@/assets/images/ball-train.jpg"),
-            description: "Learn about light that makes us see things",
-            targetPage: "child/games/ball-trail",
+            description: "Match the cards to learn about Buganda cultural items",
+            targetPage: "child/games/cardgame",
           },
           {
-            id: "patterns",
-            title: "Patterns",
+            id: "learning",
+            title: "Learning",
             image: require("@/assets/images/african-patterns.png"),
-            description: "Learn about beautiful Kente cloth patterns",
-            targetPage: "tester",
+            description: "Learning common Luganda words and how they are used in sentences",
+            targetPage: "child/games/learninggame",
           },
           {
             id: "numbers",
             title: "Numbers",
             image: require("@/assets/images/numbers.png"),
-            description: "Count with traditional African number systems",
-            targetPage: "tester",
+            description: "Count with traditional Luganda number systems",
+            targetPage: "child/games/lugandacountinggame",
           },
       
         ]);
@@ -228,14 +244,14 @@ const AfricanThemeGameInterface: React.FC = () => {
             image: require("@/assets/images/kintu.jpg"),
             description:
               "Learn about Kintu, the first person on Earth according to Buganda mythology",
-            targetPage: "tester",
+            targetPage: "child/stories/kintustory",
           },
           {
             id: "mwanga",
             title: "Kabaka Mwanga",
             image: require("@/assets/images/mwanga.jpg"),
             description: "Discover the story of Kabaka Mwanga II of Buganda",
-            targetPage: "tester",
+            targetPage: "child/stories/mwangastory",
           },
           {
             id: "kasubi",
@@ -243,114 +259,128 @@ const AfricanThemeGameInterface: React.FC = () => {
             image: require("@/assets/images/kasubi.jpg"),
             description:
               "Explore the UNESCO World Heritage Site of Kasubi Tombs",
-            targetPage: "tester",
+            targetPage: "child/stories/kasubitombsstory",
           },
           {
-            id: "buganda-kingdom",
-            title: "Buganda Kingdom",
+            id: "walumbe",
+            title: "Walumbe and Death", 
             image: require("@/assets/images/buganda-kingdom.jpg"),
-            description: "Learn about the history of the Buganda Kingdom",
-            targetPage: "tester",
+            description: "Learn about the story of Walumbe and the origin of death",
+            targetPage: "child/stories/walumbestory",
           },
           {
-            id: "kabaka-trail",
-            title: "Kabaka Trail",
+            id: "ssezibwa",
+            title: "Ssezibwa Falls",
             image: require("@/assets/images/kabaka-trail.jpg"),
             description:
-              "Follow the historical trail of the Kabakas of Buganda",
-            targetPage: "tester",
+              "Follow the historical origin of Ssezibwa Falls",
+            targetPage: "child/stories/ssezibwafallsstory",
           },
           {
-            id: "buganda-culture",
-            title: "Buganda Culture",
+            id: "millet",
+            title: "Nambi and the First Millet",
             image: require("@/assets/images/culture.jpg"),
-            description: "Discover the rich cultural heritage of Buganda",
-            targetPage: "tester",
+            description: "Discover the story of Nambi and the first millet",
+            targetPage: "child/stories/milletstory",
+          },
+          {
+            id: "kasokambirye",
+            title: "Kasokambirye and the Moon",
+            image: require("@/assets/images/culture.jpg"),
+            description: "Discover the story of Kasokambirye and the moon",
+            targetPage: "child/stories/kasokambiryestory",
+          },
+          {
+            id: "fig-tree",
+            title: "The Generous Fig Tree",
+            image: require("@/assets/images/culture.jpg"),
+            description: "Discover the story of the generous fig tree",
+            targetPage: "child/stories/figtreestory",
           },
         ]);
         break;
 
-      case "quizz":
-        setScreenTitle("Quizz");
-        setLearningCards([
-          {
-            id: "history",
-            title: "History",
-            image: require("@/assets/images/history.jpg"), // Replace with appropriate image
-            description: "Test your knowledge of African history",
-            targetPage: "tester",
-          },
-          {
-            id: "geography",
-            title: "Geography",
-            image: require("@/assets/images/geography.jpg"), // Replace with appropriate image
-            description: "Quiz about African countries and landmarks",
-            targetPage: "tester",
-          },
-          {
-            id: "culture",
-            title: "Culture",
-            image: require("@/assets/images/culture.jpg"), // Replace with appropriate image
-            description: "Learn about diverse African cultures",
-            targetPage: "tester",
-          },
-          {
-            id: "wildlife",
-            title: "Wildlife",
-            image: require("@/assets/images/wildlife.jpg"), // Replace with appropriate image
-            description: "Test your knowledge of African animals",
-            targetPage: "tester",
-          },
-          {
-            id: "languages",
-            title: "Languages",
-            image: require("@/assets/images/language.jpg"), // Replace with appropriate image
-            description: "Learn words from different African languages",
-            targetPage: "tester",
-          },
-        ]);
-        break;
+      // case "quizz":
+      //   setScreenTitle("Quizz");
+      //   setLearningCards([
+      //     {
+      //       id: "history",
+      //       title: "History",
+      //       image: require("@/assets/images/history.jpg"), // Replace with appropriate image
+      //       description: "Test your knowledge of African history",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "geography",
+      //       title: "Geography",
+      //       image: require("@/assets/images/geography.jpg"), // Replace with appropriate image
+      //       description: "Quiz about African countries and landmarks",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "culture",
+      //       title: "Culture",
+      //       image: require("@/assets/images/culture.jpg"), // Replace with appropriate image
+      //       description: "Learn about diverse African cultures",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "wildlife",
+      //       title: "Wildlife",
+      //       image: require("@/assets/images/wildlife.jpg"), // Replace with appropriate image
+      //       description: "Test your knowledge of African animals",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "languages",
+      //       title: "Languages",
+      //       image: require("@/assets/images/language.jpg"), // Replace with appropriate image
+      //       description: "Learn words from different African languages",
+      //       targetPage: "tester",
+      //     },
+      //   ]);
+      //   break;
 
-      case "nature":
-        setScreenTitle("Nature");
-        setLearningCards([
-          {
-            id: "savanna",
-            title: "Savanna",
-            image: require("@/assets/images/savannah.jpg"), // Replace with appropriate image
-            description: "Explore the African savanna ecosystem",
-            targetPage: "tester",
-          },
-          {
-            id: "rainforest",
-            title: "Rainforest",
-            image: require("@/assets/images/rainforest.jpg"), // Replace with appropriate image
-            description: "Discover the Congo rainforest",
-            targetPage: "tester",
-          },
-          {
-            id: "desert",
-            title: "Desert",
-            image: require("@/assets/images/desert.jpg"), // Replace with appropriate image
-            description: "Learn about the Sahara and Kalahari deserts",
-            targetPage: "tester",
-          },
-          {
-            id: "mountains",
-            title: "Mountains",
-            image: require("@/assets/images/mountain.jpg"), // Replace with appropriate image
-            description: "Explore African mountains like Kilimanjaro",
-            targetPage: "tester",
-          },
-          {
-            id: "rivers",
-            title: "Rivers",
-            image: require("@/assets/images/river.jpg"), // Replace with appropriate image
-            description: "Learn about the Nile, Congo, and other major rivers",
-            targetPage: "tester",
-          },
-        ]);
-        break;
+      // case "nature":
+      //   setScreenTitle("Nature");
+      //   setLearningCards([
+      //     {
+      //       id: "savanna",
+      //       title: "Savanna",
+      //       image: require("@/assets/images/savannah.jpg"), // Replace with appropriate image
+      //       description: "Explore the African savanna ecosystem",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "rainforest",
+      //       title: "Rainforest",
+      //       image: require("@/assets/images/rainforest.jpg"), // Replace with appropriate image
+      //       description: "Discover the Congo rainforest",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "desert",
+      //       title: "Desert",
+      //       image: require("@/assets/images/desert.jpg"), // Replace with appropriate image
+      //       description: "Learn about the Sahara and Kalahari deserts",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "mountains",
+      //       title: "Mountains",
+      //       image: require("@/assets/images/mountain.jpg"), // Replace with appropriate image
+      //       description: "Explore African mountains like Kilimanjaro",
+      //       targetPage: "tester",
+      //     },
+      //     {
+      //       id: "rivers",
+      //       title: "Rivers",
+      //       image: require("@/assets/images/river.jpg"), // Replace with appropriate image
+      //       description: "Learn about the Nile, Congo, and other major rivers",
+      //       targetPage: "tester",
+      //     },
+      //   ]);
+      //   break;
 
       case "museum":
         setScreenTitle("Museum");
@@ -360,36 +390,36 @@ const AfricanThemeGameInterface: React.FC = () => {
             title: "Artifacts",
             image: require("@/assets/images/artifacts.jpg"), // Replace with appropriate image
             description: "Explore ancient African artifacts",
-            targetPage: "tester",
+            targetPage: "child/games/museum/ArtifactsScreen",
           },
           {
             id: "art",
             title: "Art",
             image: require("@/assets/images/art.jpg"), // Replace with appropriate image
             description: "Discover traditional and contemporary African art",
-            targetPage: "tester",
+            targetPage: "child/games/museum/ArtScreen",
           },
           {
             id: "instruments",
             title: "Instruments",
             image: require("@/assets/images/drum.jpg"), // Replace with appropriate image
             description: "Learn about traditional African musical instruments",
-            targetPage: "tester",
+            targetPage: "child/games/museum/InstrumentsScreen",
           },
           {
             id: "textiles",
             title: "Textiles",
             image: require("@/assets/images/textile.jpg"), // Replace with appropriate image
             description: "Explore the rich tradition of African textiles",
-            targetPage: "tester",
+            targetPage: "child/games/museum/TextilesScreen",
           },
-          {
-            id: "sculptures",
-            title: "Sculptures",
-            image: require("@/assets/images/sculpture.jpg"), // Replace with appropriate image
-            description: "View famous African sculptures and carvings",
-            targetPage: "tester",
-          },
+          // {
+          //   id: "sculptures",
+          //   title: "Sculptures",
+          //   image: require("@/assets/images/sculpture.jpg"), // Replace with appropriate image
+          //   description: "View famous African sculptures and carvings",
+          //   targetPage: "child/games/museum/SculptureScreen",
+          // },
         ]);
         break;
       default:
@@ -421,7 +451,7 @@ const AfricanThemeGameInterface: React.FC = () => {
             id: "numbers",
             title: "Numbers",
             image: require("@/assets/images/numbers.png"),
-            description: "Count with traditional African number systems",
+            description: "Count with traditional Luganda number systems",
             targetPage: "tester",
           },
           {
@@ -441,7 +471,7 @@ const AfricanThemeGameInterface: React.FC = () => {
       pitch: 1,
       rate: 1,
     });
-    router.push("/child/parent-gate");
+    router.push("/child/parent-gate" as any);
   };
 
   // Updated function to navigate to the card's target page with type assertion

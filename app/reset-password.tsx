@@ -225,7 +225,7 @@ export default function ResetPassword() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Decorative elements */}
-          <View className="absolute top-10 left-8">
+          <View className="absolute top-20 left-8">
             <Animated.View
               className="w-12 h-12 rounded-full bg-orange-200 opacity-50"
               style={{ transform: [{ translateY: bounceDot1 }] }}
@@ -238,7 +238,7 @@ export default function ResetPassword() {
             />
           </View>
           {/* Header */}
-          <View className="items-center mt-12 mb-4">
+          <View className="items-center mt-14 mb-4">
             <Animated.View
               style={{
                 transform: [{ translateY }, { scale: scaleValue }],
