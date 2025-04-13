@@ -58,6 +58,12 @@ interface SoundEffects {
 
 const BugandaPuzzleGame: React.FC = () => {
     const router = useRouter();
+    
+    // Add this debug utility function
+    const isMiddlePosition = (position: Position): boolean => {
+        return position.row === 1 && position.col === 1;
+    };
+
   // Different puzzle images representing Buganda cultural elements
   const puzzleImages: PuzzleImage[] = [
     {
@@ -242,6 +248,12 @@ const BugandaPuzzleGame: React.FC = () => {
     const rowDiff = Math.abs(tilePosition.row - emptyPosition.row);
     const colDiff = Math.abs(tilePosition.col - emptyPosition.col);
     
+    // Add debugging for middle position
+    if (isMiddlePosition(tilePosition)) {
+      console.log(`Middle position check: rowDiff=${rowDiff}, colDiff=${colDiff}`);
+      console.log(`Can middle tile move? ${(rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)}`);
+    }
+    
     return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
   };
 
@@ -261,6 +273,11 @@ const BugandaPuzzleGame: React.FC = () => {
     
     if (canMoveTile(tile.currentPosition, emptyPos)) {
       console.log(`Tile ${tileId} can move and will be moved`);
+      
+      // Special debug for middle tile
+      if (tileId === 5) {
+        console.log("Middle tile is moving!");
+      }
       
       // Play sound effect
       if (soundEffects.tileMove) {
@@ -351,8 +368,16 @@ const BugandaPuzzleGame: React.FC = () => {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => !isComplete,
       onMoveShouldSetPanResponder: (_: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        // Only respond to deliberate swipes, not small movements
+        // Reduce the threshold for the middle position tile to make it more responsive
         const { dx, dy } = gestureState;
+        const tileIndex = tiles.findIndex(t => t.id === tileId);
+        if (tileIndex !== -1 && isMiddlePosition(tiles[tileIndex].currentPosition)) {
+          console.log(`Middle tile pan detected: dx=${dx}, dy=${dy}`);
+          // Use a lower threshold for the middle position
+          return !isComplete && (Math.abs(dx) > 5 || Math.abs(dy) > 5);
+        }
+        
+        // Regular threshold for other tiles
         return !isComplete && (Math.abs(dx) > 10 || Math.abs(dy) > 10);
       },
       onPanResponderRelease: (_: GestureResponderEvent, gestureState: PanResponderGestureState) => {
@@ -394,6 +419,16 @@ const BugandaPuzzleGame: React.FC = () => {
     const canMove = canMoveTile(tile.currentPosition, emptyPos);
     const panResponder = createTilePanResponder(tile.id);
     
+    // Check if this tile is in the middle position
+    const isInMiddle = isMiddlePosition(tile.currentPosition);
+    
+    // Find the animated position for the current tile
+    const animatedPos = animatedPositions[tile.id];
+    if (!animatedPos) {
+      console.warn(`Animated position not found for tile ${tile.id}`);
+      return null;
+    }
+    
     return (
       <Animated.View
         key={tile.id}
@@ -402,10 +437,13 @@ const BugandaPuzzleGame: React.FC = () => {
           {
             width: TILE_SIZE,
             height: TILE_SIZE,
-            left: animatedPositions[tile.id].left,
-            top: animatedPositions[tile.id].top,
-            // Increase z-index for middle tile to ensure it's on top
-            zIndex: tile.id === 5 ? 10 : 1,
+            left: animatedPos.left,
+            top: animatedPos.top,
+            // Give the middle position a higher zIndex to ensure it's above other tiles
+            zIndex: isInMiddle ? 5 : 1,
+            // Make debugging visible with a subtle border if tile is in middle position
+            borderColor: isInMiddle ? '#ff0000' : '#873600',
+            borderWidth: isInMiddle ? 2 : 1,
           }
         ]}
         {...panResponder.panHandlers}
@@ -415,13 +453,27 @@ const BugandaPuzzleGame: React.FC = () => {
             width: '100%', 
             height: '100%',
             justifyContent: 'center',
-            alignItems: 'center'
+            alignItems: 'center',
+            // Highlight middle position for debugging
+            backgroundColor: isInMiddle ? 'rgba(255,220,220,0.1)' : 'transparent'
           }}
+          // Increase hitSlop for the middle position tile to improve touch detection
+          hitSlop={{ top: isInMiddle ? 15 : 5, bottom: isInMiddle ? 15 : 5, 
+                   left: isInMiddle ? 15 : 5, right: isInMiddle ? 15 : 5 }}
           onPress={() => {
-            console.log(`Tile ${tile.id} pressed. Can move: ${canMove}`);
+            // Add special debugging for middle position
+            if (isInMiddle) {
+              console.log(`🔴 MIDDLE POSITION TILE (ID: ${tile.id}) PRESSED. Can move: ${canMove}`);
+              console.log(`Middle tile at position (${tile.currentPosition.row}, ${tile.currentPosition.col})`);
+              console.log(`Empty space at (${emptyPos.row}, ${emptyPos.col})`);
+            } else {
+              console.log(`Tile ${tile.id} pressed. Can move: ${canMove}`);
+            }
+            
+            // Force the move attempt
             moveTile(tile.id);
           }}
-          activeOpacity={0.6} // Make the touch feedback more visible
+          activeOpacity={0.6}
           accessible={true}
           accessibilityLabel={`Tile ${tile.id}`}
           accessibilityHint={canMove ? "Double tap to move this tile or swipe it toward an empty space" : "This tile cannot be moved"}
@@ -439,7 +491,14 @@ const BugandaPuzzleGame: React.FC = () => {
             }}
             accessible={false}
           />
-          <View style={[styles.tileNumber, { opacity: 0.9 }]}>
+          <View style={[
+            styles.tileNumber, 
+            { 
+              opacity: 0.9,
+              // Make the number more visible for middle position
+              backgroundColor: isInMiddle ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.7)',
+            }
+          ]}>
             <Text style={styles.tileNumberText}>{tile.id}</Text>
           </View>
         </TouchableOpacity>
