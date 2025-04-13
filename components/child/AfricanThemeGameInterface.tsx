@@ -168,13 +168,13 @@ const AfricanThemeGameInterface: React.FC = () => {
             description: "Solve puzzles inspired by popular Buganda heritage sites",
             targetPage: "child/games/puzzlegame",
           },
-          // {
-          //   id: "ball-train",
-          //   title: "Ball Train",
-          //   image: require("@/assets/images/ball-train.jpg"),
-          //   description: "Learn about light that makes us see things",
-          //   targetPage: "child/games/ball-trail",
-          // },
+          {
+            id: "cards",
+            title: "Cards Matching",
+            image: require("@/assets/images/ball-train.jpg"),
+            description: "Match the cards to learn about Buganda cultural items",
+            targetPage: "child/games/cardgame",
+          },
           {
             id: "learning",
             title: "Learning",
