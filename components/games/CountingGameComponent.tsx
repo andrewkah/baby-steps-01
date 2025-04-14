@@ -655,7 +655,7 @@ const LugandaCountingGame: React.FC = () => {
             className={`text-2xl font-bold text-center
               ${isCorrect ? 'text-success' : 'text-destructive'}`}
           >
-            {isCorrect ? 'Kirungi! (Correct!)' : 'Gezaako nate! (Try again!)'}
+            {isCorrect ? 'Kirungi! (Correct!)' : 'Gezaako nela! (Try again!)'}
           </Text>
         </Animated.View>
       )}
