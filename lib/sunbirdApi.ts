@@ -1,13 +1,11 @@
-const EXPO_SUNBIRD_TOKEN = process.env.EXPO_SUNBIRD_TOKEN as string;
 
-
-export const translateText = async (text: string, sourceLang = "lug", targetLang = "eng") => {
-    const res = await fetch("https://api.sunbird.ai/tasks/nllb_translate", {
-      method: "POST",
+  export const translateText = async (text: string, sourceLang = 'en', targetLang = 'lug') => {
+    const res = await fetch('https://api.sunbird.ai/tasks/nllb_translate', {
+      method: 'POST',
       headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${EXPO_SUNBIRD_TOKEN}`,
-        "Content-Type": "application/json",
+        Accept: 'application/json',
+        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJTb2NjZXJEZXZDIiwiYWNjb3VudF90eXBlIjoiRnJlZSIsImV4cCI6NDg5ODIzNDY1MH0.R4KBL_aYqA1ZGXa6w8blGZDMErOXBWAdqGpLEPT24dY`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         source_language: sourceLang,

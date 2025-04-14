@@ -8,6 +8,8 @@ import { StatusBar } from "expo-status-bar"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons"
 import { supabase } from "@/lib/supabase"
+import { useLanguage } from "@/context/languageContext"
+import { useTranslate } from "@/hooks/useTranslate"
 
 type ChildProfile = {
   id: string
@@ -28,6 +30,28 @@ const ParentDashboard = () => {
   const router = useRouter()
   const [childProfiles, setChildProfiles] = useState<ChildProfile[]>([])
   const [loading, setLoading] = useState(true)
+  const title = useTranslate("Parent Dashboard");
+const subtitle = useTranslate("Monitor your children's learning journey");
+const viewAll = useTranslate("View All");
+const childProfilesLabel = useTranslate("Child Profiles");
+const addChild = useTranslate("Add Child");
+const newProfile = useTranslate("New profile");
+const loadingProfiles = useTranslate("Loading profiles...");
+const recentActivitiesLabel = useTranslate("Recent Activities");
+const viewAllActivities = useTranslate("View All Activities");
+const weeklyLearningTimeLabel = useTranslate("Weekly Learning Time");
+const totalThisWeek = useTranslate("Total this week:");
+const parentToolsLabel = useTranslate("Parent Tools");
+const schedule = useTranslate("Schedule");
+const achievements = useTranslate("Achievements");
+const preferences = useTranslate("Preferences");
+const resources = useTranslate("Resources");
+const parentingTips = useTranslate("Parenting Tips");
+const parentingTipTitle = useTranslate("Supporting your child's learning at home");
+const parentingTipDesc = useTranslate(
+  "Create a comfortable learning environment with minimal distractions and regular routines."
+);
+const readMore = useTranslate("Read More");
 
   useEffect(() => {
     fetchChildProfiles()
@@ -130,9 +154,9 @@ const ParentDashboard = () => {
           <View className="flex-row justify-between items-center p-4 border-b border-gray-100">
             <View>
               <Text variant="bold" className="text-gray-800 text-2xl">
-                Parent Dashboard
+                {title}
               </Text>
-              <Text className="text-gray-500">Monitor your children's learning journey</Text>
+              <Text className="text-gray-500">{subtitle}</Text>
             </View>
 
             <View className="flex-row">
@@ -158,21 +182,21 @@ const ParentDashboard = () => {
             <View className="mb-6">
               <View className="flex-row justify-between items-center mb-3">
                 <Text variant="bold" className="text-gray-800 text-lg">
-                  Child Profiles
+                  {childProfilesLabel}
                 </Text>
                 <TouchableOpacity
                   className="bg-purple-100 px-3 py-1 rounded-full"
                   onPress={() => router.push("/child-list")}
                 >
                   <Text variant="medium" className="text-[#7b5af0]">
-                    View All
+                    {viewAll}
                   </Text>
                 </TouchableOpacity>
               </View>
 
               {loading ? (
                 <View className="items-center justify-center py-4">
-                  <Text>Loading profiles...</Text>
+                  <Text>{loadingProfiles}</Text>
                 </View>
               ) : (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-4 pb-2">
@@ -232,9 +256,9 @@ const ParentDashboard = () => {
                       <Ionicons name="add" size={30} color="#7b5af0" />
                     </View>
                     <Text variant="medium" className="text-gray-800 text-center">
-                      Add Child
+                      {addChild}
                     </Text>
-                    <Text className="text-gray-500 text-xs text-center mt-1">New profile</Text>
+                    <Text className="text-gray-500 text-xs text-center mt-1">{newProfile}</Text>
                   </TouchableOpacity>
                 </ScrollView>
               )}
@@ -243,7 +267,7 @@ const ParentDashboard = () => {
             {/* Recent activities section */}
             <View className="mb-6">
               <Text variant="bold" className="text-gray-800 text-lg mb-3">
-                Recent Activities
+                {recentActivitiesLabel}
               </Text>
 
               <View className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -277,7 +301,7 @@ const ParentDashboard = () => {
                   onPress={() => router.push("/parent/activities" as any)}
                 >
                   <Text variant="medium" className="text-[#7b5af0] text-center">
-                    View All Activities
+                    {viewAllActivities}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -286,7 +310,7 @@ const ParentDashboard = () => {
             {/* Weekly insights */}
             <View className="mb-6">
               <Text variant="bold" className="text-gray-800 text-lg mb-3">
-                Weekly Learning Time
+                {weeklyLearningTimeLabel}
               </Text>
 
               <View className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -313,7 +337,7 @@ const ParentDashboard = () => {
                 </View>
 
                 <View className="flex-row items-center justify-between mt-5 pt-3 border-t border-gray-100">
-                  <Text className="text-gray-800">Total this week:</Text>
+                  <Text className="text-gray-800">{totalThisWeek}:</Text>
                   <Text variant="bold" className="text-[#7b5af0]">
                     {weeklyInsights.reduce((sum, day) => sum + day.minutes, 0)} minutes
                   </Text>
@@ -324,29 +348,29 @@ const ParentDashboard = () => {
             {/* Quick actions */}
             <View className="mb-6">
               <Text variant="bold" className="text-gray-800 text-lg mb-3">
-                Parent Tools
+                {parentToolsLabel}
               </Text>
 
               <View className="flex-row flex-wrap justify-between">
                 {[
                   {
                     icon: "calendar",
-                    label: "Schedule",
+                    label: useTranslate("schedule"),
                     route: "/CalendarTrackingPage",
                   },
                   {
                     icon: "trophy",
-                    label: "Achievements",
+                    label: useTranslate("achievements"),
                     route: "/child-progress",
                   },
                   {
                     icon: "sliders-h",
-                    label: "Preferences",
+                    label: useTranslate("preferences"),
                     route: "/parent/preferences",
                   },
                   {
                     icon: "book-reader",
-                    label: "Resources",
+                    label: useTranslate("resources"),
                     route: "/parent/resources",
                   },
                 ].map((tool, index) => (
@@ -370,7 +394,7 @@ const ParentDashboard = () => {
             {/* Parenting tips */}
             <View className="mb-8">
               <Text variant="bold" className="text-gray-800 text-lg mb-3">
-                Parenting Tips
+                {parentingTips}
               </Text>
 
               <TouchableOpacity
@@ -378,13 +402,13 @@ const ParentDashboard = () => {
                 activeOpacity={0.8}
               >
                 <Text variant="medium" className="text-gray-800 mb-2">
-                  Supporting your child's learning at home
+                  {parentingTipTitle}
                 </Text>
                 <Text className="text-gray-600 text-sm">
-                  Create a comfortable learning environment with minimal distractions and regular routines.
+                  {parentingTipDesc}
                 </Text>
                 <Text variant="medium" className="text-[#7b5af0] mt-2">
-                  Read More
+                  {readMore}
                 </Text>
               </TouchableOpacity>
             </View>
