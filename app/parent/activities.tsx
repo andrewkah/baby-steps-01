@@ -76,7 +76,19 @@ export default function ActivitiesScreen() {
 
           // Format activities for display
           const formattedActivities = await getFormattedActivities(allActivities);
-          setActivities(formattedActivities);
+          
+          // Sort by date and time (most recent first)
+          const sortedActivities = formattedActivities.sort((a, b) => {
+            // Create comparable date-time strings for accurate chronological sorting
+            // This assumes date is in a format that can be properly compared (like YYYY-MM-DD)
+            const dateTimeA = `${a.date} ${a.time}`;
+            const dateTimeB = `${b.date} ${b.time}`;
+            
+            // Sort in descending order (newest first)
+            return dateTimeB.localeCompare(dateTimeA);
+          });
+          
+          setActivities(sortedActivities);
         }
 
         setLoading(false);
@@ -117,8 +129,18 @@ export default function ActivitiesScreen() {
     return true;
   });
 
+  // Ensure activities remain chronologically sorted within each date group
+  const sortedFilteredActivities = filteredActivities.sort((a, b) => {
+    // For activities on the same date, sort by time
+    if (a.date === b.date) {
+      return b.time.localeCompare(a.time); // Most recent time first
+    }
+    // Otherwise, rely on the main date sorting
+    return 0;
+  });
+
   // Group activities by date
-  const groupedActivities = filteredActivities.reduce<Record<string, Activity[]>>((groups, activity) => {
+  const groupedActivities = sortedFilteredActivities.reduce<Record<string, Activity[]>>((groups, activity) => {
     const date = activity.date || 'Unknown';
     if (!groups[date]) {
       groups[date] = [];
@@ -264,67 +286,69 @@ export default function ActivitiesScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            Object.entries(groupedActivities).map(([date, dateActivities]) => (
-              <View key={date} className="mb-4">
-                <View className="px-4 py-2 bg-gray-50">
-                  <Text variant="medium" className="text-gray-500">
-                    {date}
-                  </Text>
-                </View>
+            Object.entries(groupedActivities)
+              .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // Sort dates chronologically (newest first)
+              .map(([date, dateActivities]) => (
+                <View key={date} className="mb-4">
+                  <View className="px-4 py-2 bg-gray-50">
+                    <Text variant="medium" className="text-gray-500">
+                      {date}
+                    </Text>
+                  </View>
 
-                {dateActivities.map((activity: any) => (
-                  <TouchableOpacity
-                    key={activity.id}
-                    className="px-4 py-3 border-b border-gray-100"
-                  >
-                    <View className="flex-row">
-                      <View
-                        style={{ backgroundColor: `${activity.color}15` }}
-                        className="w-12 h-12 rounded-full items-center justify-center mr-3"
-                      >
-                        <FontAwesome5
-                          name={activity.icon}
-                          size={18}
-                          color={activity.color}
-                        />
-                      </View>
-
-                      <View className="flex-1">
-                        <View className="flex-row items-center">
-                          <Text className="text-sm bg-purple-100 text-[#7b5af0] px-2 py-0.5 rounded-full mr-2">
-                            {activity.childName}
-                          </Text>
-                          <Text className="text-xs text-gray-500">
-                            {activity.time}
-                          </Text>
+                  {dateActivities.map((activity: any) => (
+                    <TouchableOpacity
+                      key={activity.id}
+                      className="px-4 py-3 border-b border-gray-100"
+                    >
+                      <View className="flex-row">
+                        <View
+                          style={{ backgroundColor: `${activity.color}15` }}
+                          className="w-12 h-12 rounded-full items-center justify-center mr-3"
+                        >
+                          <FontAwesome5
+                            name={activity.icon}
+                            size={18}
+                            color={activity.color}
+                          />
                         </View>
 
-                        <Text variant="medium" className="text-gray-800 mt-1">
-                          {activity.activity}
-                        </Text>
-
-                        <View className="flex-row justify-between items-center mt-1">
+                        <View className="flex-1">
                           <View className="flex-row items-center">
-                            <Text className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                              {activity.category}
+                            <Text className="text-sm bg-purple-100 text-[#7b5af0] px-2 py-0.5 rounded-full mr-2">
+                              {activity.childName}
+                            </Text>
+                            <Text className="text-xs text-gray-500">
+                              {activity.time}
                             </Text>
                           </View>
-                          <Text className="text-[#7b5af0] font-medium">
-                            {activity.score}
-                          </Text>
-                        </View>
 
-                        {activity.details && (
-                          <Text className="text-gray-600 text-sm mt-1">
-                            {activity.details}
+                          <Text variant="medium" className="text-gray-800 mt-1">
+                            {activity.activity}
                           </Text>
-                        )}
+
+                          <View className="flex-row justify-between items-center mt-1">
+                            <View className="flex-row items-center">
+                              <Text className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                {activity.category}
+                              </Text>
+                            </View>
+                            <Text className="text-[#7b5af0] font-medium">
+                              {activity.score}
+                            </Text>
+                          </View>
+
+                          {activity.details && (
+                            <Text className="text-gray-600 text-sm mt-1">
+                              {activity.details}
+                            </Text>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))
           )}
         </ScrollView>
       </SafeAreaView>

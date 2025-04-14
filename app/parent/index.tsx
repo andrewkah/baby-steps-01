@@ -124,10 +124,20 @@ const ParentDashboard = () => {
           }
         }
 
-        // Sort activities by date
+        // Improved sorting for chronological order
+        // Sort activities by date AND time (most recent first)
         combinedActivities.sort((a, b) => {
-          return new Date(b.time).getTime() - new Date(a.time).getTime()
-        })
+          // If activities have date and time properties already formatted
+          if (a.date && a.time && b.date && b.time) {
+            const dateTimeA = `${a.date} ${a.time}`;
+            const dateTimeB = `${b.date} ${b.time}`;
+            return dateTimeB.localeCompare(dateTimeA);
+          }
+          
+          // If activities have a combined time property
+          // This fallback uses the existing code which might be working with a different format
+          return new Date(b.time).getTime() - new Date(a.time).getTime();
+        });
 
         setRecentActivities(combinedActivities.slice(0, 3)) // Show 3 most recent
         setWeeklyStats({
@@ -425,4 +435,3 @@ const ParentDashboard = () => {
 }
 
 export default ParentDashboard
-
