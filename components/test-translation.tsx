@@ -16,7 +16,8 @@ export const TestTranslation = () => {
     setError(null)
 
     try {
-      const result = await translateText(inputText, "en", "lug")
+      // Using "eng" instead of "en" for the source language
+      const result = await translateText(inputText, "eng", "lug")
       console.log("Test translation result:", JSON.stringify(result))
 
       // Try to extract the translated text from different possible response structures

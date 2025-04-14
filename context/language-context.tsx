@@ -54,7 +54,8 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
 
     try {
       console.log("Translating:", text)
-      const result = await translateText(text, "en", "lug")
+      // Using "eng" instead of "en" for the source language
+      const result = await translateText(text, "eng", "lug")
 
       // Check if the result has the expected structure
       if (result && typeof result === "object") {
