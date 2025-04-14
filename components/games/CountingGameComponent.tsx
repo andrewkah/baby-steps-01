@@ -14,6 +14,8 @@ import { StatusBar } from 'expo-status-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useRouter } from 'expo-router';
 import { Ionicons } from "@expo/vector-icons";
+import { useChild } from '@/context/ChildContext';
+import { saveActivity } from '@/lib/utils';
 import {
   COUNTING_GAME_STAGES,
   CountingGameStage,
@@ -61,6 +63,8 @@ const LugandaCountingGame: React.FC = () => {
   
   const bounceAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const { activeChild } = useChild();
+  const gameStartTime = useRef(Date.now());
 
   // Add orientation locking
   useEffect(() => {
@@ -298,7 +302,27 @@ const LugandaCountingGame: React.FC = () => {
     }
   };
   
-  const handleNumberPress = (number: number): void => {
+  const trackActivity = async (isStageComplete: boolean = false) => {
+    if (!activeChild) return;
+    
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000); // duration in seconds
+    
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: 'counting',
+      activity_name: isStageComplete ? `Completed Counting Stage ${currentStage}` : 'Practiced Counting',
+      score: score.toString(),
+      duration,
+      completed_at: new Date().toISOString(),
+      details: `${isStageComplete ? 
+        `Completed all levels in Stage ${currentStage}` : 
+        `Completed level ${currentLevel} in Stage ${currentStage}`}`,
+      stage: currentStage,
+      level: currentLevel
+    });
+  };
+
+  const handleNumberPress = async (number: number): Promise<void> => {
     setSelectedCount(number);
     playNumberSound(number);
     
@@ -339,13 +363,15 @@ const LugandaCountingGame: React.FC = () => {
       });
       
       // Move to next level after a delay
-      setTimeout(() => {
+      setTimeout(async () => {
         const currentStageData = COUNTING_GAME_STAGES.find(s => s.id === currentStage) || COUNTING_GAME_STAGES[0];
         if (currentLevel < currentStageData.levels) {
+          await trackActivity(false);
           setCurrentLevel(prevLevel => prevLevel + 1);
         } else {
           // Stage completed!
           setStageCompleted(true);
+          await trackActivity(true);
           
           if (currentStage < COUNTING_GAME_STAGES.length) {
             Alert.alert(
@@ -365,6 +391,8 @@ const LugandaCountingGame: React.FC = () => {
                     const nextStage = currentStage + 1;
                     setCurrentStage(nextStage);
                     setScore(0);
+                    // Reset game start time for new stage
+                    gameStartTime.current = Date.now();
                   } 
                 }
               ]
@@ -388,6 +416,8 @@ const LugandaCountingGame: React.FC = () => {
                     setCurrentStage(1);
                     setCurrentLevel(1);
                     setScore(0);
+                    // Reset game start time for new game
+                    gameStartTime.current = Date.now();
                   } 
                 }
               ]

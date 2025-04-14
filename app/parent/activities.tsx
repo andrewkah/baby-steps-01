@@ -3,7 +3,6 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  FlatList,
   TextInput,
 } from "react-native";
 import { Text } from "@/components/StyledText";
@@ -11,240 +10,132 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import { supabase } from "@/lib/supabase";
+import { getChildActivities, getFormattedActivities } from "@/lib/utils";
 
-// Define TypeScript interfaces
+// Child interface
 interface Child {
   id: string;
   name: string;
   avatar: string;
 }
 
-interface Activity {
-  id: string;
-  childId: string;
-  childName: string;
-  activity: string;
-  time: string;
-  date: string; // Full date for grouping
-  score: string;
-  icon: string;
-  color: string;
-  details?: string;
-  category?: string;
-}
-
-// Mock children data
-const children: Child[] = [
-  { id: "1", name: "Esther", avatar: "👧" },
-  { id: "2", name: "David", avatar: "👦" },
-];
-
-// Mock comprehensive activity data
-const allActivities: Activity[] = [
-  {
-    id: "1",
-    childId: "1",
-    childName: "Esther",
-    activity: "Completed 'African Animals' game",
-    time: "2:30 PM",
-    date: "Today",
-    score: "8/10",
-    icon: "paw",
-    color: "#FF9F43",
-    details:
-      "Identified 8 out of 10 animals correctly. Struggled with elephant and giraffe.",
-    category: "Science",
-  },
-  {
-    id: "2",
-    childId: "2",
-    childName: "David",
-    activity: "Practiced counting with Adinkra",
-    time: "11:15 AM",
-    date: "Yesterday",
-    score: "12/15",
-    icon: "calculator",
-    color: "#1DD1A1",
-    details: "Counted objects up to 15. Still working on numbers above 10.",
-    category: "Math",
-  },
-  {
-    id: "3",
-    childId: "1",
-    childName: "Esther",
-    activity: "Read 'Kintu' story",
-    time: "4:45 PM",
-    date: "Yesterday",
-    score: "Completed",
-    icon: "book",
-    color: "#6C5CE7",
-    details:
-      "Read the entire story and answered comprehension questions correctly.",
-    category: "Reading",
-  },
-  {
-    id: "4",
-    childId: "1",
-    childName: "Esther",
-    activity: "Played the African Drums game",
-    time: "3:20 PM",
-    date: "2 days ago",
-    score: "Perfect!",
-    icon: "music",
-    color: "#8B5CF6",
-    details:
-      "Matched all rhythm patterns correctly and created her own patterns.",
-    category: "Music",
-  },
-  {
-    id: "5",
-    childId: "2",
-    childName: "David",
-    activity: "Completed shape recognition",
-    time: "10:00 AM",
-    date: "2 days ago",
-    score: "9/10",
-    icon: "shapes",
-    color: "#F87171",
-    details:
-      "Identified most shapes correctly. Still confused between oval and circle.",
-    category: "Shapes",
-  },
-  {
-    id: "6",
-    childId: "1",
-    childName: "Esther",
-    activity: "Practiced Luganda alphabet",
-    time: "5:30 PM",
-    date: "3 days ago",
-    score: "Excellent",
-    icon: "language",
-    color: "#10B981",
-    details:
-      "Recognized and pronounced all letters correctly. Starting to form simple words.",
-    category: "Language",
-  },
-  {
-    id: "7",
-    childId: "2",
-    childName: "David",
-    activity: "Explored 'Solar System' activity",
-    time: "4:15 PM",
-    date: "3 days ago",
-    score: "Completed",
-    icon: "planet",
-    color: "#3B82F6",
-    details:
-      "Named all planets in order and identified key characteristics of each.",
-    category: "Science",
-  },
-  {
-    id: "8",
-    childId: "1",
-    childName: "Esther",
-    activity: "Completed color mixing game",
-    time: "3:00 PM",
-    date: "Last week",
-    score: "10/10",
-    icon: "palette",
-    color: "#EC4899",
-    details:
-      "Successfully mixed primary colors to create secondary colors. Shows strong color recognition.",
-    category: "Art",
-  },
-  {
-    id: "9",
-    childId: "2",
-    childName: "David",
-    activity: "Practiced writing numbers 1-5",
-    time: "11:30 AM",
-    date: "Last week",
-    score: "Good",
-    icon: "pencil-alt",
-    color: "#F59E0B",
-    details:
-      "Forming numbers more clearly. Still working on proper orientation of '3'.",
-    category: "Writing",
-  },
-  {
-    id: "10",
-    childId: "1",
-    childName: "Esther",
-    activity: "Explored 'Ugandan Wildlife' module",
-    time: "2:45 PM",
-    date: "Last week",
-    score: "15/15",
-    icon: "leaf",
-    color: "#059669",
-    details:
-      "Identified all native animals and plants. Shows strong interest in conservation.",
-    category: "Science",
-  },
-];
-
 export default function ActivitiesScreen() {
   const router = useRouter();
-  const [activities, setActivities] = useState<Activity[]>(allActivities);
+  interface Activity {
+    id: string;
+    icon: string; 
+    color: string;
+    childId: string;
+    childName: string;
+    category: "stories" | "counting" | "museum" | "other";
+    activity: string;
+    time: string;
+    date: string;
+    score: string;
+    details: string | undefined;
+  }
+  
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [children, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
 
-  // Categories from activities for filtering
-  const categories = Array.from(
-    new Set(allActivities.map((activity) => activity.category))
-  );
+  // Fetch children and their activities
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Get current user session
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) return;
+
+        // Get children profiles
+        const { data: childrenData } = await supabase
+          .from("children")
+          .select("*")
+          .eq("parent_id", sessionData.session.user.id);
+
+        if (childrenData) {
+          // Transform children data
+          const transformedChildren = childrenData.map(child => ({
+            id: child.id,
+            name: child.name,
+            avatar: child.gender === "male" ? "👦" : "👧"
+          }));
+          setChildren(transformedChildren);
+
+          // Fetch activities for all children
+          const allActivities = [];
+          for (const child of childrenData) {
+            const childActivities = await getChildActivities(child.id);
+            allActivities.push(...childActivities);
+          }
+
+          // Format activities for display
+          const formattedActivities = await getFormattedActivities(allActivities);
+          setActivities(formattedActivities);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    // Set up real-time subscription for new activities
+    const subscription = supabase
+      .channel('activities')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'activities' 
+      }, fetchData)
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Filter activities based on selected child, search, and category
-  useEffect(() => {
-    let filtered = [...allActivities];
-
-    // Filter by child
-    if (selectedChild !== "all") {
-      filtered = filtered.filter(
-        (activity) => activity.childId === selectedChild
-      );
-    }
-
-    // Filter by search query
+  const filteredActivities = activities.filter(activity => {
+    if (selectedChild !== "all" && activity.childId !== selectedChild) return false;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (activity) =>
-          activity.activity.toLowerCase().includes(query) ||
-          activity.childName.toLowerCase().includes(query) ||
-          activity.category?.toLowerCase().includes(query)
-      );
+      if (!activity.activity.toLowerCase().includes(query) &&
+          !activity.childName.toLowerCase().includes(query) &&
+          !activity.category?.toLowerCase().includes(query)) {
+        return false;
+      }
     }
-
-    // Filter by category
-    if (filterCategory !== "all") {
-      filtered = filtered.filter(
-        (activity) => activity.category === filterCategory
-      );
-    }
-
-    setActivities(filtered);
-  }, [selectedChild, searchQuery, filterCategory]);
-
-  // Group activities by date
-  const groupedActivities: { [key: string]: Activity[] } = {};
-  activities.forEach((activity) => {
-    if (!groupedActivities[activity.date]) {
-      groupedActivities[activity.date] = [];
-    }
-    groupedActivities[activity.date].push(activity);
+    if (filterCategory !== "all" && activity.category !== filterCategory) return false;
+    return true;
   });
 
-  // Format date keys for display
-  const dateKeys = Object.keys(groupedActivities);
+  // Group activities by date
+  const groupedActivities = filteredActivities.reduce<Record<string, Activity[]>>((groups, activity) => {
+    const date = activity.date || 'Unknown';
+    if (!groups[date]) {
+      groups[date] = [];
+    }
+    groups[date].push(activity);
+    return groups;
+  }, {});
+
+  // Categories from activities
+  const categories = Array.from(
+    new Set(activities.map(activity => activity.category).filter(Boolean))
+  );
 
   return (
     <>
       <StatusBar style="dark" />
-      <SafeAreaView
-        className="flex-1 bg-white"
-        edges={["top", "left", "right"]}
-      >
+      <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
         {/* Header */}
         <View className="flex-row items-center px-4 py-3 border-b border-gray-100">
           <TouchableOpacity onPress={() => router.back()} className="mr-3">
@@ -274,52 +165,45 @@ export default function ActivitiesScreen() {
           </View>
         </View>
 
-        {/* Filters */}
+        {/* Child filters */}
         <View className="px-4 py-3 border-b border-gray-100">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text variant="medium" className="text-gray-800">
-              Filter by child:
-            </Text>
-            <View className="flex-row">
-              <TouchableOpacity
-                className={`px-3 py-1 rounded-full mr-2 ${
-                  selectedChild === "all" ? "bg-[#7b5af0]" : "bg-gray-100"
-                }`}
-                onPress={() => setSelectedChild("all")}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <TouchableOpacity
+              className={`px-3 py-1 rounded-full mr-2 ${
+                selectedChild === "all" ? "bg-[#7b5af0]" : "bg-gray-100"
+              }`}
+              onPress={() => setSelectedChild("all")}
+            >
+              <Text
+                className={selectedChild === "all" ? "text-white" : "text-gray-800"}
               >
+                All Children
+              </Text>
+            </TouchableOpacity>
+
+            {children.map((child) => (
+              <TouchableOpacity
+                key={child.id}
+                className={`flex-row items-center px-3 py-1 rounded-full mr-2 ${
+                  selectedChild === child.id ? "bg-[#7b5af0]" : "bg-gray-100"
+                }`}
+                onPress={() => setSelectedChild(child.id)}
+              >
+                <Text className="mr-1">{child.avatar}</Text>
                 <Text
-                  className={`${
-                    selectedChild === "all" ? "text-white" : "text-gray-800"
-                  }`}
+                  className={
+                    selectedChild === child.id ? "text-white" : "text-gray-800"
+                  }
                 >
-                  All
+                  {child.name}
                 </Text>
               </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-              {children.map((child) => (
-                <TouchableOpacity
-                  key={child.id}
-                  className={`flex-row items-center px-3 py-1 rounded-full mr-2 ${
-                    selectedChild === child.id ? "bg-[#7b5af0]" : "bg-gray-100"
-                  }`}
-                  onPress={() => setSelectedChild(child.id)}
-                >
-                  <Text className="mr-1">{child.avatar}</Text>
-                  <Text
-                    className={`${
-                      selectedChild === child.id
-                        ? "text-white"
-                        : "text-gray-800"
-                    }`}
-                  >
-                    {child.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Category filters */}
+        {/* Category filters */}
+        <View className="px-4 py-3 border-b border-gray-100">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <TouchableOpacity
               className={`px-3 py-1 rounded-full mr-2 ${
@@ -328,9 +212,9 @@ export default function ActivitiesScreen() {
               onPress={() => setFilterCategory("all")}
             >
               <Text
-                className={`${
+                className={
                   filterCategory === "all" ? "text-white" : "text-gray-800"
-                }`}
+                }
               >
                 All Categories
               </Text>
@@ -342,12 +226,12 @@ export default function ActivitiesScreen() {
                 className={`px-3 py-1 rounded-full mr-2 ${
                   filterCategory === category ? "bg-[#7b5af0]" : "bg-gray-100"
                 }`}
-                onPress={() => setFilterCategory(category || "all")}
+                onPress={() => setFilterCategory(category)}
               >
                 <Text
-                  className={`${
+                  className={
                     filterCategory === category ? "text-white" : "text-gray-800"
-                  }`}
+                  }
                 >
                   {category}
                 </Text>
@@ -358,7 +242,11 @@ export default function ActivitiesScreen() {
 
         {/* Activity list */}
         <ScrollView className="flex-1">
-          {activities.length === 0 ? (
+          {loading ? (
+            <View className="p-10 items-center justify-center">
+              <Text>Loading activities...</Text>
+            </View>
+          ) : filteredActivities.length === 0 ? (
             <View className="p-10 items-center justify-center">
               <Ionicons name="calendar-outline" size={60} color="#D1D5DB" />
               <Text className="text-gray-500 text-center mt-4">
@@ -376,7 +264,7 @@ export default function ActivitiesScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            dateKeys.map((date) => (
+            Object.entries(groupedActivities).map(([date, dateActivities]) => (
               <View key={date} className="mb-4">
                 <View className="px-4 py-2 bg-gray-50">
                   <Text variant="medium" className="text-gray-500">
@@ -384,14 +272,10 @@ export default function ActivitiesScreen() {
                   </Text>
                 </View>
 
-                {groupedActivities[date].map((activity) => (
+                {dateActivities.map((activity: any) => (
                   <TouchableOpacity
                     key={activity.id}
                     className="px-4 py-3 border-b border-gray-100"
-                    onPress={() => {
-                      // Navigate to activity detail if needed
-                      // router.push({ pathname: "/parent/activity-detail", params: { id: activity.id } });
-                    }}
                   >
                     <View className="flex-row">
                       <View
@@ -399,7 +283,7 @@ export default function ActivitiesScreen() {
                         className="w-12 h-12 rounded-full items-center justify-center mr-3"
                       >
                         <FontAwesome5
-                          name={activity.icon as any}
+                          name={activity.icon}
                           size={18}
                           color={activity.color}
                         />
@@ -442,8 +326,6 @@ export default function ActivitiesScreen() {
               </View>
             ))
           )}
-
-          <View className="h-8" />
         </ScrollView>
       </SafeAreaView>
     </>
