@@ -1,39 +1,37 @@
-import React, { useEffect } from "react";
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  Alert,
-} from "react-native";
-import { Text } from "@/components/StyledText";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
-import { supabase } from "../../lib/supabase";
-import * as ScreenOrientation from "expo-screen-orientation";
+"use client"
+
+import React, { useEffect } from "react"
+import { View, ScrollView, TouchableOpacity, Switch, Alert } from "react-native"
+import { Text } from "@/components/StyledText"
+import { useRouter } from "expo-router"
+import { StatusBar } from "expo-status-bar"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons"
+import { supabase } from "../../lib/supabase"
+import * as ScreenOrientation from "expo-screen-orientation"
+import { useLanguage, TranslatedText } from "@/context/language-context"
 
 // Define the props interface
 interface SettingItemProps {
-  icon: string;
-  iconColor: string;
-  iconType?: "ionicons" | "fontawesome"; // Add this to specify icon type
-  text: string;
-  action: () => void;
-  toggle?: boolean;
-  value?: boolean;
-  last?: boolean;
+  icon: string
+  iconColor: string
+  iconType?: "ionicons" | "fontawesome" // Add this to specify icon type
+  text: string
+  action: () => void
+  toggle?: boolean
+  value?: boolean
+  last?: boolean
 }
 
 interface SectionTitleProps {
-  title: string;
+  title: string
 }
 
 export default function SettingsScreen() {
-  const router = useRouter();
-  const [notifications, setNotifications] = React.useState(true);
-  const [soundEffects, setSoundEffects] = React.useState(true);
+  const router = useRouter()
+  const [notifications, setNotifications] = React.useState(true)
+  const [soundEffects, setSoundEffects] = React.useState(true)
+  const { language, toggleLanguage, isLoading } = useLanguage()
 
   const handleSignOut = async () => {
     Alert.alert("Confirm Logout", "Are you sure you want to log out?", [
@@ -45,31 +43,29 @@ export default function SettingsScreen() {
         text: "Logout",
         style: "destructive",
         onPress: async () => {
-          const { error } = await supabase.auth.signOut();
+          const { error } = await supabase.auth.signOut()
           if (error) {
-            console.error("Error signing out:", error.message);
-            Alert.alert("Error", "Could not sign out. Please try again.");
+            console.error("Error signing out:", error.message)
+            Alert.alert("Error", "Could not sign out. Please try again.")
           } else {
-            console.log("Signed out successfully");
-            router.replace("/");
+            console.log("Signed out successfully")
+            router.replace("/")
           }
         },
       },
-    ]);
-  };
+    ])
+  }
 
   useEffect(() => {
     // Lock to portrait initially when screen loads
     const lockToPortrait = async () => {
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.PORTRAIT_UP
-      );
-    };
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
+    }
 
-    lockToPortrait();
+    lockToPortrait()
 
-    return () => {};
-  }, []);
+    return () => {}
+  }, [])
 
   // Fixed component with proper TypeScript typing
   const SettingItem: React.FC<SettingItemProps> = ({
@@ -83,9 +79,7 @@ export default function SettingsScreen() {
     last = false,
   }) => (
     <TouchableOpacity
-      className={`flex-row items-center py-4 ${
-        !last ? "border-b border-gray-100" : ""
-      }`}
+      className={`flex-row items-center py-4 ${!last ? "border-b border-gray-100" : ""}`}
       onPress={action}
       activeOpacity={toggle ? 1 : 0.7}
     >
@@ -99,7 +93,7 @@ export default function SettingsScreen() {
           <Ionicons name={icon as any} size={22} color={iconColor} />
         )}
       </View>
-      <Text className="flex-1 text-gray-800 text-base">{text}</Text>
+      <TranslatedText className="flex-1 text-gray-800 text-base">{text}</TranslatedText>
       {toggle ? (
         <Switch
           value={value}
@@ -111,38 +105,32 @@ export default function SettingsScreen() {
         <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
       )}
     </TouchableOpacity>
-  );
+  )
 
   // Helper function to get the right background color with opacity
   const getBackgroundColor = (color: string) => {
     // Add opacity to the color
-    return `${color}20`; // 20 is the hex value for ~12% opacity
-  };
+    return `${color}20` // 20 is the hex value for ~12% opacity
+  }
 
   const SectionTitle: React.FC<SectionTitleProps> = ({ title }) => (
-    <Text
-      variant="medium"
-      className="text-gray-500 text-sm uppercase tracking-wider mt-6 mb-2 px-1"
-    >
+    <TranslatedText variant="medium" className="text-gray-500 text-sm uppercase tracking-wider mt-6 mb-2 px-1">
       {title}
-    </Text>
-  );
+    </TranslatedText>
+  )
 
   return (
     <>
       <StatusBar style="dark" />
-      <SafeAreaView
-        className="flex-1 bg-white"
-        edges={["top", "left", "right"]}
-      >
+      <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
         {/* Header */}
         <View className="flex-row items-center px-4 py-3 border-b border-gray-100">
           <TouchableOpacity onPress={() => router.back()} className="mr-3">
             <Ionicons name="arrow-back" size={24} color="#374151" />
           </TouchableOpacity>
-          <Text variant="bold" className="text-xl text-gray-800">
+          <TranslatedText variant="bold" className="text-xl text-gray-800">
             Settings
-          </Text>
+          </TranslatedText>
         </View>
 
         <ScrollView className="flex-1 px-4">
@@ -163,7 +151,6 @@ export default function SettingsScreen() {
               text="Learning Progress & Achievements"
               action={() => router.push("/parent/child-progress")}
             />
-           
           </View>
 
           {/* App Settings Section */}
@@ -189,7 +176,9 @@ export default function SettingsScreen() {
               icon="language"
               iconColor="#8B5CF6"
               text="Language"
-              action={() => router.push("/language-settings" as any)}
+              toggle
+              value={language === "lug"}
+              action={toggleLanguage}
             />
             <SettingItem
               icon="moon"
@@ -233,20 +222,15 @@ export default function SettingsScreen() {
               text="Account Information"
               action={() => router.push("/account-info" as any)}
             />
-            <SettingItem
-              icon="log-out"
-              iconColor="#EF4444"
-              text="Logout"
-              action={handleSignOut}
-              last
-            />
+            <SettingItem icon="log-out" iconColor="#EF4444" text="Logout" action={handleSignOut} last />
           </View>
 
           <View className="py-6 items-center">
             <Text className="text-gray-400 text-sm">Baby Steps v1.0.0</Text>
+            {isLoading && <Text className="text-gray-400 text-xs mt-1">Translating...</Text>}
           </View>
         </ScrollView>
       </SafeAreaView>
     </>
-  );
+  )
 }
