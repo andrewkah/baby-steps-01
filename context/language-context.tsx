@@ -3,13 +3,13 @@
 import type React from "react"
 import { createContext, useState, useContext, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { translateText } from "@/lib/sunbirdApi"
+import { translations } from "@/lib/translations"
 
 // Create a simple context
 export const LanguageContext = createContext({
   isLuganda: false,
   toggleLanguage: () => {},
-  translateText: async (text: string) => text,
+  translate: (text: string) => text,
 })
 
 // Provider component
@@ -47,43 +47,16 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     )
   }
 
-  // Simple translate function
-  const translate = async (text: string) => {
-    if (!isLuganda) return text
-    if (!text || typeof text !== "string") return text
+  // Simple translate function using hardcoded translations
+  const translate = (text: string): string => {
+    if (!isLuganda || !text) return text
 
-    try {
-      console.log("Translating:", text)
-      // Using "eng" instead of "en" for the source language
-      const result = await translateText(text, "eng", "lug")
-
-      // Check if the result has the expected structure
-      if (result && typeof result === "object") {
-        // Log the full result to see its structure
-        console.log("Full translation result:", JSON.stringify(result))
-
-        // Try different possible response structures
-        const translatedText =
-          result.translated_text || // Check standard format
-          (result.result && result.result.translated_text) || // Check nested format
-          (result.data && result.data.translated_text) || // Another possible format
-          text // Fallback to original text
-
-        console.log("Final translated text:", translatedText)
-        return translatedText
-      }
-
-      return text // Fallback to original text if result is not as expected
-    } catch (error) {
-      console.error("Translation error:", error)
-      return text
-    }
+    // Return the translation if it exists, otherwise return the original text
+    return translations[text] || text
   }
 
   return (
-    <LanguageContext.Provider value={{ isLuganda, toggleLanguage, translateText: translate }}>
-      {children}
-    </LanguageContext.Provider>
+    <LanguageContext.Provider value={{ isLuganda, toggleLanguage, translate }}>{children}</LanguageContext.Provider>
   )
 }
 
