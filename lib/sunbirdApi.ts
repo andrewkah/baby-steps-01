@@ -4,7 +4,7 @@
       method: 'POST',
       headers: {
         Accept: 'application/json',
-        Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJTb2NjZXJEZXZDIiwiYWNjb3VudF90eXBlIjoiRnJlZSIsImV4cCI6NDg5ODIzNDY1MH0.R4KBL_aYqA1ZGXa6w8blGZDMErOXBWAdqGpLEPT24dY`,
+        Authorization: `Bearer YOUR_ACCESS_TOKEN`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

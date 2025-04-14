@@ -13,8 +13,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { supabase } from "../../lib/supabase";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { useLanguage } from '@/context/languageContext'; // Import the context
-import { translateText } from '@/lib/sunbirdApi'; // Import the translation function
 
 // Define the props interface
 interface SettingItemProps {
@@ -34,7 +32,6 @@ interface SectionTitleProps {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { language, toggleLanguage } = useLanguage(); // Get language and toggle function from context
   const [notifications, setNotifications] = React.useState(true);
   const [soundEffects, setSoundEffects] = React.useState(true);
 
@@ -74,6 +71,7 @@ export default function SettingsScreen() {
     return () => {};
   }, []);
 
+  // Fixed component with proper TypeScript typing
   const SettingItem: React.FC<SettingItemProps> = ({
     icon,
     iconColor,
@@ -85,7 +83,9 @@ export default function SettingsScreen() {
     last = false,
   }) => (
     <TouchableOpacity
-      className={`flex-row items-center py-4 ${!last ? "border-b border-gray-100" : ""}`}
+      className={`flex-row items-center py-4 ${
+        !last ? "border-b border-gray-100" : ""
+      }`}
       onPress={action}
       activeOpacity={toggle ? 1 : 0.7}
     >
@@ -115,6 +115,7 @@ export default function SettingsScreen() {
 
   // Helper function to get the right background color with opacity
   const getBackgroundColor = (color: string) => {
+    // Add opacity to the color
     return `${color}20`; // 20 is the hex value for ~12% opacity
   };
 
@@ -162,6 +163,7 @@ export default function SettingsScreen() {
               text="Learning Progress & Achievements"
               action={() => router.push("/parent/child-progress")}
             />
+           
           </View>
 
           {/* App Settings Section */}
@@ -183,14 +185,12 @@ export default function SettingsScreen() {
               value={soundEffects}
               action={() => setSoundEffects(!soundEffects)}
             />
-
-<SettingItem
-  icon="language"
-  iconColor="#8B5CF6"
-  text="Switch Language"
-  action={toggleLanguage}
-/>
-
+            <SettingItem
+              icon="language"
+              iconColor="#8B5CF6"
+              text="Language"
+              action={() => router.push("/language-settings" as any)}
+            />
             <SettingItem
               icon="moon"
               iconColor="#6366F1"
@@ -207,19 +207,19 @@ export default function SettingsScreen() {
               icon="cloud-download"
               iconColor="#EC4899"
               text="Content Management"
-              action={() => router.push("/content-management")}
+              action={() => router.push("/content-management" as any)}
             />
             <SettingItem
               icon="lock-closed"
               iconColor="#0891B2"
               text="Privacy Settings"
-              action={() => router.push("/privacy-settings")}
+              action={() => router.push("/privacy-settings" as any)}
             />
             <SettingItem
               icon="help-circle"
               iconColor="#6366F1"
               text="Help & Support"
-              action={() => router.push("/help-support")}
+              action={() => router.push("/help-support" as any)}
               last
             />
           </View>
@@ -231,7 +231,7 @@ export default function SettingsScreen() {
               icon="person"
               iconColor="#7b5af0"
               text="Account Information"
-              action={() => router.push("/account-info")}
+              action={() => router.push("/account-info" as any)}
             />
             <SettingItem
               icon="log-out"
