@@ -8,7 +8,7 @@ import { StatusBar } from "expo-status-bar"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons"
 import { supabase } from "@/lib/supabase"
-import { TranslatedText } from "@/context/language-context"
+import { TranslatedText } from "@/components/translated-text"
 
 type ChildProfile = {
   id: string

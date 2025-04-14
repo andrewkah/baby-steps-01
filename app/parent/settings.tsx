@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect } from "react"
-import { View, ScrollView, TouchableOpacity, Switch, Alert } from "react-native"
+import { View, ScrollView, TouchableOpacity, Switch, Alert, Text as RNText } from "react-native"
 import { Text } from "@/components/StyledText"
 import { useRouter } from "expo-router"
 import { StatusBar } from "expo-status-bar"
@@ -9,13 +9,15 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons"
 import { supabase } from "../../lib/supabase"
 import * as ScreenOrientation from "expo-screen-orientation"
-import { useLanguage, TranslatedText } from "@/context/language-context"
+import { useLanguage } from "@/context/language-context"
+import { TranslatedText } from "@/components/translated-text"
+import { TestTranslation } from "@/components/test-translation"
 
 // Define the props interface
 interface SettingItemProps {
   icon: string
   iconColor: string
-  iconType?: "ionicons" | "fontawesome" // Add this to specify icon type
+  iconType?: "ionicons" | "fontawesome"
   text: string
   action: () => void
   toggle?: boolean
@@ -31,7 +33,8 @@ export default function SettingsScreen() {
   const router = useRouter()
   const [notifications, setNotifications] = React.useState(true)
   const [soundEffects, setSoundEffects] = React.useState(true)
-  const { language, toggleLanguage, isLoading } = useLanguage()
+  const { isLuganda, toggleLanguage } = useLanguage()
+  const [showTestTool, setShowTestTool] = React.useState(false)
 
   const handleSignOut = async () => {
     Alert.alert("Confirm Logout", "Are you sure you want to log out?", [
@@ -134,6 +137,22 @@ export default function SettingsScreen() {
         </View>
 
         <ScrollView className="flex-1 px-4">
+          {/* Language Debug Section */}
+          <View className="bg-gray-100 p-3 rounded-lg my-3">
+            <RNText>Current Language: {isLuganda ? "Luganda" : "English"}</RNText>
+            <TouchableOpacity onPress={toggleLanguage} className="bg-purple-500 p-2 rounded mt-2">
+              <RNText className="text-white text-center">Toggle Language (Debug)</RNText>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowTestTool(!showTestTool)} className="bg-blue-500 p-2 rounded mt-2">
+              <RNText className="text-white text-center">
+                {showTestTool ? "Hide API Test Tool" : "Show API Test Tool"}
+              </RNText>
+            </TouchableOpacity>
+          </View>
+
+          {/* API Test Tool */}
+          {showTestTool && <TestTranslation />}
+
           {/* Child Management Section */}
           <SectionTitle title="Child Management" />
           <View className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -177,7 +196,7 @@ export default function SettingsScreen() {
               iconColor="#8B5CF6"
               text="Language"
               toggle
-              value={language === "lug"}
+              value={isLuganda}
               action={toggleLanguage}
             />
             <SettingItem
@@ -227,7 +246,6 @@ export default function SettingsScreen() {
 
           <View className="py-6 items-center">
             <Text className="text-gray-400 text-sm">Baby Steps v1.0.0</Text>
-            {isLoading && <Text className="text-gray-400 text-xs mt-1">Translating...</Text>}
           </View>
         </ScrollView>
       </SafeAreaView>
