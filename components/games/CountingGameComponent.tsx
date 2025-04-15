@@ -81,7 +81,6 @@ const LugandaCountingGame: React.FC = () => {
     
     return () => {
       // Reset orientation when component unmounts
-      ScreenOrientation.unlockAsync();
     };
   }, []);
   
