@@ -108,7 +108,7 @@ export default function ChildListScreen() {
   const navigateToProfile = (childId: string) => {
     // Navigate to profile and pass the child ID
     router.push({
-      pathname: "/child/(tabs)/profile",
+      pathname: "/parent/child-detail/1" as any,
       params: { childId },
     })
   }
