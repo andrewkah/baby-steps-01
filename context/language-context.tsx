@@ -51,8 +51,16 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   const translate = (text: string): string => {
     if (!isLuganda || !text) return text
 
+    // Add debug logging
+    const translation = translations[text as keyof typeof translations] || text
+    if (translations[text as keyof typeof translations]) {
+      console.log(`Translation found for "${text}": "${translation}"`)
+    } else {
+      console.log(`No translation found for: "${text}"`)
+    }
+
     // Return the translation if it exists, otherwise return the original text
-    return translations[text] || text
+    return translation
   }
 
   return (

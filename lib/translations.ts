@@ -1,5 +1,5 @@
 // Hardcoded translations to avoid API rate limits
-export const translations = {
+export const translations: Record<string, string> = {
   // Parent Dashboard
   "Parent Dashboard": "Ekipande ky'abazadde",
   "Monitor your children's learning journey": "Londoola olugendo lw'okusoma kw'abaana bo",
@@ -99,4 +99,110 @@ export const translations = {
   "Discover the story of Nambi and the first millet": "Zula emboozi ya Nambi n'obulo obwasooka",
   "Discover the story of Kasokambirye and the moon": "Zula emboozi ya Kasokambirye n'omwezi",
   "Discover the story of the generous fig tree": "Zula emboozi y'omutuba omugabi",
+
+  // Parent Gate
+  "Parent Access": "Okuyingira kw'Abazadde",
+  "Please enter these digits:": "Yingiza enamba zino:",
+  "For parents only...": "Eri bazadde bokka...",
+
+  // Child Detail Screen
+  "Child Profile": "Ebikwata ku Mwana",
+  "Loading child profile...": "Kulinda ebikwata ku mwana...",
+  "Gender:": "Ekikula:",
+  "Launch Child Mode": "Tandika Enkola y'Omwana",
+  "Child ID": "Ennamba y'Omwana",
+  "Coming Soon": "Bijja Mangu",
+  "Additional child information and progress tracking will be available here in future updates.":
+    "Ebikwata ku mwana ebirala n'okugoberera enkulaakulana bijja kubeera wano mu mpya ezijja.",
+  "Child not found": "Omwana tazuuliddwa",
+
+  // Child List Screen
+  "Personalized learning journeys": "Olugendo lw'okuyiga olw'omuntu ssekinnoomu",
+  "Loading profiles...": "Kulinda ebikwata ku baana...",
+  "Add Another Child": "Gattako Omwana Omulala",
+  "No Child Profiles Yet": "Tewali Bikwata ku Baana Kati",
+  "You haven't added any child profiles yet. Create a profile to start your child's personalized learning journey!":
+    "Tonnagattako bikwata ku baana. Tonda ebikwata ku mwana okutandika olugendo lw'okuyiga olw'omwana wo olw'omuntu ssekinnoomu!",
+  "Add Child Profile": "Gattako Ebikwata ku Mwana",
+
+  // Add Child Screens
+  "What is your child's gender and name?": "Ekikula n'erinnya ly'omwana wo bye biriwa?",
+  Boy: "Omulenzi",
+  Girl: "Omuwala",
+  "Child's Name": "Erinnya ly'Omwana",
+  "Enter your child's name": "Yingiza erinnya ly'omwana wo",
+  "Prefer not to answer": "Sirina kyakuddamu",
+  Next: "Eddako",
+  "Child's Age": "Emyaka gy'Omwana",
+  "How old is your child?": "Omwana wo alina emyaka emeka?",
+  "Under 4": "Wansi wa 4",
+  "4-5 years": "Emyaka 4-5",
+  "6 years": "Emyaka 6",
+  "7 years": "Emyaka 7",
+  "8 years": "Emyaka 8",
+  "9-15 years": "Emyaka 9-15",
+  "Your Goals": "Ebigendererwa Byo",
+  "What was the main reason for downloading BabySteps?": "Ensonga enkulu eyakusobozesezza okussa BabySteps ye eriwa?",
+  "Develop logical thinking and memory": "Kukulaakulanya ebirowoozo eby'amagezi n'okujjukira",
+  "Boost creativity": "Kugaziya ebirowoozo",
+  "Learn culture": "Kuyiga obuwangwa",
+  "Prepare for school": "Kweteekateeka okugenda ku ssomero",
+  "Healthy screen time": "Ebiseera eby'okukolera ku kompyuta ebirungi",
+  Other: "Ebirala",
+  "Baby Steps Community": "Ekibiina kya Baby Steps",
+  Continue: "Weyongereyo",
+  "Joined by 10,000+ children every day!": "Baana 10,000+ begatta buli lunaku!",
+  "Daily Users": "Abakozesa Buli Lunaku",
+  "User Rating": "Okugera kw'Abakozesa",
+  Activities: "Ebikolebwa",
+  "Here's what other parents are saying:": "Abazadde abalala kye bagamba kiri:",
+  "Ready to start": "Mwetegefu okutandika",
+  "learning adventure with Baby Steps!": "olugendo lw'okuyiga ne Baby Steps!",
+  "Our Promise": "Ekisuubizo Kyaffe",
+  "Your Child is Our Priority": "Omwana Wo ye Nsonga Yaffe Enkulu",
+  "At BabySteps, we understand the importance of fostering your child's growth and development. We are committed to providing content and activities that are tailored to their learning journey, helping them grow in a healthy and positive environment.":
+    "Ku BabySteps, tutegeera obukulu bw'okukuza omwana wo n'okumukulaakulanya. Twewaddeyo okuwa ebirimu n'ebikolebwa ebikoleddwa okusinziira ku lugendo lw'okuyiga kwabwe, nga tubayamba okukula mu mbeera ennungi era ey'obulamu.",
+  "Safe Environment:": "Embeera Ennungi:",
+  "Child-friendly content with no ads": "Ebirimu ebisaanira abaana nga tebiriiko biragiro",
+  "Educational Focus:": "Okufaayo ku Byenjigiriza:",
+  "Activities designed by child development experts": "Ebikolebwa ebikoleddwa abamanyi mu kukulaakulanya abaana",
+  "Personalized Journey:": "Olugendo lw'Omuntu Ssekinnoomu:",
+  "Content adapts to your child's progress": "Ebirimu bikyuka okusinziira ku nkulaakulana y'omwana wo",
+  "Child Assessment": "Okugezesa Omwana",
+  "Can Your Child Match Numbers to Objects?": "Omwana Wo Asobola Okugerageranya Enamba n'Ebintu?",
+  'Can your child match numbers with objects? For example, matching the number "3" with three apples or three toys.':
+    "Omwana wo asobola okugerageranya enamba n'ebintu? Okugeza, okugerageranya enamba \"3\" n'amapaali asatu oba ebizannyo bisatu.",
+  Yes: "Yee",
+  No: "Nedda",
+  "Great! Your child has started developing number sense.":
+    "Kirungi! Omwana wo atandise okukulaakulanya okutegeera enamba.",
+  "No problem! We'll help develop this skill with fun activities.":
+    "Tewali buzibu! Tujja kuyamba okukulaakulanya obusobozi buno n'ebikolebwa eby'essanyu.",
+  "Visual Skills": "Obusobozi bw'Okulaba",
+  "Can Your Child Spot the Difference?": "Omwana Wo Asobola Okulaba Enjawulo?",
+  "Can your child identify what has changed between these two scenes? This helps us understand their visual attention to detail.":
+    "Omwana wo asobola okuzuula ekikyuse wakati w'ebifaananyi bino ebibiri? Kino kituyamba okutegeera okufaayo kwabwe ku buwandiike.",
+  "Great! Your child is developing strong visual discrimination skills.":
+    "Kirungi! Omwana wo akulaakulanya obusobozi obw'amaanyi obw'okwawula okulaba.",
+  "No problem! We'll include fun activities to develop this important skill.":
+    "Tewali buzibu! Tujja kuteekamu ebikolebwa eby'essanyu okukulaakulanya obusobozi buno obukulu.",
+  "Scene 1": "Ekifaananyi 1",
+  "Scene 2": "Ekifaananyi 2",
+  "Saving Profile": "Kutereka Ebikwata ku Mwana",
+  "Profile Saved!": "Ebikwata ku Mwana Biterekeddwa!",
+  "Something Went Wrong": "Waliwo Ekisobedde",
+  "We're saving": "Tutereka",
+  "'s profile information...": " ebikwata ku mwana...",
+  "'s profile has been successfully created. You can now access personalized content.":
+    " ebikwata ku mwana biterekeddwa bulungi. Kati osobola okutuuka ku birimu eby'omuntu ssekinnoomu.",
+  "An error occurred while saving the profile.": "Waliwo ensobi egudde nga tutereka ebikwata ku mwana.",
+  "Profile Summary:": "Ebikwata ku Mwana mu Bufunze:",
+  "Name:": "Erinnya:",
+  "Age:": "Emyaka:",
+  "Focus:": "Okufaayo:",
+  "Not specified": "Tekitegeezeddwa",
+  "Continue to Dashboard": "Weyongereyo ku Kipande",
+  "Try Again": "Gezaako Nate",
+  "Skip for Now": "Buuka Kati",
+  "This may take a moment. Please don't close the app.": "Kino kiyinza okutwala akaseera. Tosaako app.",
 }
