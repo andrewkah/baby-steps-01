@@ -162,7 +162,7 @@ export default function ChildListScreen() {
         <View className="px-5 py-4 bg-white border-b border-gray-200">
           <View className="flex-row items-center mb-2">
             <TouchableOpacity
-              onPress={() => router.push("./parent/index")}
+              onPress={() => router.push("/")}
               className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mr-3"
             >
               <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
