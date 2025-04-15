@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons"
 import { supabase } from "@/lib/supabase"
+import { getActivityStats } from "@/lib/utils"
 import { TranslatedText } from "@/components/translated-text"
 
 type ChildProfile = {
@@ -29,6 +30,12 @@ const ParentDashboard = () => {
   const router = useRouter()
   const [childProfiles, setChildProfiles] = useState<ChildProfile[]>([])
   const [loading, setLoading] = useState(true)
+  const [recentActivities, setRecentActivities] = useState<any[]>([])
+  const [weeklyStats, setWeeklyStats] = useState({
+    dailyMinutes: [0, 0, 0, 0, 0, 0, 0],
+    totalActivities: 0,
+    averageScore: 0
+  })
 
   useEffect(() => {
     fetchChildProfiles()
@@ -76,50 +83,78 @@ const ParentDashboard = () => {
     }
   }
 
-  // Activity mock data
-  const recentActivities = [
-    {
-      id: "1",
-      childName: "Esther",
-      activity: "Completed 'African Animals' game",
-      time: "2 hours ago",
-      score: "8/10",
-      icon: "paw",
-      color: "#FF9F43",
-    },
-    {
-      id: "2",
-      childName: "David",
-      activity: "Practiced counting with Adinkra",
-      time: "Yesterday",
-      score: "12/15",
-      icon: "calculator",
-      color: "#1DD1A1",
-    },
-    {
-      id: "3",
-      childName: "Esther",
-      activity: "Read 'Kintu' story",
-      time: "Yesterday",
-      score: "Completed",
-      icon: "book",
-      color: "#6C5CE7",
-    },
-  ]
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        // Get the current user session
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (!sessionData.session) return
 
-  // Weekly insights data
-  const weeklyInsights = [
-    { day: "Mon", minutes: 25 },
-    { day: "Tue", minutes: 40 },
-    { day: "Wed", minutes: 30 },
-    { day: "Thu", minutes: 45 },
-    { day: "Fri", minutes: 20 },
-    { day: "Sat", minutes: 60 },
-    { day: "Sun", minutes: 35 },
-  ]
+        // Get all child profiles for this parent
+        const { data: children } = await supabase
+          .from("children")
+          .select("id")
+          .eq("parent_id", sessionData.session.user.id)
 
-  // Calculate maximum minutes for chart scaling
-  const maxMinutes = Math.max(...weeklyInsights.map((day) => day.minutes))
+        if (!children?.length) return
+
+        // Fetch activities for all children
+        const childIds = children.map(child => child.id)
+        const promises = childIds.map(id => getActivityStats(id))
+        const allStats = await Promise.all(promises)
+
+        // Combine all activities and stats
+        const combinedActivities: any[] = []
+        const weeklyMinutes = [0, 0, 0, 0, 0, 0, 0]
+        let totalActivities = 0
+        let totalScore = 0
+        let activitiesWithScore = 0
+
+        for (const stats of allStats) {
+          if (stats) {
+            const activities = await stats.recentActivities
+            combinedActivities.push(...activities)
+            stats.dailyMinutes.forEach((minutes, i) => {
+              weeklyMinutes[i] += minutes
+            })
+            totalActivities += stats.totalActivities
+            if (stats.averageScore) {
+              totalScore += stats.averageScore
+              activitiesWithScore++
+            }
+          }
+        }
+
+        // Improved sorting for chronological order
+        // Sort activities by date AND time (most recent first)
+        combinedActivities.sort((a, b) => {
+          // If activities have date and time properties already formatted
+          if (a.date && a.time && b.date && b.time) {
+            const dateTimeA = `${a.date} ${a.time}`;
+            const dateTimeB = `${b.date} ${b.time}`;
+            return dateTimeB.localeCompare(dateTimeA);
+          }
+          
+          // If activities have a combined time property
+          // This fallback uses the existing code which might be working with a different format
+          return new Date(b.time).getTime() - new Date(a.time).getTime();
+        });
+
+        setRecentActivities(combinedActivities.slice(0, 3)) // Show 3 most recent
+        setWeeklyStats({
+          dailyMinutes: weeklyMinutes,
+          totalActivities,
+          averageScore: activitiesWithScore ? Math.round(totalScore / activitiesWithScore) : 0
+        })
+      } catch (error) {
+        console.error("Error fetching activities:", error)
+      }
+    }
+
+    fetchActivities()
+    const interval = setInterval(fetchActivities, 30000) // Refresh every 30 seconds
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <>
@@ -248,34 +283,38 @@ const ParentDashboard = () => {
               </TranslatedText>
 
               <View className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                {recentActivities.map((activity, index) => (
-                  <View
-                    key={activity.id}
-                    className={`${index !== recentActivities.length - 1 ? "border-b border-gray-100 pb-3 mb-3" : ""}`}
-                  >
-                    <View className="flex-row">
-                      <View
-                        style={{ backgroundColor: `${activity.color}15` }}
-                        className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                      >
-                        <FontAwesome5 name={activity.icon} size={16} color={activity.color} />
-                      </View>
-                      <View className="flex-1">
-                        <Text variant="medium" className="text-gray-800 text-sm">
-                          {activity.childName} {activity.activity}
-                        </Text>
-                        <View className="flex-row justify-between">
-                          <Text className="text-gray-500 text-xs">{activity.time}</Text>
-                          <Text className="text-[#7b5af0] text-xs font-medium">{activity.score}</Text>
+                {recentActivities.length > 0 ? (
+                  recentActivities.map((activity, index) => (
+                    <View
+                      key={activity.id}
+                      className={`${index !== recentActivities.length - 1 ? "border-b border-gray-100 pb-3 mb-3" : ""}`}
+                    >
+                      <View className="flex-row">
+                        <View
+                          style={{ backgroundColor: `${activity.color}15` }}
+                          className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                        >
+                          <FontAwesome5 name={activity.icon} size={16} color={activity.color} />
+                        </View>
+                        <View className="flex-1">
+                          <Text variant="medium" className="text-gray-800 text-sm">
+                            {activity.childName} {activity.activity}
+                          </Text>
+                          <View className="flex-row justify-between">
+                            <Text className="text-gray-500 text-xs">{activity.time}</Text>
+                            <Text className="text-[#7b5af0] text-xs font-medium">{activity.score}</Text>
+                          </View>
                         </View>
                       </View>
                     </View>
-                  </View>
-                ))}
+                  ))
+                ) : (
+                  <Text className="text-gray-500 text-center py-2">No recent activities</Text>
+                )}
 
                 <TouchableOpacity
                   className="mt-3 border-t border-gray-100 pt-3"
-                  onPress={() => router.push("/parent/activities" as any)}
+                  onPress={() => router.push("/parent/activities")}
                 >
                   <TranslatedText variant="medium" className="text-[#7b5af0] text-center">
                     View All Activities
@@ -292,23 +331,23 @@ const ParentDashboard = () => {
 
               <View className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                 <View className="flex-row justify-between items-end h-[120px] mb-2">
-                  {weeklyInsights.map((day, index) => (
+                  {weeklyStats.dailyMinutes.map((minutes, index) => (
                     <View key={index} className="items-center flex-1">
                       <View
                         className="bg-[#7b5af0] rounded-t-lg w-[80%] max-w-6"
                         style={{
-                          height: (day.minutes / maxMinutes) * 100,
-                          opacity: 0.6 + (day.minutes / maxMinutes) * 0.4,
+                          height: (minutes / Math.max(...weeklyStats.dailyMinutes)) * 100,
+                          opacity: 0.6 + (minutes / Math.max(...weeklyStats.dailyMinutes)) * 0.4,
                         }}
                       />
                     </View>
                   ))}
                 </View>
                 <View className="flex-row justify-between">
-                  {weeklyInsights.map((day, index) => (
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
                     <View key={index} className="items-center flex-1">
-                      <Text className="text-gray-500 text-xs">{day.day}</Text>
-                      <Text className="text-gray-700 text-xs mt-1">{day.minutes}m</Text>
+                      <Text className="text-gray-500 text-xs">{day}</Text>
+                      <Text className="text-gray-700 text-xs mt-1">{weeklyStats.dailyMinutes[index]}m</Text>
                     </View>
                   ))}
                 </View>
@@ -316,7 +355,7 @@ const ParentDashboard = () => {
                 <View className="flex-row items-center justify-between mt-5 pt-3 border-t border-gray-100">
                   <TranslatedText className="text-gray-800">Total this week:</TranslatedText>
                   <Text variant="bold" className="text-[#7b5af0]">
-                    {weeklyInsights.reduce((sum, day) => sum + day.minutes, 0)} <TranslatedText>minutes</TranslatedText>
+                    {weeklyStats.dailyMinutes.reduce((sum, mins) => sum + mins, 0)} minutes
                   </Text>
                 </View>
               </View>

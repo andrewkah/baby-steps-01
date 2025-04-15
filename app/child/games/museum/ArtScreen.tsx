@@ -15,6 +15,8 @@ import {
 import * as Haptics from "expo-haptics";
 import { Audio } from "expo-av";
 import { useNavigation } from "@react-navigation/native";
+import { useChild } from '@/context/ChildContext';
+import { saveActivity } from '@/lib/utils';
 
 // Base 3D Screen Component with Common Functionality
 const Base3DScreen = ({
@@ -58,6 +60,9 @@ export default function ArtScreen() {
   const [score, setScore] = useState(0);
   const [viewedArt, setViewedArt] = useState<string[]>([]);
   const animationRef = useRef(null);
+  const { activeChild } = useChild();
+  const gameStartTime = useRef(Date.now());
+  const [isGameComplete, setIsGameComplete] = useState(false);
 
   const artworks = [
     {
@@ -198,6 +203,33 @@ export default function ArtScreen() {
   };
 
   const currentArtwork = getCurrentArtwork();
+
+  // Track activity completion
+  const trackActivity = async () => {
+    if (!activeChild) return;
+    
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000);
+    const completedArtworks = viewedArt.length;
+    const accuracy = (score / (score + obstacles.length * 50)) * 100; // Calculate accuracy based on score and obstacles hit
+    
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: 'museum',
+      activity_name: 'Explored African Art Gallery',
+      score: score.toString(),
+      duration,
+      completed_at: new Date().toISOString(),
+      details: `Discovered ${completedArtworks} artworks with ${accuracy.toFixed(1)}% accuracy`
+    });
+  };
+
+  // Add completion check
+  useEffect(() => {
+    if (!isGameComplete && viewedArt.length >= artworks.length) {
+      setIsGameComplete(true);
+      trackActivity();
+    }
+  }, [viewedArt, isGameComplete]);
 
   return (
     <Base3DScreen
