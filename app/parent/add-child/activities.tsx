@@ -1,28 +1,24 @@
-import React from "react";
-import {
-  View,
-  TouchableOpacity,
-  StatusBar,
-  Image,
-  ScrollView,
-} from "react-native";
-import { useUser } from "@/context/UserContext";
-import { useRouter } from "expo-router";
-import { Text } from "@/components/StyledText";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+"use client"
+
+import { View, TouchableOpacity, StatusBar, ScrollView } from "react-native"
+import { useUser } from "@/context/UserContext"
+import { useRouter } from "expo-router"
+import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
+import { FontAwesome5 } from "@expo/vector-icons"
+import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function StatisticsDisplayScreen() {
-  const router = useRouter();
-  const { name } = useUser();
+  const router = useRouter()
+  const { name } = useUser()
 
   const handleBack = () => {
-    router.push("/parent/add-child/reason");
-  };
+    router.push("/parent/add-child/reason")
+  }
 
   const handleNext = () => {
-    router.push("/parent/add-child/ourPriority");
-  };
+    router.push("/parent/add-child/ourPriority")
+  }
 
   // Sample testimonials data
   const testimonials = [
@@ -41,7 +37,7 @@ export default function StatisticsDisplayScreen() {
       author: "Jessica T.",
       avatar: "👩‍👧‍👦",
     },
-  ];
+  ]
 
   return (
     <>
@@ -56,12 +52,9 @@ export default function StatisticsDisplayScreen() {
           >
             <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
           </TouchableOpacity>
-          <Text
-            variant="bold"
-            className="flex-1 text-center text-xl text-primary-800 mr-10"
-          >
+          <TranslatedText variant="bold" className="flex-1 text-center text-xl text-primary-800 mr-10">
             Baby Steps Community
-          </Text>
+          </TranslatedText>
         </View>
 
         {/* Decorative elements - Fixed relative to SafeAreaView */}
@@ -69,20 +62,13 @@ export default function StatisticsDisplayScreen() {
         <View className="absolute w-[50px] h-[50px] rounded-full bg-secondary-100/30 bottom-[25%] right-[10%] -z-10" />
 
         {/* Scrollable main content */}
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-6 py-4 pb-6"
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView className="flex-1" contentContainerClassName="px-6 py-4 pb-6" showsVerticalScrollIndicator={false}>
           <View className="bg-white p-5 rounded-3xl shadow-md">
             {/* Stats and image section */}
             <View className="items-center mb-6">
-              <Text
-                variant="bold"
-                className="text-xl text-primary-800 text-center mb-4"
-              >
+              <TranslatedText variant="bold" className="text-xl text-primary-800 text-center mb-4">
                 Joined by 10,000+ children every day!
-              </Text>
+              </TranslatedText>
 
               {/* Replace with actual image */}
               <View className="w-full h-[180px] bg-primary-200 rounded-2xl mb-2 overflow-hidden">
@@ -96,42 +82,35 @@ export default function StatisticsDisplayScreen() {
                   <Text variant="bold" className="text-2xl text-secondary-600">
                     10k+
                   </Text>
-                  <Text className="text-xs text-neutral-500">Daily Users</Text>
+                  <TranslatedText className="text-xs text-neutral-500">Daily Users</TranslatedText>
                 </View>
                 <View className="items-center">
                   <Text variant="bold" className="text-2xl text-secondary-600">
                     4.8★
                   </Text>
-                  <Text className="text-xs text-neutral-500">User Rating</Text>
+                  <TranslatedText className="text-xs text-neutral-500">User Rating</TranslatedText>
                 </View>
                 <View className="items-center">
                   <Text variant="bold" className="text-2xl text-secondary-600">
                     50+
                   </Text>
-                  <Text className="text-xs text-neutral-500">Activities</Text>
+                  <TranslatedText className="text-xs text-neutral-500">Activities</TranslatedText>
                 </View>
               </View>
             </View>
 
             {/* Testimonials section */}
-            <Text variant="semibold" className="text-lg text-primary-800 mb-4">
+            <TranslatedText variant="semibold" className="text-lg text-primary-800 mb-4">
               Here's what other parents are saying:
-            </Text>
+            </TranslatedText>
 
             {testimonials.map((testimonial, index) => (
-              <View
-                key={index}
-                className="bg-gray-50 p-3 rounded-xl mb-2 border border-gray-100"
-              >
+              <View key={index} className="bg-gray-50 p-3 rounded-xl mb-2 border border-gray-100">
                 <View className="flex-row items-center">
                   <Text className="text-2xl mr-2">{testimonial.avatar}</Text>
                   <View className="flex-1">
-                    <Text className="text-sm italic text-neutral-700 mb-1">
-                      "{testimonial.quote}"
-                    </Text>
-                    <Text className="text-xs text-neutral-500">
-                      — {testimonial.author}
-                    </Text>
+                    <Text className="text-sm italic text-neutral-700 mb-1">"{testimonial.quote}"</Text>
+                    <Text className="text-xs text-neutral-500">— {testimonial.author}</Text>
                   </View>
                 </View>
               </View>
@@ -140,9 +119,9 @@ export default function StatisticsDisplayScreen() {
             {/* Personal message for the user */}
             {name && (
               <View className="bg-secondary-50 rounded-xl p-3 mt-3 border border-secondary-100">
-                <Text className="text-sm text-primary-800 text-center">
+                <TranslatedText className="text-sm text-primary-800 text-center">
                   Ready to start {name}'s learning adventure with Baby Steps!
-                </Text>
+                </TranslatedText>
               </View>
             )}
           </View>
@@ -155,13 +134,13 @@ export default function StatisticsDisplayScreen() {
             onPress={handleNext}
             activeOpacity={0.8}
           >
-            <Text variant="bold" className="text-white text-base mr-2">
+            <TranslatedText variant="bold" className="text-white text-base mr-2">
               Continue
-            </Text>
+            </TranslatedText>
             <FontAwesome5 name="arrow-right" size={14} color="white" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     </>
-  );
+  )
 }

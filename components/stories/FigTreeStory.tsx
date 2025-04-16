@@ -4,6 +4,9 @@ import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from 'expo-router';
+import StoryProgress from './StoryProgress';
+import { saveActivity } from '@/lib/utils';
+import { useChild } from '@/context/ChildContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,6 +24,7 @@ interface StoryQuestion {
 
 const FigTreeStory: React.FC = () => {
   const router = useRouter();
+  const { activeChild } = useChild();
   // Story content - The Tale of Kintu (Ugandan folklore)
   const coinImage = require('@/assets/images/coin.png'); // Placeholder for coin image
   const storyPages: StoryPage[] = [
@@ -222,7 +226,7 @@ const FigTreeStory: React.FC = () => {
     setUserAnswers(newAnswers);
   };
 
-  const handleQuizSubmit = () => {
+  const handleQuizSubmit = async () => {
     let correctAnswers = 0;
     storyQuestions.forEach((question, index) => {
       if (userAnswers[index] === question.correctAnswer) {
@@ -232,6 +236,18 @@ const FigTreeStory: React.FC = () => {
     
     setScore(correctAnswers);
     setQuizCompleted(true);
+
+    // Track quiz completion as an activity
+    if (activeChild) {
+      await saveActivity({
+        child_id: activeChild.id,
+        activity_type: 'stories',
+        activity_name: 'Completed Fig Tree Story Quiz',
+        score: `${correctAnswers}/${storyQuestions.length}`,
+        completed_at: new Date().toISOString(),
+        details: `Scored ${correctAnswers} out of ${storyQuestions.length} questions correctly in the Fig Tree story quiz`
+      });
+    }
   };
 
   const handleRestartQuiz = () => {
@@ -240,325 +256,338 @@ const FigTreeStory: React.FC = () => {
     setScore(0);
   };
 
-  return (
-    <View style={styles.container}>
-      {!showQuestions ? (
-        // Show original story UI
-        <View style={styles.contentContainer}>
-          {/* Back Button - keep existing code */}
-          <TouchableOpacity 
-            style={{
-              position: 'absolute',
-              top: 10,
-              left: 10,
-              zIndex: 10,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              padding: 8,
-              borderRadius: 20,
-            }}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-          </TouchableOpacity>
+  const handleQuizComplete = (score: number, total: number) => {
+    // This will be called by StoryProgress after tracking the activity
+    console.log(`Quiz completed with score ${score}/${total}`);
+  };
 
-          {/* Left Panel: Story Image - keep existing code */}
-          <Animated.View style={[styles.imageContainer, { opacity: fadeAnim }]}>
-            <Image 
-              source={storyPages[currentPage].image} 
-              style={styles.storyImage}
-              resizeMode="contain"
-              accessibilityLabel={storyPages[currentPage].altText}
-            />
-          </Animated.View>
-          
-          {/* Right Panel: Text and Controls - keep existing code */}
-          <View style={styles.rightPanel}>
-            {/* Settings button - keep existing code */}
-            <View style={styles.settingsButtonContainer}>
-              <TouchableOpacity 
-                style={styles.settingsButton}
-                onPress={() => setSettingsVisible(true)}
-                accessibilityLabel="Open settings"
-                accessibilityRole="button"
-              >
-                <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* Story Text - keep existing code */}
-            <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
-              <Text style={styles.storyText}>
-                {words.map((word, index) => (
-                  <Text 
-                    key={index}
-                    style={[
-                      styles.word,
-                      { fontSize: getTextSize() },
-                      index === highlightedIndex && styles.highlightedWord
-                    ]}
-                  >
-                    {word}{' '}
-                  </Text>
-                ))}
-              </Text>
+  return (
+    <StoryProgress
+      storyId="fig-tree"
+      storyTitle="The Generous Fig Tree"
+      totalPages={storyPages.length}
+      currentPage={currentPage}
+      onQuizComplete={handleQuizComplete}
+    >
+      <View style={styles.container}>
+        {!showQuestions ? (
+          // Show original story UI
+          <View style={styles.contentContainer}>
+            {/* Back Button - keep existing code */}
+            <TouchableOpacity 
+              style={{
+                position: 'absolute',
+                top: 10,
+                left: 10,
+                zIndex: 10,
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: 8,
+                borderRadius: 20,
+              }}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+            </TouchableOpacity>
+
+            {/* Left Panel: Story Image - keep existing code */}
+            <Animated.View style={[styles.imageContainer, { opacity: fadeAnim }]}>
+              <Image 
+                source={storyPages[currentPage].image} 
+                style={styles.storyImage}
+                resizeMode="contain"
+                accessibilityLabel={storyPages[currentPage].altText}
+              />
             </Animated.View>
             
-            {/* Navigation and Controls */}
-            <View style={styles.navRow}>
-              <TouchableOpacity 
-                style={[styles.navButton, currentPage === 0 && styles.disabledButton]}
-                onPress={() => handlePageTurn('prev')}
-                disabled={currentPage === 0}
-                accessibilityLabel="Previous page"
-                accessibilityRole="button"
-                accessibilityState={{ disabled: currentPage === 0 }}
-                accessibilityHint="Navigate to previous story page"
-              >
-                <Text style={styles.navButtonText}>←</Text>
-              </TouchableOpacity>
-              
-              {currentPage === storyPages.length - 1 ? (
+            {/* Right Panel: Text and Controls - keep existing code */}
+            <View style={styles.rightPanel}>
+              {/* Settings button - keep existing code */}
+              <View style={styles.settingsButtonContainer}>
                 <TouchableOpacity 
-                  style={[styles.readButton, { backgroundColor: '#6495ED' }]}
-                  onPress={() => setShowQuestions(true)}
-                  accessibilityLabel="Take the quiz"
+                  style={styles.settingsButton}
+                  onPress={() => setSettingsVisible(true)}
+                  accessibilityLabel="Open settings"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.readButtonText}>Take Quiz</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity 
-                  style={styles.readButton}
-                  onPress={readStory}
-                  accessibilityLabel={isReading ? "Stop reading" : "Read to Me"}
-                  accessibilityRole="button"
-                  accessibilityHint={isReading ? "Stop the story narration" : "Start reading the story aloud"}
-                >
-                  <Text style={styles.readButtonText}>
-                    {isReading ? "Stop" : "Read to Me"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              
-              <TouchableOpacity 
-                style={[styles.navButton, currentPage === storyPages.length - 1 && styles.disabledButton]}
-                onPress={() => handlePageTurn('next')}
-                disabled={currentPage === storyPages.length - 1}
-                accessibilityLabel="Next page"
-                accessibilityRole="button"
-                accessibilityState={{ disabled: currentPage === storyPages.length - 1 }}
-                accessibilityHint="Navigate to next story page"
-              >
-                <Text style={styles.navButtonText}>→</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* Page indicator - keep existing code */}
-            <View style={styles.pageIndicator}>
-              {storyPages.map((_, index) => (
-                <View 
-                  key={index} 
-                  style={[
-                    styles.pageIndicatorDot,
-                    index === currentPage && styles.currentPageDot
-                  ]} 
-                />
-              ))}
-            </View>
-          </View>
-        </View>
-      ) : (
-        // Updated Quiz UI with ScrollView
-        <View style={styles.questionsContainer}>
-          <TouchableOpacity 
-            style={{
-              position: 'absolute',
-              top: 10,
-              left: 10,
-              zIndex: 10,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              padding: 8,
-              borderRadius: 20,
-            }}
-            onPress={() => {
-              setShowQuestions(false);
-              if (quizCompleted) {
-                setQuizCompleted(false);
-                setUserAnswers(Array(storyQuestions.length).fill(-1));
-              }
-            }}
-          >
-            <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-          </TouchableOpacity>
-
-          <View style={styles.quizContent}>
-            <Text style={styles.quizTitle}>
-              {quizCompleted ? `Your Score: ${score}/${storyQuestions.length}` : "The Tale of Kintu - Quiz"}
-            </Text>
-            
-            <ScrollView 
-              style={styles.questionsScrollView}
-              showsVerticalScrollIndicator={true}
-              contentContainerStyle={styles.questionsScrollContent}
-            >
-              {!quizCompleted ? (
-                <>
-                  {storyQuestions.map((question, qIndex) => (
-                    <View key={qIndex} style={styles.questionContainer}>
-                      <Text style={styles.questionText}>{qIndex + 1}. {question.question}</Text>
-                      
-                      {question.options.map((option, oIndex) => (
-                        <TouchableOpacity
-                          key={oIndex}
-                          style={[
-                            styles.optionButton,
-                            userAnswers[qIndex] === oIndex && styles.selectedOption
-                          ]}
-                          onPress={() => handleAnswerSelection(qIndex, oIndex)}
-                        >
-                          <Text style={styles.optionText}>{option}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  ))}
-                </>
-              ) : (
-                // Results view
-                <View style={styles.resultsContainer}>
-                  {storyQuestions.map((question, qIndex) => (
-                    <View key={qIndex} style={styles.resultQuestionContainer}>
-                      <Text style={styles.questionText}>{qIndex + 1}. {question.question}</Text>
-                      
-                      {question.options.map((option, oIndex) => (
-                        <View
-                          key={oIndex}
-                          style={[
-                            styles.resultOption,
-                            oIndex === question.correctAnswer && styles.correctOption,
-                            userAnswers[qIndex] === oIndex && userAnswers[qIndex] !== question.correctAnswer && styles.incorrectOption
-                          ]}
-                        >
-                          <Text style={styles.resultOptionText}>{option}</Text>
-                          {oIndex === question.correctAnswer && <Text style={styles.correctMark}>✓</Text>}
-                          {userAnswers[qIndex] === oIndex && userAnswers[qIndex] !== question.correctAnswer && <Text style={styles.incorrectMark}>✗</Text>}
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-                </View>
-              )}
-            </ScrollView>
-            
-            {/* Submit or Try Again button outside ScrollView */}
-            {!quizCompleted ? (
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  userAnswers.includes(-1) && styles.disabledButton
-                ]}
-                onPress={handleQuizSubmit}
-                disabled={userAnswers.includes(-1)}
-              >
-                <Text style={styles.submitButtonText}>Submit Answers</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[styles.submitButton, { marginTop: 20 }]}
-                onPress={handleRestartQuiz}
-              >
-                <Text style={styles.submitButtonText}>Try Again</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* Settings Modal - keep existing code */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={settingsVisible}
-        onRequestClose={() => setSettingsVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Story Settings</Text>
-            
-            {/* Text Size Controls */}
-            <View style={styles.settingSection}>
-              <Text style={styles.settingLabel}>Text Size:</Text>
-              <View style={styles.settingsButtonGroup}>
-                <TouchableOpacity 
-                  onPress={() => setTextSize('small')}
-                  accessibilityLabel="Small text size"
-                  accessibilityRole="button"
-                  style={styles.modalButton}
-                >
-                  <Text style={[styles.modalSizeButton, textSize === 'small' && styles.activeSizeButton]}>Small</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => setTextSize('medium')}
-                  accessibilityLabel="Medium text size"
-                  accessibilityRole="button"
-                  style={styles.modalButton}
-                >
-                  <Text style={[styles.modalSizeButton, textSize === 'medium' && styles.activeSizeButton]}>Medium</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => setTextSize('large')}
-                  accessibilityLabel="Large text size"
-                  accessibilityRole="button"
-                  style={styles.modalButton}
-                >
-                  <Text style={[styles.modalSizeButton, textSize === 'large' && styles.activeSizeButton]}>Large</Text>
+                  <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-            
-            {/* Reading Speed Controls */}
-            <View style={styles.settingSection}>
-              <Text style={styles.settingLabel}>Reading Speed:</Text>
-              <View style={styles.settingsButtonGroup}>
+              
+              {/* Story Text - keep existing code */}
+              <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
+                <Text style={styles.storyText}>
+                  {words.map((word, index) => (
+                    <Text 
+                      key={index}
+                      style={[
+                        styles.word,
+                        { fontSize: getTextSize() },
+                        index === highlightedIndex && styles.highlightedWord
+                      ]}
+                    >
+                      {word}{' '}
+                    </Text>
+                  ))}
+                </Text>
+              </Animated.View>
+              
+              {/* Navigation and Controls */}
+              <View style={styles.navRow}>
                 <TouchableOpacity 
-                  onPress={() => setReadingSpeed(0.5)}
-                  accessibilityLabel="Slow reading speed"
+                  style={[styles.navButton, currentPage === 0 && styles.disabledButton]}
+                  onPress={() => handlePageTurn('prev')}
+                  disabled={currentPage === 0}
+                  accessibilityLabel="Previous page"
                   accessibilityRole="button"
-                  style={styles.modalButton}
+                  accessibilityState={{ disabled: currentPage === 0 }}
+                  accessibilityHint="Navigate to previous story page"
                 >
-                  <Text style={[styles.modalSpeedButton, readingSpeed === 0.5 && styles.activeSpeedButton]}>Slow</Text>
+                  <Text style={styles.navButtonText}>←</Text>
                 </TouchableOpacity>
+                
+                {currentPage === storyPages.length - 1 ? (
+                  <TouchableOpacity 
+                    style={[styles.readButton, { backgroundColor: '#6495ED' }]}
+                    onPress={() => setShowQuestions(true)}
+                    accessibilityLabel="Take the quiz"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.readButtonText}>Take Quiz</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.readButton}
+                    onPress={readStory}
+                    accessibilityLabel={isReading ? "Stop reading" : "Read to Me"}
+                    accessibilityRole="button"
+                    accessibilityHint={isReading ? "Stop the story narration" : "Start reading the story aloud"}
+                  >
+                    <Text style={styles.readButtonText}>
+                      {isReading ? "Stop" : "Read to Me"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                
                 <TouchableOpacity 
-                  onPress={() => setReadingSpeed(0.8)}
-                  accessibilityLabel="Normal reading speed"
+                  style={[styles.navButton, currentPage === storyPages.length - 1 && styles.disabledButton]}
+                  onPress={() => handlePageTurn('next')}
+                  disabled={currentPage === storyPages.length - 1}
+                  accessibilityLabel="Next page"
                   accessibilityRole="button"
-                  style={styles.modalButton}
+                  accessibilityState={{ disabled: currentPage === storyPages.length - 1 }}
+                  accessibilityHint="Navigate to next story page"
                 >
-                  <Text style={[styles.modalSpeedButton, readingSpeed === 0.8 && styles.activeSpeedButton]}>Normal</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => setReadingSpeed(1.5)}
-                  accessibilityLabel="Fast reading speed"
-                  accessibilityRole="button"
-                  style={styles.modalButton}
-                >
-                  <Text style={[styles.modalSpeedButton, readingSpeed === 1.5 && styles.activeSpeedButton]}>Fast</Text>
+                  <Text style={styles.navButtonText}>→</Text>
                 </TouchableOpacity>
               </View>
+              
+              {/* Page indicator - keep existing code */}
+              <View style={styles.pageIndicator}>
+                {storyPages.map((_, index) => (
+                  <View 
+                    key={index} 
+                    style={[
+                      styles.pageIndicatorDot,
+                      index === currentPage && styles.currentPageDot
+                    ]} 
+                  />
+                ))}
+              </View>
             </View>
-            
-            {/* Close Button */}
+          </View>
+        ) : (
+          // Updated Quiz UI with ScrollView
+          <View style={styles.questionsContainer}>
             <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setSettingsVisible(false)}
-              accessibilityLabel="Close settings"
-              accessibilityRole="button"
+              style={{
+                position: 'absolute',
+                top: 10,
+                left: 10,
+                zIndex: 10,
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: 8,
+                borderRadius: 20,
+              }}
+              onPress={() => {
+                setShowQuestions(false);
+                if (quizCompleted) {
+                  setQuizCompleted(false);
+                  setUserAnswers(Array(storyQuestions.length).fill(-1));
+                }
+              }}
             >
-              <Text style={styles.closeButtonText}>Close</Text>
+              <Ionicons name="arrow-back" size={24} color="#7b5af0" />
             </TouchableOpacity>
+
+            <View style={styles.quizContent}>
+              <Text style={styles.quizTitle}>
+                {quizCompleted ? `Your Score: ${score}/${storyQuestions.length}` : "The Tale of Kintu - Quiz"}
+              </Text>
+              
+              <ScrollView 
+                style={styles.questionsScrollView}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={styles.questionsScrollContent}
+              >
+                {!quizCompleted ? (
+                  <>
+                    {storyQuestions.map((question, qIndex) => (
+                      <View key={qIndex} style={styles.questionContainer}>
+                        <Text style={styles.questionText}>{qIndex + 1}. {question.question}</Text>
+                        
+                        {question.options.map((option, oIndex) => (
+                          <TouchableOpacity
+                            key={oIndex}
+                            style={[
+                              styles.optionButton,
+                              userAnswers[qIndex] === oIndex && styles.selectedOption
+                            ]}
+                            onPress={() => handleAnswerSelection(qIndex, oIndex)}
+                          >
+                            <Text style={styles.optionText}>{option}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    ))}
+                  </>
+                ) : (
+                  // Results view
+                  <View style={styles.resultsContainer}>
+                    {storyQuestions.map((question, qIndex) => (
+                      <View key={qIndex} style={styles.resultQuestionContainer}>
+                        <Text style={styles.questionText}>{qIndex + 1}. {question.question}</Text>
+                        
+                        {question.options.map((option, oIndex) => (
+                          <View
+                            key={oIndex}
+                            style={[
+                              styles.resultOption,
+                              oIndex === question.correctAnswer && styles.correctOption,
+                              userAnswers[qIndex] === oIndex && userAnswers[qIndex] !== question.correctAnswer && styles.incorrectOption
+                            ]}
+                          >
+                            <Text style={styles.resultOptionText}>{option}</Text>
+                            {oIndex === question.correctAnswer && <Text style={styles.correctMark}>✓</Text>}
+                            {userAnswers[qIndex] === oIndex && userAnswers[qIndex] !== question.correctAnswer && <Text style={styles.incorrectMark}>✗</Text>}
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
+              
+              {/* Submit or Try Again button outside ScrollView */}
+              {!quizCompleted ? (
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    userAnswers.includes(-1) && styles.disabledButton
+                  ]}
+                  onPress={handleQuizSubmit}
+                  disabled={userAnswers.includes(-1)}
+                >
+                  <Text style={styles.submitButtonText}>Submit Answers</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.submitButton, { marginTop: 20 }]}
+                  onPress={handleRestartQuiz}
+                >
+                  <Text style={styles.submitButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        )}
+
+        {/* Settings Modal - keep existing code */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={settingsVisible}
+          onRequestClose={() => setSettingsVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Story Settings</Text>
+              
+              {/* Text Size Controls */}
+              <View style={styles.settingSection}>
+                <Text style={styles.settingLabel}>Text Size:</Text>
+                <View style={styles.settingsButtonGroup}>
+                  <TouchableOpacity 
+                    onPress={() => setTextSize('small')}
+                    accessibilityLabel="Small text size"
+                    accessibilityRole="button"
+                    style={styles.modalButton}
+                  >
+                    <Text style={[styles.modalSizeButton, textSize === 'small' && styles.activeSizeButton]}>Small</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => setTextSize('medium')}
+                    accessibilityLabel="Medium text size"
+                    accessibilityRole="button"
+                    style={styles.modalButton}
+                  >
+                    <Text style={[styles.modalSizeButton, textSize === 'medium' && styles.activeSizeButton]}>Medium</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => setTextSize('large')}
+                    accessibilityLabel="Large text size"
+                    accessibilityRole="button"
+                    style={styles.modalButton}
+                  >
+                    <Text style={[styles.modalSizeButton, textSize === 'large' && styles.activeSizeButton]}>Large</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {/* Reading Speed Controls */}
+              <View style={styles.settingSection}>
+                <Text style={styles.settingLabel}>Reading Speed:</Text>
+                <View style={styles.settingsButtonGroup}>
+                  <TouchableOpacity 
+                    onPress={() => setReadingSpeed(0.5)}
+                    accessibilityLabel="Slow reading speed"
+                    accessibilityRole="button"
+                    style={styles.modalButton}
+                  >
+                    <Text style={[styles.modalSpeedButton, readingSpeed === 0.5 && styles.activeSpeedButton]}>Slow</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => setReadingSpeed(0.8)}
+                    accessibilityLabel="Normal reading speed"
+                    accessibilityRole="button"
+                    style={styles.modalButton}
+                  >
+                    <Text style={[styles.modalSpeedButton, readingSpeed === 0.8 && styles.activeSpeedButton]}>Normal</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => setReadingSpeed(1.5)}
+                    accessibilityLabel="Fast reading speed"
+                    accessibilityRole="button"
+                    style={styles.modalButton}
+                  >
+                    <Text style={[styles.modalSpeedButton, readingSpeed === 1.5 && styles.activeSpeedButton]}>Fast</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {/* Close Button */}
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setSettingsVisible(false)}
+                accessibilityLabel="Close settings"
+                accessibilityRole="button"
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </StoryProgress>
   );
 };
 

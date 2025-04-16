@@ -1,36 +1,33 @@
-import React, { useState } from "react";
-import {
-  View,
-  TouchableOpacity,
-  StatusBar,
-  Alert,
-  ScrollView,
-} from "react-native";
-import { useUser } from "@/context/UserContext";
-import { useRouter } from "expo-router";
-import { Text } from "@/components/StyledText";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+"use client"
+
+import { useState } from "react"
+import { View, TouchableOpacity, StatusBar, Alert } from "react-native"
+import { useUser } from "@/context/UserContext"
+import { useRouter } from "expo-router"
+import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
+import { FontAwesome5 } from "@expo/vector-icons"
+import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function ReasonForDownloadingScreen() {
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
-  const { setReason } = useUser();
-  const router = useRouter();
+  const [selectedReason, setSelectedReason] = useState<string | null>(null)
+  const { setReason } = useUser()
+  const router = useRouter()
 
   const handleBack = () => {
-    router.push("/parent/add-child/age");
-  };
+    router.push("/parent/add-child/age")
+  }
 
   const handleNext = () => {
     if (selectedReason) {
-      setReason(selectedReason);
+      setReason(selectedReason)
       // Navigate to next screen
-      router.push("/parent/add-child/activities");
+      router.push("/parent/add-child/activities")
     } else {
       // Simple validation matching the age screen format
-      Alert.alert("Selection Required", "Please select a reason to continue");
+      Alert.alert("Selection Required", "Please select a reason to continue")
     }
-  };
+  }
 
   // Reason options with icons for visual appeal
   const reasonOptions = [
@@ -64,7 +61,7 @@ export default function ReasonForDownloadingScreen() {
       icon: "✨",
       color: "bg-gray-50 border-gray-200",
     },
-  ];
+  ]
 
   return (
     <>
@@ -79,49 +76,37 @@ export default function ReasonForDownloadingScreen() {
           >
             <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
           </TouchableOpacity>
-          <Text
-            variant="bold"
-            className="flex-1 text-center text-2xl text-primary-800 mr-10"
-          >
+          <TranslatedText variant="bold" className="flex-1 text-center text-2xl text-primary-800 mr-10">
             Your Goals
-          </Text>
+          </TranslatedText>
         </View>
 
         <View className="flex-1 justify-center px-6">
           {/* Main content card */}
           <View className="bg-white p-6 rounded-3xl shadow-md">
-            <Text
-              variant="bold"
-              className="text-2xl text-center text-primary-800 mb-8"
-            >
+            <TranslatedText variant="bold" className="text-2xl text-center text-primary-800 mb-8">
               What was the main reason for downloading BabySteps?
-            </Text>
+            </TranslatedText>
 
             <View className="flex-row flex-wrap justify-between">
               {reasonOptions.map((option) => (
                 <TouchableOpacity
                   key={option.value}
                   className={`w-[48%] mb-4 p-4 rounded-2xl items-center justify-center border-2 ${
-                    selectedReason === option.value
-                      ? "border-secondary-500 bg-secondary-50"
-                      : `${option.color}`
+                    selectedReason === option.value ? "border-secondary-500 bg-secondary-50" : `${option.color}`
                   } shadow-sm`}
                   onPress={() => setSelectedReason(option.value)}
                   activeOpacity={0.7}
                 >
                   <Text className="text-[28px] mb-2">{option.icon}</Text>
-                  <Text
-                    variant={
-                      selectedReason === option.value ? "bold" : "medium"
-                    }
+                  <TranslatedText
+                    variant={selectedReason === option.value ? "bold" : "medium"}
                     className={`text-center text-sm ${
-                      selectedReason === option.value
-                        ? "text-secondary-700"
-                        : "text-neutral-700"
+                      selectedReason === option.value ? "text-secondary-700" : "text-neutral-700"
                     }`}
                   >
                     {option.value}
-                  </Text>
+                  </TranslatedText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -130,13 +115,13 @@ export default function ReasonForDownloadingScreen() {
             <TouchableOpacity
               className="self-center mt-4"
               onPress={() => {
-                setReason("");
-                router.push("/parent/add-child/activities");
+                setReason("")
+                router.push("/parent/add-child/activities")
               }}
             >
-              <Text variant="medium" className="text-neutral-500">
+              <TranslatedText variant="medium" className="text-neutral-500">
                 Prefer not to answer
-              </Text>
+              </TranslatedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -148,13 +133,13 @@ export default function ReasonForDownloadingScreen() {
             onPress={handleNext}
             activeOpacity={0.8}
           >
-            <Text variant="bold" className="text-white text-lg mr-2">
+            <TranslatedText variant="bold" className="text-white text-lg mr-2">
               Next
-            </Text>
+            </TranslatedText>
             <FontAwesome5 name="arrow-right" size={16} color="white" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     </>
-  );
+  )
 }

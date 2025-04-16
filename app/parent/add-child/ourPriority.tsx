@@ -1,29 +1,26 @@
-import React from "react";
-import { View, TouchableOpacity, StatusBar, Image } from "react-native";
-import { useRouter } from "expo-router";
-import { Text } from "@/components/StyledText";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
+"use client"
+import { View, TouchableOpacity, StatusBar } from "react-native"
+import { useRouter } from "expo-router"
+import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
+import { FontAwesome5 } from "@expo/vector-icons"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { LinearGradient } from "expo-linear-gradient"
 
 export default function YourChildIsOurPriorityScreen() {
-  const router = useRouter();
+  const router = useRouter()
 
   const handleBack = () => {
-    router.push("/parent/add-child/activities");
-  };
+    router.push("/parent/add-child/activities")
+  }
 
   const navigateToNextScreen = () => {
-    router.push("/parent/add-child/knowledge");
-  };
+    router.push("/parent/add-child/knowledge")
+  }
 
   return (
     <>
-      <StatusBar
-        translucent
-        backgroundColor="white"
-        barStyle="dark-content"
-      />
+      <StatusBar translucent backgroundColor="white" barStyle="dark-content" />
 
       <SafeAreaView className="flex-1 bg-primary-50">
         {/* Header with back button */}
@@ -34,12 +31,9 @@ export default function YourChildIsOurPriorityScreen() {
           >
             <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
           </TouchableOpacity>
-          <Text
-            variant="bold"
-            className="flex-1 text-center text-xl text-primary-800 mr-10"
-          >
+          <TranslatedText variant="bold" className="flex-1 text-center text-xl text-primary-800 mr-10">
             Our Promise
-          </Text>
+          </TranslatedText>
         </View>
 
         {/* Decorative elements */}
@@ -57,19 +51,15 @@ export default function YourChildIsOurPriorityScreen() {
               </View>
             </View>
 
-            <Text
-              variant="bold"
-              className="text-2xl text-center text-primary-800 mb-4"
-            >
+            <TranslatedText variant="bold" className="text-2xl text-center text-primary-800 mb-4">
               Your Child is Our Priority
-            </Text>
+            </TranslatedText>
 
-            <Text className="text-base text-center text-neutral-600 mb-6 leading-6">
-              At BabySteps, we understand the importance of fostering your
-              child's growth and development. We are committed to providing
-              content and activities that are tailored to their learning
-              journey, helping them grow in a healthy and positive environment.
-            </Text>
+            <TranslatedText className="text-base text-center text-neutral-600 mb-6 leading-6">
+              At BabySteps, we understand the importance of fostering your child's growth and development. We are
+              committed to providing content and activities that are tailored to their learning journey, helping them
+              grow in a healthy and positive environment.
+            </TranslatedText>
 
             {/* Key points with icons */}
             <View className="mb-6">
@@ -77,30 +67,42 @@ export default function YourChildIsOurPriorityScreen() {
                 <View className="w-10 h-10 rounded-full bg-secondary-100 items-center justify-center mr-3">
                   <Text className="text-xl">🔒</Text>
                 </View>
-                <Text className="flex-1 text-sm text-neutral-700">
-                  <Text variant="bold">Safe Environment:</Text> Child-friendly
-                  content with no ads
-                </Text>
+                <View className="flex-1">
+                  <TranslatedText variant="bold" className="text-sm text-neutral-700">
+                    Safe Environment:
+                  </TranslatedText>
+                  <TranslatedText className="text-sm text-neutral-700">
+                    Child-friendly content with no ads
+                  </TranslatedText>
+                </View>
               </View>
 
               <View className="flex-row items-center mb-3">
                 <View className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mr-3">
                   <Text className="text-xl">🧠</Text>
                 </View>
-                <Text className="flex-1 text-sm text-neutral-700">
-                  <Text variant="bold">Educational Focus:</Text> Activities
-                  designed by child development experts
-                </Text>
+                <View className="flex-1">
+                  <TranslatedText variant="bold" className="text-sm text-neutral-700">
+                    Educational Focus:
+                  </TranslatedText>
+                  <TranslatedText className="text-sm text-neutral-700">
+                    Activities designed by child development experts
+                  </TranslatedText>
+                </View>
               </View>
 
               <View className="flex-row items-center">
                 <View className="w-10 h-10 rounded-full bg-accent-100 items-center justify-center mr-3">
                   <Text className="text-xl">💗</Text>
                 </View>
-                <Text className="flex-1 text-sm text-neutral-700">
-                  <Text variant="bold">Personalized Journey:</Text> Content
-                  adapts to your child's progress
-                </Text>
+                <View className="flex-1">
+                  <TranslatedText variant="bold" className="text-sm text-neutral-700">
+                    Personalized Journey:
+                  </TranslatedText>
+                  <TranslatedText className="text-sm text-neutral-700">
+                    Content adapts to your child's progress
+                  </TranslatedText>
+                </View>
               </View>
             </View>
           </View>
@@ -113,21 +115,16 @@ export default function YourChildIsOurPriorityScreen() {
             onPress={navigateToNextScreen}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={["#6366f1", "#8b5cf6"]}
-              start={[0, 0]}
-              end={[1, 0]}
-              className="absolute inset-0"
-            />
+            <LinearGradient colors={["#6366f1", "#8b5cf6"]} start={[0, 0]} end={[1, 0]} className="absolute inset-0" />
             <View className="flex-row items-center">
-              <Text variant="bold" className="text-white text-lg mr-2">
+              <TranslatedText variant="bold" className="text-white text-lg mr-2">
                 Continue
-              </Text>
+              </TranslatedText>
               <FontAwesome5 name="arrow-right" size={16} color="white" />
             </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     </>
-  );
+  )
 }

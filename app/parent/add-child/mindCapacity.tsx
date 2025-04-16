@@ -1,21 +1,24 @@
-import React, { useState } from "react";
-import { View, TouchableOpacity, StatusBar } from "react-native";
-import { useRouter } from "expo-router";
-import { Text } from "@/components/StyledText";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+"use client"
+
+import { useState } from "react"
+import { View, TouchableOpacity, StatusBar } from "react-native"
+import { useRouter } from "expo-router"
+import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
+import { FontAwesome5 } from "@expo/vector-icons"
+import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function CanYourChildFigureOutWhatsChangedScreen() {
-  const router = useRouter();
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const router = useRouter()
+  const [selectedOption, setSelectedOption] = useState<string | null>(null)
 
   const handleBack = () => {
-    router.push("/parent/add-child/knowledge");
-  };
+    router.push("/parent/add-child/knowledge")
+  }
 
   const navigateToNextScreen = () => {
-    router.push("/parent/add-child/final");
-  };
+    router.push("/parent/add-child/final")
+  }
 
   return (
     <>
@@ -30,12 +33,9 @@ export default function CanYourChildFigureOutWhatsChangedScreen() {
           >
             <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
           </TouchableOpacity>
-          <Text
-            variant="bold"
-            className="flex-1 text-center text-xl text-primary-800 mr-10"
-          >
+          <TranslatedText variant="bold" className="flex-1 text-center text-xl text-primary-800 mr-10">
             Visual Skills
-          </Text>
+          </TranslatedText>
         </View>
 
         {/* Decorative elements */}
@@ -46,12 +46,9 @@ export default function CanYourChildFigureOutWhatsChangedScreen() {
         {/* Main content */}
         <View className="flex-1 justify-center px-6">
           <View className="bg-white p-6 rounded-3xl shadow-md">
-            <Text
-              variant="bold"
-              className="text-xl text-center text-primary-800 mb-4"
-            >
+            <TranslatedText variant="bold" className="text-xl text-center text-primary-800 mb-4">
               Can Your Child Spot the Difference?
-            </Text>
+            </TranslatedText>
 
             {/* Emoji Scene Comparison */}
             <View className="flex-row justify-between mb-6">
@@ -59,9 +56,9 @@ export default function CanYourChildFigureOutWhatsChangedScreen() {
               <View className="w-[48%]">
                 {/* Label above scene */}
                 <View className="items-center mb-2">
-                  <Text className="bg-primary-100 px-3 py-1 rounded-full text-xs text-primary-700 font-bold">
+                  <TranslatedText className="bg-primary-100 px-3 py-1 rounded-full text-xs text-primary-700 font-bold">
                     Scene 1
-                  </Text>
+                  </TranslatedText>
                 </View>
 
                 {/* First scene */}
@@ -90,9 +87,9 @@ export default function CanYourChildFigureOutWhatsChangedScreen() {
               <View className="w-[48%]">
                 {/* Label above scene */}
                 <View className="items-center mb-2">
-                  <Text className="bg-primary-100 px-3 py-1 rounded-full text-xs text-primary-700 font-bold">
+                  <TranslatedText className="bg-primary-100 px-3 py-1 rounded-full text-xs text-primary-700 font-bold">
                     Scene 2
-                  </Text>
+                  </TranslatedText>
                 </View>
 
                 {/* Second scene with one difference */}
@@ -119,53 +116,41 @@ export default function CanYourChildFigureOutWhatsChangedScreen() {
               </View>
             </View>
 
-            <Text className="text-base text-center text-neutral-600 mb-6 leading-6">
-              Can your child identify what has changed between these two scenes?
-              This helps us understand their visual attention to detail.
-            </Text>
+            <TranslatedText className="text-base text-center text-neutral-600 mb-6 leading-6">
+              Can your child identify what has changed between these two scenes? This helps us understand their visual
+              attention to detail.
+            </TranslatedText>
 
             {/* Options */}
             <View className="flex-row justify-between mb-6">
               <TouchableOpacity
                 onPress={() => setSelectedOption("yes")}
                 className={`w-[48%] py-4 rounded-2xl items-center justify-center border-2 ${
-                  selectedOption === "yes"
-                    ? "border-secondary-500 bg-secondary-50"
-                    : "border-gray-200 bg-white"
+                  selectedOption === "yes" ? "border-secondary-500 bg-secondary-50" : "border-gray-200 bg-white"
                 }`}
                 activeOpacity={0.7}
               >
-                <Text
+                <TranslatedText
                   variant={selectedOption === "yes" ? "bold" : "medium"}
-                  className={`text-lg ${
-                    selectedOption === "yes"
-                      ? "text-secondary-700"
-                      : "text-neutral-700"
-                  }`}
+                  className={`text-lg ${selectedOption === "yes" ? "text-secondary-700" : "text-neutral-700"}`}
                 >
                   Yes
-                </Text>
+                </TranslatedText>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setSelectedOption("no")}
                 className={`w-[48%] py-4 rounded-2xl items-center justify-center border-2 ${
-                  selectedOption === "no"
-                    ? "border-secondary-500 bg-secondary-50"
-                    : "border-gray-200 bg-white"
+                  selectedOption === "no" ? "border-secondary-500 bg-secondary-50" : "border-gray-200 bg-white"
                 }`}
                 activeOpacity={0.7}
               >
-                <Text
+                <TranslatedText
                   variant={selectedOption === "no" ? "bold" : "medium"}
-                  className={`text-lg ${
-                    selectedOption === "no"
-                      ? "text-secondary-700"
-                      : "text-neutral-700"
-                  }`}
+                  className={`text-lg ${selectedOption === "no" ? "text-secondary-700" : "text-neutral-700"}`}
                 >
                   No
-                </Text>
+                </TranslatedText>
               </TouchableOpacity>
             </View>
 
@@ -173,16 +158,14 @@ export default function CanYourChildFigureOutWhatsChangedScreen() {
             {selectedOption && (
               <View
                 className={`p-3 rounded-xl mb-2 ${
-                  selectedOption === "yes"
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-blue-50 border border-blue-200"
+                  selectedOption === "yes" ? "bg-green-50 border border-green-200" : "bg-blue-50 border border-blue-200"
                 }`}
               >
-                <Text className="text-sm text-neutral-700 text-center">
+                <TranslatedText className="text-sm text-neutral-700 text-center">
                   {selectedOption === "yes"
                     ? "Great! Your child is developing strong visual discrimination skills."
                     : "No problem! We'll include fun activities to develop this important skill."}
-                </Text>
+                </TranslatedText>
               </View>
             )}
           </View>
@@ -198,12 +181,12 @@ export default function CanYourChildFigureOutWhatsChangedScreen() {
             activeOpacity={0.8}
             disabled={!selectedOption}
           >
-            <Text variant="bold" className="text-white text-lg">
+            <TranslatedText variant="bold" className="text-white text-lg">
               Next
-            </Text>
+            </TranslatedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     </>
-  );
+  )
 }
