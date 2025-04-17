@@ -11,6 +11,7 @@ import { useFonts } from "expo-font";
 import { SplashScreen } from "expo-router";
 import { Audio } from "expo-av";
 import "@/global.css";
+import { ChildProvider } from '@/context/ChildContext';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -204,18 +205,20 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerTitleStyle: { fontFamily: "Atma-Medium" }, // Use Atma for headers
-        headerShown: false, // Set headerShown false globally
-      }}
-    >
-      <Stack.Screen name="index" options={{ gestureEnabled: false }} />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="signup" />
-      <Stack.Screen name="forgot-password" />
-      <Stack.Screen name="child-list" />
-      <Stack.Screen name="parent" />
-    </Stack>
+    <ChildProvider>
+      <Stack
+        screenOptions={{
+          headerTitleStyle: { fontFamily: "Atma-Medium" }, // Use Atma for headers
+          headerShown: false, // Set headerShown false globally
+        }}
+      >
+        <Stack.Screen name="index" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="signup" />
+        <Stack.Screen name="forgot-password" />
+        <Stack.Screen name="child-list" />
+        <Stack.Screen name="parent" />
+      </Stack>
+    </ChildProvider>
   );
 }

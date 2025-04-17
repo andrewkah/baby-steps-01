@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react"
 import { View, ScrollView, TouchableOpacity } from "react-native"
 import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { supabase } from "@/lib/supabase"
+import { useChild } from "@/context/ChildContext"
 
 // Define TypeScript interface for our child data
 interface ChildData {
@@ -22,6 +24,7 @@ export default function ChildDetailScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<{ childId: string }>()
   const childId = params.childId
+  const { setActiveChild } = useChild()
 
   const [childData, setChildData] = useState<ChildData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -58,6 +61,16 @@ export default function ChildDetailScreen() {
     }
   }
 
+  const handleLaunchChildMode = () => {
+    if (childData) {
+      setActiveChild(childData)
+      router.push({
+        pathname: "/child" as any,
+        params: { active: childId },
+      })
+    }
+  }
+
   return (
     <>
       <StatusBar style="dark" />
@@ -67,15 +80,15 @@ export default function ChildDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} className="mr-3">
             <Ionicons name="arrow-back" size={24} color="#374151" />
           </TouchableOpacity>
-          <Text variant="bold" className="text-xl text-gray-800">
+          <TranslatedText variant="bold" className="text-xl text-gray-800">
             Child Profile
-          </Text>
+          </TranslatedText>
         </View>
 
         <ScrollView className="flex-1">
           {loading ? (
             <View className="flex-1 items-center justify-center p-4">
-              <Text>Loading child profile...</Text>
+              <TranslatedText>Loading child profile...</TranslatedText>
             </View>
           ) : childData ? (
             <>
@@ -100,19 +113,14 @@ export default function ChildDetailScreen() {
                       </Text>
                     </View>
                     <Text className="text-gray-500 text-sm">{childData.age} years old</Text>
-                    <Text className="text-gray-500 text-sm">Gender: {childData.gender}</Text>
+                    <TranslatedText className="text-gray-500 text-sm">Gender: {childData.gender}</TranslatedText>
 
                     <View className="mt-2 flex-row">
                       <TouchableOpacity
                         className="bg-[#7b5af0] py-1 px-3 rounded-full mr-2"
-                        onPress={() =>
-                          router.push({
-                            pathname: "/child" as any,
-                            params: { active: childId },
-                          })
-                        }
+                        onPress={handleLaunchChildMode}
                       >
-                        <Text className="text-white text-sm">Launch Child Mode</Text>
+                        <TranslatedText className="text-white text-sm">Launch Child Mode</TranslatedText>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -123,26 +131,26 @@ export default function ChildDetailScreen() {
               <View className="p-4">
                 {/* Child ID (for debugging) */}
                 <View className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
-                  <Text variant="bold" className="text-gray-800 text-lg mb-3">
+                  <TranslatedText variant="bold" className="text-gray-800 text-lg mb-3">
                     Child ID
-                  </Text>
+                  </TranslatedText>
                   <Text className="text-gray-500">{childId}</Text>
                 </View>
 
                 {/* Placeholder for future content */}
                 <View className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
-                  <Text variant="bold" className="text-gray-800 text-lg mb-3">
+                  <TranslatedText variant="bold" className="text-gray-800 text-lg mb-3">
                     Coming Soon
-                  </Text>
-                  <Text className="text-gray-500">
+                  </TranslatedText>
+                  <TranslatedText className="text-gray-500">
                     Additional child information and progress tracking will be available here in future updates.
-                  </Text>
+                  </TranslatedText>
                 </View>
               </View>
             </>
           ) : (
             <View className="flex-1 items-center justify-center p-4">
-              <Text>Child not found</Text>
+              <TranslatedText>Child not found</TranslatedText>
             </View>
           )}
         </ScrollView>
@@ -150,4 +158,3 @@ export default function ChildDetailScreen() {
     </>
   )
 }
-

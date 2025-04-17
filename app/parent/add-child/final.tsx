@@ -5,6 +5,7 @@ import { View, TouchableOpacity, StatusBar, ActivityIndicator } from "react-nati
 import { useUser } from "@/context/UserContext"
 import { useRouter } from "expo-router"
 import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
 import { FontAwesome5 } from "@expo/vector-icons"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
@@ -56,9 +57,9 @@ export default function SubmitScreen() {
           >
             <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
           </TouchableOpacity>
-          <Text variant="bold" className="flex-1 text-center text-2xl text-primary-800 mr-10">
+          <TranslatedText variant="bold" className="flex-1 text-center text-2xl text-primary-800 mr-10">
             Saving Profile
-          </Text>
+          </TranslatedText>
         </View>
 
         {/* Decorative elements */}
@@ -87,48 +88,48 @@ export default function SubmitScreen() {
             </View>
 
             {/* Status message */}
-            <Text variant="bold" className="text-2xl text-center text-primary-800 mb-4">
+            <TranslatedText variant="bold" className="text-2xl text-center text-primary-800 mb-4">
               {isLoading ? "Saving Profile" : isSuccess ? "Profile Saved!" : "Something Went Wrong"}
-            </Text>
+            </TranslatedText>
 
-            <Text className="text-base text-center text-neutral-600 mb-8">
+            <TranslatedText className="text-base text-center text-neutral-600 mb-8">
               {isLoading
                 ? `We're saving ${name}'s profile information...`
                 : isSuccess
                   ? `${name}'s profile has been successfully created. You can now access personalized content.`
                   : error || "An error occurred while saving the profile."}
-            </Text>
+            </TranslatedText>
 
             {/* Profile summary (only show on success) */}
             {isSuccess && (
               <View className="bg-primary-50 p-4 rounded-xl w-full mb-6">
-                <Text variant="semibold" className="text-primary-800 mb-2">
+                <TranslatedText variant="semibold" className="text-primary-800 mb-2">
                   Profile Summary:
-                </Text>
+                </TranslatedText>
                 <View className="flex-row mb-1">
-                  <Text variant="medium" className="text-neutral-700 w-20">
+                  <TranslatedText variant="medium" className="text-neutral-700 w-20">
                     Name:
-                  </Text>
+                  </TranslatedText>
                   <Text className="text-neutral-700 flex-1">{name}</Text>
                 </View>
                 <View className="flex-row mb-1">
-                  <Text variant="medium" className="text-neutral-700 w-20">
+                  <TranslatedText variant="medium" className="text-neutral-700 w-20">
                     Gender:
-                  </Text>
-                  <Text className="text-neutral-700 flex-1">
+                  </TranslatedText>
+                  <TranslatedText className="text-neutral-700 flex-1">
                     {gender === "male" ? "Boy" : gender === "female" ? "Girl" : "Not specified"}
-                  </Text>
+                  </TranslatedText>
                 </View>
                 <View className="flex-row mb-1">
-                  <Text variant="medium" className="text-neutral-700 w-20">
+                  <TranslatedText variant="medium" className="text-neutral-700 w-20">
                     Age:
-                  </Text>
+                  </TranslatedText>
                   <Text className="text-neutral-700 flex-1">{age || "Not specified"}</Text>
                 </View>
                 <View className="flex-row">
-                  <Text variant="medium" className="text-neutral-700 w-20">
+                  <TranslatedText variant="medium" className="text-neutral-700 w-20">
                     Focus:
-                  </Text>
+                  </TranslatedText>
                   <Text className="text-neutral-700 flex-1">{reason || "Not specified"}</Text>
                 </View>
               </View>
@@ -149,9 +150,9 @@ export default function SubmitScreen() {
                       end={[1, 0]}
                       className="absolute inset-0"
                     />
-                    <Text variant="bold" className="text-white text-lg">
+                    <TranslatedText variant="bold" className="text-white text-lg">
                       Continue to Dashboard
-                    </Text>
+                    </TranslatedText>
                   </TouchableOpacity>
                 ) : (
                   <View className="space-y-3">
@@ -175,17 +176,17 @@ export default function SubmitScreen() {
                         }, 1000)
                       }}
                     >
-                      <Text variant="bold" className="text-white">
+                      <TranslatedText variant="bold" className="text-white">
                         Try Again
-                      </Text>
+                      </TranslatedText>
                     </TouchableOpacity>
                     <TouchableOpacity
                       className="py-4 rounded-full bg-gray-200 items-center"
                       onPress={() => router.push("/child-list")}
                     >
-                      <Text variant="medium" className="text-neutral-700">
+                      <TranslatedText variant="medium" className="text-neutral-700">
                         Skip for Now
-                      </Text>
+                      </TranslatedText>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -197,13 +198,12 @@ export default function SubmitScreen() {
         {/* Footer message */}
         {isLoading && (
           <View className="p-6 items-center">
-            <Text className="text-sm text-center text-neutral-500">
+            <TranslatedText className="text-sm text-center text-neutral-500">
               This may take a moment. Please don't close the app.
-            </Text>
+            </TranslatedText>
           </View>
         )}
       </SafeAreaView>
     </>
   )
 }
-

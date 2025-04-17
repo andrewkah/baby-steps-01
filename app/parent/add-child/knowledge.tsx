@@ -1,21 +1,24 @@
-import React, { useState } from "react";
-import { View, TouchableOpacity, StatusBar } from "react-native";
-import { useRouter } from "expo-router";
-import { Text } from "@/components/StyledText";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
+"use client"
+
+import { useState } from "react"
+import { View, TouchableOpacity, StatusBar } from "react-native"
+import { useRouter } from "expo-router"
+import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
+import { FontAwesome5 } from "@expo/vector-icons"
+import { SafeAreaView } from "react-native-safe-area-context"
 
 export default function CanYourKidMatchNumbersToObjectsScreen() {
-  const router = useRouter();
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const router = useRouter()
+  const [selectedOption, setSelectedOption] = useState<string | null>(null)
 
   const handleBack = () => {
-    router.push("/parent/add-child/ourPriority");
-  };
+    router.push("/parent/add-child/ourPriority")
+  }
 
   const navigateToNextScreen = () => {
-    router.push("/parent/add-child/mindCapacity");
-  };
+    router.push("/parent/add-child/mindCapacity")
+  }
 
   return (
     <>
@@ -30,12 +33,9 @@ export default function CanYourKidMatchNumbersToObjectsScreen() {
           >
             <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
           </TouchableOpacity>
-          <Text
-            variant="bold"
-            className="flex-1 text-center text-xl text-primary-800 mr-10"
-          >
+          <TranslatedText variant="bold" className="flex-1 text-center text-xl text-primary-800 mr-10">
             Child Assessment
-          </Text>
+          </TranslatedText>
         </View>
 
         {/* Decorative elements */}
@@ -55,60 +55,45 @@ export default function CanYourKidMatchNumbersToObjectsScreen() {
               </View>
             </View>
 
-            <Text
-              variant="bold"
-              className="text-2xl text-center text-primary-800 mb-4"
-            >
+            <TranslatedText variant="bold" className="text-2xl text-center text-primary-800 mb-4">
               Can Your Child Match Numbers to Objects?
-            </Text>
+            </TranslatedText>
 
-            <Text className="text-base text-center text-neutral-600 mb-8 leading-6">
-              Can your child match numbers with objects? For example, matching
-              the number "3" with three apples or three toys.
-            </Text>
+            <TranslatedText className="text-base text-center text-neutral-600 mb-8 leading-6">
+              Can your child match numbers with objects? For example, matching the number "3" with three apples or three
+              toys.
+            </TranslatedText>
 
             {/* Options */}
             <View className="flex-row justify-between mb-6">
               <TouchableOpacity
                 onPress={() => setSelectedOption("yes")}
                 className={`w-[48%] py-4 rounded-2xl items-center justify-center border-2 ${
-                  selectedOption === "yes"
-                    ? "border-secondary-500 bg-secondary-50"
-                    : "border-gray-200 bg-white"
+                  selectedOption === "yes" ? "border-secondary-500 bg-secondary-50" : "border-gray-200 bg-white"
                 }`}
                 activeOpacity={0.7}
               >
-                <Text
+                <TranslatedText
                   variant={selectedOption === "yes" ? "bold" : "medium"}
-                  className={`text-lg ${
-                    selectedOption === "yes"
-                      ? "text-secondary-700"
-                      : "text-neutral-700"
-                  }`}
+                  className={`text-lg ${selectedOption === "yes" ? "text-secondary-700" : "text-neutral-700"}`}
                 >
                   Yes
-                </Text>
+                </TranslatedText>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setSelectedOption("no")}
                 className={`w-[48%] py-4 rounded-2xl items-center justify-center border-2 ${
-                  selectedOption === "no"
-                    ? "border-secondary-500 bg-secondary-50"
-                    : "border-gray-200 bg-white"
+                  selectedOption === "no" ? "border-secondary-500 bg-secondary-50" : "border-gray-200 bg-white"
                 }`}
                 activeOpacity={0.7}
               >
-                <Text
+                <TranslatedText
                   variant={selectedOption === "no" ? "bold" : "medium"}
-                  className={`text-lg ${
-                    selectedOption === "no"
-                      ? "text-secondary-700"
-                      : "text-neutral-700"
-                  }`}
+                  className={`text-lg ${selectedOption === "no" ? "text-secondary-700" : "text-neutral-700"}`}
                 >
                   No
-                </Text>
+                </TranslatedText>
               </TouchableOpacity>
             </View>
 
@@ -116,16 +101,14 @@ export default function CanYourKidMatchNumbersToObjectsScreen() {
             {selectedOption && (
               <View
                 className={`p-3 rounded-xl mb-4 ${
-                  selectedOption === "yes"
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-blue-50 border border-blue-200"
+                  selectedOption === "yes" ? "bg-green-50 border border-green-200" : "bg-blue-50 border border-blue-200"
                 }`}
               >
-                <Text className="text-sm text-neutral-700 text-center">
+                <TranslatedText className="text-sm text-neutral-700 text-center">
                   {selectedOption === "yes"
                     ? "Great! Your child has started developing number sense."
                     : "No problem! We'll help develop this skill with fun activities."}
-                </Text>
+                </TranslatedText>
               </View>
             )}
           </View>
@@ -141,12 +124,12 @@ export default function CanYourKidMatchNumbersToObjectsScreen() {
             activeOpacity={0.8}
             disabled={!selectedOption}
           >
-            <Text variant="bold" className="text-white text-lg">
+            <TranslatedText variant="bold" className="text-white text-lg">
               Next
-            </Text>
+            </TranslatedText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     </>
-  );
+  )
 }
