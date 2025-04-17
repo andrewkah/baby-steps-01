@@ -34,7 +34,7 @@ export default function ArtScreen() {
       image: require("@/assets/images/barkcloth_art.png"),
       description:
         "Paintings created on traditional barkcloth (lubugo) using natural pigments. These artworks often depict daily life, cultural symbols, and stories from Buganda history.",
-      videoUrl: "https://www.youtube.com/embed/exampleVideo1",
+      videoUrl: "https://www.youtube.com/watch?v=uhznFtHhkBo",
     },
     {
       id: 2,
@@ -52,7 +52,7 @@ export default function ArtScreen() {
       image: require("@/assets/images/kasubi_art.png"),
       description:
         "Decorative art found at the Kasubi Tombs, a UNESCO World Heritage site where Buganda kings are buried. These artworks include symbolic patterns and royal emblems.",
-      videoUrl: "https://www.youtube.com/embed/exampleVideo3",
+      videoUrl: "https://www.youtube.com/watch?v=G2PDZZO6h68",
     },
     {
       id: 4,
@@ -61,7 +61,7 @@ export default function ArtScreen() {
       image: require("@/assets/images/basket_art.jpg"),
       description:
         "Intricate patterns and designs used in traditional Buganda basketry, which are considered both functional crafts and artistic expressions.",
-      videoUrl: "https://www.youtube.com/embed/exampleVideo4",
+      videoUrl: "https://www.youtube.com/watch?v=ddqvWZhdOzM",
     },
     {
       id: 5,
