@@ -362,9 +362,7 @@ const KintuStory: React.FC = () => {
                   <Text
                     key={index}
                     className={`${
-                      index === highlightedIndex
-                        ? "bg-amber-200 rounded"
-                        : ""
+                      index === highlightedIndex ? "bg-amber-200 rounded" : ""
                     }`}
                     style={{ fontSize: getTextSize() }}
                   >
@@ -450,27 +448,27 @@ const KintuStory: React.FC = () => {
         </View>
       ) : (
         // Quiz UI
-        <View className="flex-1 p-5">
-          {/* Back Button */}
-          <TouchableOpacity
-            className="absolute top-3 left-3 z-10 bg-white/80 p-2 rounded-full shadow-sm"
-            onPress={() => {
-              setShowQuestions(false);
-              if (quizCompleted) {
-                setQuizCompleted(false);
-                setUserAnswers(Array(storyQuestions.length).fill(-1));
-              }
-            }}
-          >
-            <Ionicons name="arrow-back" size={24} color="#8B4513" />
-          </TouchableOpacity>
+        <View className="flex-1 pt-3 px-5">
+          {/* Back button and title row */}
+          <View className="flex-row items-center justify-between mt-3 mb-2">
+            <TouchableOpacity
+              className="p-2 rounded-full bg-white/80 shadow-sm"
+              onPress={() => {
+                setShowQuestions(false);
+                if (quizCompleted) {
+                  setQuizCompleted(false);
+                  setUserAnswers(Array(storyQuestions.length).fill(-1));
+                }
+              }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#8B4513" />
+            </TouchableOpacity>
 
-          <View className="flex-1 bg-white mt-12 rounded-3xl p-6 shadow-lg border border-amber-200">
             <Text
-            variant="bold"
-              className={`text-2xl  text-center ${
+              variant="bold"
+              className={`text-xl ${
                 quizCompleted ? "text-indigo-700" : "text-amber-800"
-              } mb-5`}
+              } flex-1 text-center mr-10`}
             >
               {quizCompleted
                 ? score === storyQuestions.length
@@ -478,20 +476,37 @@ const KintuStory: React.FC = () => {
                   : `Your Score: ${score}/${storyQuestions.length}`
                 : "The Tale of Kintu - Quiz"}
             </Text>
+          </View>
+
+          {/* Main quiz container without border */}
+          <View className="flex-1   rounded-3xl px-6 ">
+            {/* Score display for completed quiz */}
+            {quizCompleted && (
+              <View className="bg-indigo-50 p-4 rounded-xl mb-5 items-center">
+                <Text variant="bold" className="text-2xl text-indigo-700">
+                  {score === storyQuestions.length
+                    ? "You got all answers correct!"
+                    : `You got ${score} out of ${storyQuestions.length} correct`}
+                </Text>
+              </View>
+            )}
 
             <ScrollView
-              className="flex-1 mb-4"
+              className="flex-1"
               showsVerticalScrollIndicator={true}
-              contentContainerStyle={{ paddingBottom: 10 }}
+              // contentContainerStyle={{ paddingBottom: 20 }}
             >
               {!quizCompleted ? (
                 <>
                   {storyQuestions.map((question, qIndex) => (
                     <View
                       key={qIndex}
-                      className="mb-6 bg-amber-50 p-4 rounded-xl"
+                      className="mb-6 bg-amber-50 p-4 rounded-xl shadow-sm"
                     >
-                      <Text variant="bold" className="text-lg text-slate-800 mb-3">
+                      <Text
+                        variant="bold"
+                        className="text-lg text-slate-800 mb-3"
+                      >
                         {qIndex + 1}. {question.question}
                       </Text>
 
@@ -506,8 +521,7 @@ const KintuStory: React.FC = () => {
                           onPress={() => handleAnswerSelection(qIndex, oIndex)}
                         >
                           <Text
-                          variant="bold"
-                            className={` ${
+                            className={`${
                               userAnswers[qIndex] === oIndex
                                 ? "text-white"
                                 : "text-slate-700"
@@ -519,85 +533,108 @@ const KintuStory: React.FC = () => {
                       ))}
                     </View>
                   ))}
+
+                  {/* Submit button moved inside ScrollView at the end */}
+                  <View className="mt-8 mb-4">
+                    <TouchableOpacity
+                      className={`py-4 rounded-xl items-center shadow-sm ${
+                        userAnswers.includes(-1)
+                          ? "bg-gray-300"
+                          : "bg-amber-700"
+                      }`}
+                      onPress={handleQuizSubmit}
+                      disabled={userAnswers.includes(-1)}
+                    >
+                      <Text variant="bold" className="text-white text-lg">
+                        Submit Answers
+                      </Text>
+                    </TouchableOpacity>
+
+                    {userAnswers.includes(-1) && (
+                      <Text className="text-amber-700 text-center mt-3 italic">
+                        Please answer all questions before submitting
+                      </Text>
+                    )}
+                  </View>
                 </>
               ) : (
                 // Results view
-                <View className="mt-2">
-                  {storyQuestions.map((question, qIndex) => (
-                    <View
-                      key={qIndex}
-                      className="mb-6 bg-slate-50 p-4 rounded-xl"
-                    >
-                      <Text className="text-lg text-slate-800 mb-3">
-                        {qIndex + 1}. {question.question}
-                      </Text>
-
-                      {question.options.map((option, oIndex) => (
-                        <View
-                          key={oIndex}
-                          className={`p-3.5 rounded-lg mb-2 flex-row justify-between items-center ${
-                            oIndex === question.correctAnswer
-                              ? "bg-emerald-100 border border-emerald-300"
-                              : userAnswers[qIndex] === oIndex
-                              ? "bg-red-100 border border-red-300"
-                              : "bg-white border border-gray-200"
-                          }`}
+                <>
+                  <View className="mt-2">
+                    {storyQuestions.map((question, qIndex) => (
+                      <View
+                        key={qIndex}
+                        className="mb-6 bg-slate-50 p-4 rounded-xl shadow-sm"
+                      >
+                        <Text
+                          variant="bold"
+                          className="text-lg text-slate-800 mb-3"
                         >
-                          <Text
-                            className={`text-base ${
+                          {qIndex + 1}. {question.question}
+                        </Text>
+
+                        {question.options.map((option, oIndex) => (
+                          <View
+                            key={oIndex}
+                            className={`p-3.5 rounded-lg mb-2 flex-row justify-between items-center ${
                               oIndex === question.correctAnswer
-                                ? "text-emerald-800"
+                                ? "bg-emerald-100 border border-emerald-300"
                                 : userAnswers[qIndex] === oIndex
-                                ? "text-red-800"
-                                : "text-slate-600"
+                                ? "bg-red-100 border border-red-300"
+                                : "bg-white border border-gray-200"
                             }`}
                           >
-                            {option}
-                          </Text>
-                          {oIndex === question.correctAnswer && (
-                            <View className="bg-emerald-600 w-6 h-6 rounded-full items-center justify-center">
-                              <Ionicons
-                                name="checkmark-sharp"
-                                size={16}
-                                color="#fff"
-                              />
-                            </View>
-                          )}
-                          {userAnswers[qIndex] === oIndex &&
-                            userAnswers[qIndex] !== question.correctAnswer && (
-                              <View className="bg-red-600 w-6 h-6 rounded-full items-center justify-center">
-                                <Ionicons name="close" size={16} color="#fff" />
+                            <Text
+                              className={`text-base ${
+                                oIndex === question.correctAnswer
+                                  ? "text-emerald-800 font-medium"
+                                  : userAnswers[qIndex] === oIndex
+                                  ? "text-red-800 font-medium"
+                                  : "text-slate-600"
+                              }`}
+                            >
+                              {option}
+                            </Text>
+                            {oIndex === question.correctAnswer && (
+                              <View className="bg-emerald-600 w-6 h-6 rounded-full items-center justify-center">
+                                <Ionicons
+                                  name="checkmark-sharp"
+                                  size={16}
+                                  color="#fff"
+                                />
                               </View>
                             )}
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-                </View>
+                            {userAnswers[qIndex] === oIndex &&
+                              userAnswers[qIndex] !==
+                                question.correctAnswer && (
+                                <View className="bg-red-600 w-6 h-6 rounded-full items-center justify-center">
+                                  <Ionicons
+                                    name="close"
+                                    size={16}
+                                    color="#fff"
+                                  />
+                                </View>
+                              )}
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Try Again button moved inside ScrollView at the end */}
+                  <View className="mt-8 mb-4">
+                    <TouchableOpacity
+                      className="bg-indigo-700 py-4 rounded-xl items-center shadow-sm"
+                      onPress={handleRestartQuiz}
+                    >
+                      <Text variant="bold" className="text-white text-lg">
+                        Try Again
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
               )}
             </ScrollView>
-
-            {/* Submit or Try Again button */}
-            {!quizCompleted ? (
-              <TouchableOpacity
-                className={`py-4 rounded-xl items-center shadow-sm ${
-                  userAnswers.includes(-1) ? "bg-gray-300" : "bg-amber-700"
-                }`}
-                onPress={handleQuizSubmit}
-                disabled={userAnswers.includes(-1)}
-              >
-                <Text variant="bold" className="text-white text-lg">
-                  Submit Answers
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                className="bg-indigo-700 py-4 rounded-xl items-center shadow-sm mt-2"
-                onPress={handleRestartQuiz}
-              >
-                <Text variant="bold" className="text-white text-lg">Try Again</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
       )}
@@ -615,16 +652,12 @@ const KintuStory: React.FC = () => {
               <View className="bg-amber-100 rounded-full p-2 mb-1">
                 <Ionicons name="settings" size={24} color="#8B4513" />
               </View>
-              <Text className="text-lg text-amber-800">
-                Story Settings
-              </Text>
+              <Text className="text-lg text-amber-800">Story Settings</Text>
             </View>
 
             {/* Text Size Controls */}
             <View className="mt-3 mb-3">
-              <Text className="text-sm  text-slate-700 mb-1.5">
-                Text Size
-              </Text>
+              <Text className="text-sm  text-slate-700 mb-1.5">Text Size</Text>
               <View className="flex-row justify-between">
                 <TouchableOpacity
                   onPress={() => setTextSize("small")}
