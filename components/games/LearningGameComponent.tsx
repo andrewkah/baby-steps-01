@@ -1325,15 +1325,11 @@ const LugandaLearningGame: React.FC = () => {
   // LEVEL COMPLETION SCREEN
   const renderLevelCompletionScreen = () => {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
-        <StatusBar style="dark" />
+      <SafeAreaView className="flex-1 bg-slate-50 ">
+        <StatusBar style="light" />
 
-        <View className="flex-1 justify-center items-center p-6">
-          <ImageBackground
-            source={require("../../assets/images/coin.png")} // Replace with confetti image
-            className="w-full h-full absolute opacity-10"
-            resizeMode="cover"
-          />
+        <View className="flex-1 justify-center items-center">
+          
 
           <LinearGradient
             colors={[
@@ -1342,21 +1338,21 @@ const LugandaLearningGame: React.FC = () => {
             ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="p-8 rounded-3xl w-11/12 max-w-md items-center shadow-lg"
+            className="p-12 rounded-3xl w-full items-center shadow-lg"
           >
-            <View className="bg-white w-24 h-24 rounded-full mb-6 justify-center items-center">
-              <Text className="text-5xl">🏆</Text>
+            <View className="bg-white w-12 h-12 rounded-full mb-2 justify-center items-center">
+              <Text className="text-xl">🏆</Text>
             </View>
 
-            <Text variant="bold" className="text-3xl text-white mb-2">
+            <Text variant="bold" className="text-xl text-white mb-2">
               Level Complete!
             </Text>
-            <Text className="text-white text-center mb-6">
+            <Text className="text-white text-center  mb-2">
               Congratulations, you've completed {selectedLevel?.title}!
             </Text>
 
-            <View className="bg-white/20 w-full rounded-2xl p-5 mb-6">
-              <View className="flex-row justify-between mb-3">
+            <View className="bg-white/20 w-full rounded-2xl p-5 mb-2">
+              <View className="flex-row justify-between mb-2">
                 <Text variant="bold" className="text-white">
                   Words Learned:
                 </Text>
@@ -1364,7 +1360,7 @@ const LugandaLearningGame: React.FC = () => {
                   {currentWords.length}
                 </Text>
               </View>
-              <View className="flex-row justify-between mb-3">
+              <View className="flex-row justify-between mb-2">
                 <Text variant="bold" className="text-white ">
                   Score Earned:
                 </Text>
@@ -1382,7 +1378,7 @@ const LugandaLearningGame: React.FC = () => {
               </View>
             </View>
 
-            <View className="flex-row space-x-3">
+            <View className="flex-row space-x-3 mt-2">
               <TouchableOpacity
                 className="bg-white py-3 px-5 rounded-xl"
                 onPress={() => setGameState("levelSelect")}
