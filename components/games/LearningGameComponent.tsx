@@ -1,55 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { 
+import React, { useState, useEffect, useCallback } from "react";
+import {
   View,
-  Text,
   TouchableOpacity,
   Image,
   Animated,
   SafeAreaView,
   Dimensions,
   ScrollView,
-  FlatList
-} from 'react-native';
-import { Audio } from 'expo-av';
-import { LinearGradient } from 'expo-linear-gradient';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+  FlatList,
+  ActivityIndicator,
+  ImageBackground,
+} from "react-native";
+import { Audio } from "expo-av";
+import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
+import { useRouter } from "expo-router";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Text } from "@/components/StyledText";
 
-// Import our new data structure
-import { 
-  LUGANDA_STAGES, 
-  Stage, 
-  Level, 
-  WordItem, 
+// Import our data structure
+import {
+  LUGANDA_STAGES,
+  Stage,
+  Level,
+  WordItem,
   getWordsForLevel,
   unlockNextLevel,
   unlockNextStage,
-  isStageCompleted
-} from './utils/lugandawords';
+  isStageCompleted,
+} from "./utils/lugandawords";
 
 // Game state types
-type GameState = 'menu' | 'stageSelect' | 'levelSelect' | 'learning' | 'playing';
+type GameState =
+  | "menu"
+  | "stageSelect"
+  | "levelSelect"
+  | "learning"
+  | "playing"
+  | "levelComplete";
 
 const LugandaLearningGame: React.FC = () => {
   const router = useRouter();
-  
+
   // Get dimensions for responsive layout
-  const { width, height } = Dimensions.get('window');
-  
+  const { width, height } = Dimensions.get("window");
+  const isLandscape = width > height;
+
   // Game state management
-  const [gameState, setGameState] = useState<GameState>('stageSelect');
+  const [gameState, setGameState] = useState<GameState>("stageSelect");
   const [stages, setStages] = useState<Stage[]>(LUGANDA_STAGES);
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
   const [currentLearningIndex, setCurrentLearningIndex] = useState<number>(0);
   const [currentWords, setCurrentWords] = useState<WordItem[]>([]);
-  
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
   // Game progress state
   const [totalScore, setTotalScore] = useState<number>(0);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
-  
+
   // Playing state
   const [currentWordIndex, setCurrentWordIndex] = useState<number>(0);
   const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
@@ -60,32 +70,51 @@ const LugandaLearningGame: React.FC = () => {
   const [sound, setSound] = useState<Audio.Sound | undefined>();
   const [correctSound, setCorrectSound] = useState<Audio.Sound | undefined>();
   const [wrongSound, setWrongSound] = useState<Audio.Sound | undefined>();
-  const [progressWidth] = useState<Animated.Value>(new Animated.Value(0));
-  const [shakingOption, setShakingOption] = useState<string | null>(null);
+
+  // Animations
+  const progressWidth = useState<Animated.Value>(new Animated.Value(0))[0];
   const shakeAnimation = useState<Animated.Value>(new Animated.Value(0))[0];
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+  const confettiAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+  const [shakingOption, setShakingOption] = useState<string | null>(null);
+
+  // Update animation when state changes
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+
+    return () => {
+      fadeAnim.setValue(0);
+    };
+  }, [gameState, currentLearningIndex, currentWordIndex]);
 
   // Load game progress on mount
   useEffect(() => {
-    loadGameProgress();
+    const init = async () => {
+      await loadGameProgress();
+      await loadSounds();
+      setIsLoading(false);
+    };
+
+    init();
+
     return () => {
       if (sound) sound.unloadAsync();
       if (correctSound) correctSound.unloadAsync();
       if (wrongSound) wrongSound.unloadAsync();
     };
   }, []);
-  
-  // Load sounds
-  useEffect(() => {
-    loadSounds();
-  }, []);
-  
+
   // Setup when selecting a level
   useEffect(() => {
     if (selectedLevel) {
       const words = getWordsForLevel(selectedStage?.id || 0, selectedLevel.id);
       setCurrentWords(words);
-      
-      if (gameState === 'playing') {
+
+      if (gameState === "playing") {
         setCurrentWordIndex(0);
         setLevelScore(0);
         setCurrentWord(words[0]);
@@ -93,10 +122,10 @@ const LugandaLearningGame: React.FC = () => {
       }
     }
   }, [selectedLevel, gameState]);
-  
+
   // Update progress bar
   useEffect(() => {
-    if (gameState === 'playing' && currentWords.length > 0) {
+    if (gameState === "playing" && currentWords.length > 0) {
       Animated.timing(progressWidth, {
         toValue: (currentWordIndex / currentWords.length) * 100,
         duration: 500,
@@ -104,117 +133,146 @@ const LugandaLearningGame: React.FC = () => {
       }).start();
     }
   }, [currentWordIndex, gameState, currentWords]);
-  
+
   // Handle shaking animation for wrong answers
   useEffect(() => {
     if (shakingOption !== null) {
       Animated.sequence([
-        Animated.timing(shakeAnimation, { toValue: 10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnimation, { toValue: -10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnimation, { toValue: 10, duration: 100, useNativeDriver: true }),
-        Animated.timing(shakeAnimation, { toValue: 0, duration: 100, useNativeDriver: true })
+        Animated.timing(shakeAnimation, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: -10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: 10,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
       ]).start(() => {
         setShakingOption(null);
       });
     }
   }, [shakingOption]);
-  
+
   // Load game progress from AsyncStorage
   const loadGameProgress = async () => {
     try {
-      const scoreData = await AsyncStorage.getItem('luganda_total_score');
-      const completedLevelsData = await AsyncStorage.getItem('luganda_completed_levels');
-      const stagesData = await AsyncStorage.getItem('luganda_stages');
-      
+      const scoreData = await AsyncStorage.getItem("luganda_total_score");
+      const completedLevelsData = await AsyncStorage.getItem(
+        "luganda_completed_levels"
+      );
+      const stagesData = await AsyncStorage.getItem("luganda_stages");
+
       if (scoreData) {
         setTotalScore(parseInt(scoreData));
       }
-      
+
       if (completedLevelsData) {
         setCompletedLevels(JSON.parse(completedLevelsData));
       }
-      
+
       if (stagesData) {
         setStages(JSON.parse(stagesData));
       }
     } catch (error) {
-      console.error('Error loading game progress', error);
+      console.error("Error loading game progress", error);
     }
   };
-  
+
   // Save game progress to AsyncStorage
   const saveGameProgress = async () => {
     try {
-      await AsyncStorage.setItem('luganda_total_score', totalScore.toString());
-      await AsyncStorage.setItem('luganda_completed_levels', JSON.stringify(completedLevels));
-      await AsyncStorage.setItem('luganda_stages', JSON.stringify(stages));
+      await AsyncStorage.setItem("luganda_total_score", totalScore.toString());
+      await AsyncStorage.setItem(
+        "luganda_completed_levels",
+        JSON.stringify(completedLevels)
+      );
+      await AsyncStorage.setItem("luganda_stages", JSON.stringify(stages));
     } catch (error) {
-      console.error('Error saving game progress', error);
+      console.error("Error saving game progress", error);
     }
   };
-  
+
   const loadSounds = async (): Promise<void> => {
     try {
       const correctSoundObject = new Audio.Sound();
-      await correctSoundObject.loadAsync(require('../../assets/sounds/correct.mp3'));
+      await correctSoundObject.loadAsync(
+        require("../../assets/sounds/correct.mp3")
+      );
       setCorrectSound(correctSoundObject);
-      
+
       const wrongSoundObject = new Audio.Sound();
-      await wrongSoundObject.loadAsync(require('../../assets/sounds/wrong.mp3'));
+      await wrongSoundObject.loadAsync(
+        require("../../assets/sounds/wrong.mp3")
+      );
       setWrongSound(wrongSoundObject);
     } catch (error) {
-      console.error('Error loading sounds', error);
+      console.error("Error loading sounds", error);
     }
   };
-  
-  const playWordSound = async (word: WordItem = currentWord!): Promise<void> => {
+
+  const playWordSound = async (
+    word: WordItem = currentWord!
+  ): Promise<void> => {
     try {
       if (sound) {
         await sound.unloadAsync();
       }
-      
+
       const { sound: newSound } = await Audio.Sound.createAsync(
-        require('../../assets/sounds/wrong.mp3') // Replace with actual sound file
+        require("../../assets/sounds/wrong.mp3") // Replace with actual sound file
       );
       setSound(newSound);
       await newSound.playAsync();
     } catch (error) {
-      console.error('Error playing sound', error);
+      console.error("Error playing sound", error);
     }
   };
-  
+
   // Stage selection
   const selectStage = (stage: Stage) => {
     if (!stage.isLocked) {
       setSelectedStage(stage);
-      setGameState('levelSelect');
+      setGameState("levelSelect");
     }
   };
-  
+
   // Level selection
   const selectLevel = (level: Level) => {
     if (!level.isLocked) {
       setSelectedLevel(level);
-      setGameState('learning');
+      setGameState("learning");
       setCurrentLearningIndex(0);
     }
   };
-  
+
   // Learning navigation
   const nextLearningWord = (): void => {
     if (currentLearningIndex < currentWords.length - 1) {
+      fadeAnim.setValue(0);
       setCurrentLearningIndex(currentLearningIndex + 1);
     }
   };
-  
+
   const previousLearningWord = (): void => {
     if (currentLearningIndex > 0) {
+      fadeAnim.setValue(0);
       setCurrentLearningIndex(currentLearningIndex - 1);
     }
   };
-  
+
   const startGame = (): void => {
-    setGameState('playing');
+    setGameState("playing");
     setCurrentWordIndex(0);
     setLevelScore(0);
     setSelectedOption(null);
@@ -224,71 +282,82 @@ const LugandaLearningGame: React.FC = () => {
       generateOptions(currentWords[0], currentWords);
     }
   };
-  
+
   // Generate options for the game
   const generateOptions = (word: WordItem, wordList: WordItem[]): void => {
     const correctAnswer = word.english;
     let optionsArray: string[] = [correctAnswer];
-    
+
     // Add 3 random incorrect options
     while (optionsArray.length < 4) {
       const randomIndex = Math.floor(Math.random() * wordList.length);
       const randomOption = wordList[randomIndex].english;
-      
+
       if (!optionsArray.includes(randomOption)) {
         optionsArray.push(randomOption);
       }
     }
-    
+
     // Shuffle options
     optionsArray = optionsArray.sort(() => Math.random() - 0.5);
     setOptions(optionsArray);
   };
-  
+
   const handleOptionSelect = (option: string): void => {
-    if (!currentWord) return;
-    
+    if (!currentWord || selectedOption) return;
+
     setSelectedOption(option);
-    
+
     if (option === currentWord.english) {
       // Correct answer
       setIsCorrect(true);
       setLevelScore(levelScore + 10);
-      
+
+      // Play sound and animate
       if (correctSound) {
         correctSound.replayAsync();
       }
-      
-      // Move to next word after a short delay
+
+      // Animate confetti on correct answer
+      Animated.timing(confettiAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }).start(() => {
+        confettiAnim.setValue(0);
+      });
+
+      // Move to next word after a delay
       setTimeout(() => {
         nextWord();
-      }, 1000);
+      }, 1500);
     } else {
       // Wrong answer
       setIsCorrect(false);
       setShakingOption(option);
-      
+
       if (wrongSound) {
         wrongSound.replayAsync();
       }
-      
-      // Allow trying again after a short delay
+
+      // Allow trying again after a delay
       setTimeout(() => {
         setSelectedOption(null);
         setIsCorrect(null);
       }, 1500);
     }
   };
-  
-  const nextWord = (): void => {
+
+  const nextWord = useCallback((): void => {
     const nextIndex = currentWordIndex + 1;
-    
+    fadeAnim.setValue(0);
+
     if (nextIndex < currentWords.length) {
       setCurrentWordIndex(nextIndex);
       setCurrentWord(currentWords[nextIndex]);
       setSelectedOption(null);
       setIsCorrect(null);
-      
+
       setTimeout(() => {
         generateOptions(currentWords[nextIndex], currentWords);
       }, 300);
@@ -296,530 +365,1054 @@ const LugandaLearningGame: React.FC = () => {
       // Level completed
       completeLevelAndUpdateProgress();
     }
-  };
-  
+  }, [currentWordIndex, currentWords]);
+
   const completeLevelAndUpdateProgress = () => {
     const newTotalScore = totalScore + levelScore;
     setTotalScore(newTotalScore);
-    
+
     // Add this level to completed levels if not already there
     if (!completedLevels.includes(selectedLevel?.id || 0)) {
       const newCompletedLevels = [...completedLevels, selectedLevel?.id || 0];
       setCompletedLevels(newCompletedLevels);
-      
+
       // Check if all levels in stage are completed
-      if (selectedStage && isStageCompleted(selectedStage.id, newCompletedLevels)) {
+      if (
+        selectedStage &&
+        isStageCompleted(selectedStage.id, newCompletedLevels)
+      ) {
         // Unlock next stage if available and total score meets requirement
-        const nextStage = stages.find(s => s.id === selectedStage.id + 1);
+        const nextStage = stages.find((s) => s.id === selectedStage.id + 1);
         if (nextStage && newTotalScore >= nextStage.requiredScore) {
           const updatedStages = unlockNextStage(selectedStage.id, stages);
           setStages(updatedStages);
         }
       } else if (selectedStage && selectedLevel) {
         // Unlock next level in current stage
-        const updatedStages = unlockNextLevel(selectedStage.id, selectedLevel.id, stages);
+        const updatedStages = unlockNextLevel(
+          selectedStage.id,
+          selectedLevel.id,
+          stages
+        );
         setStages(updatedStages);
       }
     }
-    
+
     // Save progress
     saveGameProgress();
-    
-    // Show completion screen or return to level select
-    showLevelCompletionScreen();
+
+    // Show completion screen
+    setGameState("levelComplete");
   };
-  
-  const showLevelCompletionScreen = () => {
-    // In a real app, you might show a modal or a different screen
-    // For this example, we'll just go back to level select
-    setTimeout(() => {
-      setGameState('levelSelect');
-    }, 2000);
-  };
-  
-  const resetGame = (): void => {
-    setGameState('stageSelect');
-    setSelectedStage(null);
-    setSelectedLevel(null);
-  };
-  
-  const getOptionClassNames = (option: string): string => {
-    if (!currentWord) return "bg-white border-2 border-gray-200 rounded-xl p-4 mb-3 items-center shadow";
-    
-    let baseClasses = "bg-white border-2 border-gray-200 rounded-xl p-4 mb-3 items-center shadow";
-    
-    if (selectedOption === null) {
-      return baseClasses;
-    }
-    
-    if (option === currentWord.english) {
-      return `${baseClasses} bg-green-100 border-green-500`;
-    }
-    
-    if (option === selectedOption && option !== currentWord.english) {
-      return `${baseClasses} bg-red-100 border-red-500`;
-    }
-    
-    return baseClasses;
-  };
-  
-  // Render the Stage Selection Screen
+
+  // STAGE SELECTION SCREEN
   const renderStageSelectScreen = () => {
     return (
-      <SafeAreaView className="flex-1 bg-blue-50">
-        <TouchableOpacity 
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            zIndex: 10,
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            padding: 8,
-            borderRadius: 20,
-          }}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-        </TouchableOpacity>
-        
-        <View className="flex-1 p-4">
-          <View className="mb-6 pt-4">
-            <Text className="text-3xl font-bold text-blue-800 text-center">Luganda Learning Journey</Text>
-            <Text className="text-lg text-gray-600 text-center mt-2">Select a Stage to Begin</Text>
-            
-            <View className="flex-row justify-between items-center mt-4 bg-white p-3 rounded-lg shadow">
-              <Text className="text-lg font-semibold text-blue-700">Total Score:</Text>
-              <View className="flex-row items-center">
-                <Image 
-                  source={require('../../assets/images/coin.png')} 
-                  className="w-6 h-6 mr-1" 
-                  resizeMode="contain"
-                />
-                <Text className="text-xl font-bold text-yellow-500">{totalScore}</Text>
-              </View>
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar style="dark" />
+
+        {/* Header with back button and score */}
+        <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+          <TouchableOpacity
+            className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={20} color="#7b5af0" />
+          </TouchableOpacity>
+
+          <Text variant="bold" className="text-xl text-indigo-800">
+            Luganda Learning
+          </Text>
+
+          <View className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-amber-200">
+            <Image
+              source={require("../../assets/images/coin.png")}
+              style={{ width: 20, height: 20, marginRight: 4 }}
+              resizeMode="contain"
+            />
+            <Text variant="bold" className="text-amber-500">
+              {totalScore}
+            </Text>
+          </View>
+        </View>
+
+        <Animated.View className="flex-1 pt-2" style={{ opacity: fadeAnim }}>
+          {/* Stage Navigation Header */}
+          <View className="flex-row justify-between items-center px-4 mb-2">
+            <Text variant="bold" className="text-lg text-indigo-800">
+              Select a Stage
+            </Text>
+            <View className="flex-row items-center">
+              <Text className="text-xs text-slate-500 mr-2">
+                Swipe to explore
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color="#6366f1" />
             </View>
           </View>
-          
+
+          {/* Stage Cards with Snap Scrolling */}
           <FlatList
             data={stages}
-            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={width * 0.55 + 8}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            contentContainerStyle={{
+              paddingVertical: 12,
+              paddingLeft: 6,
+              paddingRight: width * 0.45,
+            }}
             renderItem={({ item: stage }) => (
-              <TouchableOpacity 
-                className={`mb-4 rounded-xl overflow-hidden shadow-lg ${stage.isLocked ? 'opacity-50' : ''}`}
+              <TouchableOpacity
+                key={stage.id}
+                style={{
+                  width: width * 0.4,
+                  marginRight: 8,
+                  height: height * 0.5,
+                  maxHeight: 450,
+                }}
+                className={`rounded-2xl overflow-hidden shadow-md mx-2 ${
+                  stage.isLocked ? "opacity-70" : ""
+                }`}
                 onPress={() => selectStage(stage)}
                 disabled={stage.isLocked}
+                activeOpacity={0.9}
               >
                 <LinearGradient
-                  colors={[stage.color, stage.color + '99']}
-                  className="p-5"
+                  colors={[stage.color, `${stage.color}DD`]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  className="p-4 flex-1"
                 >
-                  <View className="flex-row justify-between items-center">
-                    <View className="flex-1">
-                      <Text className="text-2xl font-bold text-white mb-2">Stage {stage.id}: {stage.title}</Text>
-                      <Text className="text-white mb-3">{stage.description}</Text>
-                      <Text className="text-white mb-3">{stage.description}</Text>
-                      <View className="flex-row items-center">
-                        <Text className="text-white font-medium mr-3">
-                          {stage.levels.filter(level => completedLevels.includes(level.id)).length} / {stage.levels.length} Levels
+                  {/* Top section */}
+                  <View>
+                    {/* Stage Header */}
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-8 h-8 rounded-full bg-white bg-opacity-40 justify-center items-center mr-2">
+                        <Text variant="bold" style={{ color: stage.color }}>
+                          {stage.id}
                         </Text>
-                        {stage.isLocked && (
-                          <View className="flex-row items-center bg-white bg-opacity-20 px-3 py-1 rounded-full">
-                            <Ionicons name="lock-closed" size={14} color="white" />
-                            <Text className="text-white text-xs ml-1">
-                              {stage.requiredScore} points to unlock
-                            </Text>
-                          </View>
-                        )}
+                      </View>
+
+                      {/* Image alongside title */}
+                      <View className="ml-auto bg-white p-2 rounded-full shadow-sm">
+                        <Image
+                          source={stage.image}
+                          style={{ width: 24, height: 24 }}
+                          resizeMode="contain"
+                        />
                       </View>
                     </View>
-                    <View className="justify-center items-center ml-4">
-                      <Image 
-                        source={stage.image} 
-                        className="w-16 h-16" 
-                        resizeMode="contain"
-                      />
-                      {!stage.isLocked && (
-                        <TouchableOpacity 
-                          className="bg-white rounded-full p-1 mt-2"
+
+                    {/* Stage title */}
+                    <Text
+                      variant="bold"
+                      className="text-lg  text-white mb-1.5 tracking-wide"
+                    >
+                      {stage.title}
+                    </Text>
+
+                    {/* Description */}
+                    <Text
+                      className="text-white text-opacity-95 mb-3 text-sm"
+                      style={{ lineHeight: 18 }}
+                      numberOfLines={2}
+                    >
+                      {stage.description}
+                    </Text>
+                  </View>
+
+                  {/* Info badges and action button in one horizontal line */}
+                  <View className="flex-row items-center justify-between mt-3">
+                    {/* Left side - Info badges */}
+                    <View className="flex-row flex-wrap">
+                      {/* Level count badge */}
+                      <View className="flex-row items-center bg-white bg-opacity-60 px-3 py-1.5 rounded-full mr-2">
+                        <Ionicons
+                          name="school-outline"
+                          size={14}
+                          color={stage.color}
+                        />
+                        <Text
+                          variant="bold"
+                          className="text-sm ml-1"
+                          style={{ color: stage.color }}
+                        >
+                          {stage.levels.length}
+                        </Text>
+                      </View>
+
+                      {/* Completed levels badge */}
+                      <View className="flex-row items-center bg-white bg-opacity-60 px-3 py-1.5 rounded-full mr-2">
+                        <Ionicons
+                          name="checkmark-circle-outline"
+                          size={14}
+                          color={stage.color}
+                        />
+                        <Text
+                          variant="bold"
+                          className="ml-1"
+                          style={{ color: stage.color }}
+                        >
+                          {
+                            stage.levels.filter((level) =>
+                              completedLevels.includes(level.id)
+                            ).length
+                          }
+                          /{stage.levels.length}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Right side - Action button */}
+                    <View className="ml-auto">
+                      {!stage.isLocked ? (
+                        <TouchableOpacity
+                          className="bg-white px-3 py-1.5 rounded-full items-center shadow-sm"
                           onPress={() => selectStage(stage)}
                         >
-                          <Ionicons name="arrow-forward" size={18} color={stage.color} />
+                          <Text variant="bold" style={{ color: stage.color }}>
+                            Start
+                          </Text>
                         </TouchableOpacity>
+                      ) : (
+                        <View className="flex-row items-center justify-center bg-black bg-opacity-25 px-3 py-1.5 rounded-full border border-white border-opacity-30">
+                          <Ionicons
+                            name="lock-closed"
+                            size={14}
+                            color="white"
+                          />
+                          <Text variant="bold" className="text-white ml-1">
+                            {stage.requiredScore}
+                          </Text>
+                        </View>
                       )}
                     </View>
                   </View>
                 </LinearGradient>
               </TouchableOpacity>
             )}
+            ListFooterComponent={() => (
+              <View style={{ width: 20 }} /> // Small spacer at the end
+            )}
           />
-        </View>
+        </Animated.View>
       </SafeAreaView>
     );
   };
-  
-  // Render the Level Selection Screen
+
+  // LEVEL SELECTION SCREEN
   const renderLevelSelectScreen = () => {
     if (!selectedStage) return null;
-    
+
     return (
-      <SafeAreaView className="flex-1 bg-blue-50">
-        <TouchableOpacity 
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            zIndex: 10,
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            padding: 8,
-            borderRadius: 20,
-          }}
-          onPress={() => setGameState('stageSelect')}
-        >
-          <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-        </TouchableOpacity>
-        
-        <View className="flex-1 p-4">
-          <View className="mb-6 pt-4">
-            <LinearGradient
-              colors={[selectedStage.color, selectedStage.color + '99']}
-              className="p-4 rounded-xl mb-4"
-            >
-              <Text className="text-2xl font-bold text-white">Stage {selectedStage.id}: {selectedStage.title}</Text>
-              <Text className="text-white mb-2">{selectedStage.description}</Text>
-              <View className="flex-row justify-between items-center">
-                <Text className="text-white">
-                  {selectedStage.levels.filter(level => completedLevels.includes(level.id)).length} / {selectedStage.levels.length} Completed
-                </Text>
-                <View className="flex-row items-center">
-                  <Image 
-                    source={require('../../assets/images/coin.png')} 
-                    className="w-5 h-5 mr-1" 
-                    resizeMode="contain"
-                  />
-                  <Text className="text-white font-bold">{totalScore}</Text>
-                </View>
-              </View>
-            </LinearGradient>
-            
-            <Text className="text-xl font-bold text-blue-800 mb-3">Select a Level</Text>
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar style="dark" />
+
+        {/* Header with back button and stage info */}
+        <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+          <TouchableOpacity
+            className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+            onPress={() => setGameState("stageSelect")}
+          >
+            <Ionicons name="arrow-back" size={20} color="#7b5af0" />
+          </TouchableOpacity>
+
+          <Text variant="bold" className="text-xl text-indigo-800">
+            {selectedStage.title}
+          </Text>
+
+          <View className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-amber-200">
+            <Image
+              source={require("../../assets/images/coin.png")}
+              style={{ width: 20, height: 20, marginRight: 4 }}
+              resizeMode="contain"
+            />
+            <Text variant="bold" className="text-amber-500">
+              {totalScore}
+            </Text>
           </View>
-          
+        </View>
+
+        <Animated.View
+          className="flex-1 px-4 pt-2"
+          style={{ opacity: fadeAnim }}
+        >
+          {/* Stage banner */}
+          <LinearGradient
+            colors={[selectedStage.color, `${selectedStage.color}DD`]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="p-4 rounded-xl mb-4 shadow-sm"
+          >
+            <View className="flex-row items-center mb-2">
+              <View className="bg-white p-2 rounded-full mr-3">
+                <Image
+                  source={selectedStage.image}
+                  style={{ width: 30, height: 30 }}
+                  resizeMode="contain"
+                />
+              </View>
+              <View>
+                <Text className="text-white text-opacity-80">
+                  Stage {selectedStage.id}
+                </Text>
+                <Text variant="bold" className="text-white text-xl">
+                  {selectedStage.title}
+                </Text>
+              </View>
+            </View>
+
+            <Text className="text-white text-opacity-90 mb-2">
+              {selectedStage.description}
+            </Text>
+
+            {/* Progress bar */}
+            <View className="mt-2">
+              <View className="h-2 w-full bg-white bg-opacity-30 rounded-full overflow-hidden">
+                <View
+                  className="h-full bg-white"
+                  style={{
+                    width: `${
+                      (selectedStage.levels.filter((level) =>
+                        completedLevels.includes(level.id)
+                      ).length /
+                        selectedStage.levels.length) *
+                      100
+                    }%`,
+                  }}
+                />
+              </View>
+              <View className="flex-row justify-between mt-1">
+                <Text className="text-white text-opacity-90 text-xs">
+                  {
+                    selectedStage.levels.filter((level) =>
+                      completedLevels.includes(level.id)
+                    ).length
+                  }{" "}
+                  / {selectedStage.levels.length} Completed
+                </Text>
+                <Text className="text-white text-opacity-90 text-xs">
+                  {selectedStage.levels.filter((level) =>
+                    completedLevels.includes(level.id)
+                  ).length === selectedStage.levels.length
+                    ? "Completed"
+                    : "In Progress"}
+                </Text>
+              </View>
+            </View>
+          </LinearGradient>
+
+          {/* Level selection grid */}
+          <Text variant="bold" className="text-lg text-slate-800 mb-3">
+            Select a Level
+          </Text>
+
           <View className="flex-row flex-wrap justify-between">
             {selectedStage.levels.map((level) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={level.id}
-                className={`w-[48%] mb-4 p-4 rounded-xl shadow-md ${
-                  level.isLocked ? 'bg-gray-200' : completedLevels.includes(level.id) ? 'bg-green-100' : 'bg-white'
-                }`}
+                className={`w-[48%] mb-4 rounded-xl shadow-sm overflow-hidden border
+                  ${
+                    level.isLocked
+                      ? "bg-slate-100 border-slate-200"
+                      : completedLevels.includes(level.id)
+                      ? "bg-white border-emerald-300"
+                      : "bg-white border-indigo-200"
+                  }
+                `}
                 onPress={() => selectLevel(level)}
                 disabled={level.isLocked}
+                activeOpacity={level.isLocked ? 1 : 0.7}
               >
-                <View className="items-center">
-                  <Text className="text-lg font-bold text-center mb-2">{level.title}</Text>
+                <View className="px-3 py-4 items-center">
                   {level.isLocked ? (
-                    <Ionicons name="lock-closed" size={24} color="gray" />
+                    <View className="items-center">
+                      <View className="w-12 h-12 rounded-full bg-slate-200 justify-center items-center mb-3">
+                        <Ionicons
+                          name="lock-closed"
+                          size={22}
+                          color="#94a3b8"
+                        />
+                      </View>
+                      <Text variant="bold" className="text-base text-slate-400">
+                        {level.title}
+                      </Text>
+                      <Text className="text-xs text-slate-400 mt-1">
+                        Locked
+                      </Text>
+                    </View>
                   ) : completedLevels.includes(level.id) ? (
-                    <Ionicons name="checkmark-circle" size={24} color="green" />
+                    <View className="items-center">
+                      <View className="w-12 h-12 rounded-full bg-emerald-100 justify-center items-center mb-3">
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={28}
+                          color="#10b981"
+                        />
+                      </View>
+                      <Text variant="bold" className="text-slate-700">
+                        {level.title}
+                      </Text>
+                      <Text className="text-xs text-emerald-600 mt-1">
+                        Completed
+                      </Text>
+                    </View>
                   ) : (
-                    <Ionicons name="play-circle" size={24} color={selectedStage.color} />
+                    <View className="items-center">
+                      <View className="w-12 h-12 rounded-full bg-indigo-100 justify-center items-center mb-3">
+                        <Ionicons
+                          name="play-circle"
+                          size={28}
+                          color="#7b5af0"
+                        />
+                      </View>
+                      <Text variant="bold" className="text-slate-700">
+                        {level.title}
+                      </Text>
+                      <Text className="text-xs text-slate-500 mt-1">
+                        {level.words.length} Words
+                      </Text>
+                    </View>
                   )}
-                  <Text className="text-sm text-gray-600 mt-2">
-                    {level.words.length} Words
-                  </Text>
                 </View>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </Animated.View>
       </SafeAreaView>
     );
   };
-  
-  // Render the Learning Screen - Adapted for landscape orientation
+
+  // LEARNING SCREEN
   const renderLearningScreen = () => {
     if (!selectedLevel || currentWords.length === 0) return null;
-    
+
     const currentLearnWord = currentWords[currentLearningIndex];
-    
+    const layout = isLandscape ? "landscape" : "portrait";
+
     return (
-      <SafeAreaView className="flex-1 bg-blue-50">
-        <TouchableOpacity 
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            zIndex: 10,
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            padding: 8,
-            borderRadius: 20,
-          }}
-          onPress={() => setGameState('levelSelect')}
-        >
-          <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-        </TouchableOpacity>
-        
-        <ScrollView contentContainerClassName="flex-grow">
-          <View className="flex-row h-full">
-            {/* Left panel - Image */}
-            <View className="w-1/2 justify-center items-center p-4">
-              <Image 
-                source={currentLearnWord.image} 
-                className="w-full h-3/5"
-                resizeMode="contain"
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar style="dark" />
+
+        {/* Header */}
+        <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+          <TouchableOpacity
+            className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+            onPress={() => setGameState("levelSelect")}
+          >
+            <Ionicons name="arrow-back" size={20} color="#7b5af0" />
+          </TouchableOpacity>
+
+          <View className="flex-row items-center">
+            <Text variant="bold" className="text-indigo-800 text-sm">
+              {currentLearningIndex + 1}/{currentWords.length}
+            </Text>
+            <View className="w-16 h-1.5 bg-slate-200 rounded-full ml-2 overflow-hidden">
+              <View
+                className="h-full bg-indigo-500"
+                style={{
+                  width: `${
+                    ((currentLearningIndex + 1) / currentWords.length) * 100
+                  }%`,
+                }}
               />
             </View>
-            
-            {/* Right panel - Word info */}
-            <View className="w-1/2 p-6 justify-between">
-              <View>
-                <View className="flex-row justify-between items-center mb-4">
-                  <View>
-                    <Text className="text-base text-blue-500">
-                      Stage {selectedStage?.id}: {selectedStage?.title}
-                    </Text>
-                    <Text className="text-2xl font-bold text-blue-800">
-                      Level {selectedLevel.id}: {selectedLevel.title}
-                    </Text>
-                  </View>
-                  <TouchableOpacity 
-                    className="bg-blue-100 py-2 px-4 rounded-full"
-                    onPress={startGame}
+          </View>
+
+          <TouchableOpacity
+            className="bg-indigo-500 py-1.5 px-3 rounded-full"
+            onPress={startGame}
+          >
+            <Text variant="bold" className="text-white  text-sm">
+              Play Game
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {layout === "landscape" ? (
+          // Landscape layout
+          <View className="flex-1 flex-row">
+            <View className="w-1/2 p-4 justify-center items-center">
+              <Animated.View
+                className="bg-white p-5 rounded-2xl shadow-sm w-full h-4/5 justify-center items-center"
+                style={{ opacity: fadeAnim }}
+              >
+                <Image
+                  source={currentLearnWord.image}
+                  style={{ width: "100%", height: "80%" }}
+                  resizeMode="contain"
+                />
+              </Animated.View>
+            </View>
+
+            <View className="w-1/2 p-4">
+              <Animated.View
+                className="bg-white p-5 rounded-2xl shadow-sm mb-4"
+                style={{
+                  opacity: fadeAnim,
+                  transform: [
+                    {
+                      translateX: fadeAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [20, 0],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <View className="flex-row justify-between items-center mb-5">
+                  <Text className="text-sm text-indigo-500">
+                    {selectedStage?.title} - {selectedLevel.title}
+                  </Text>
+                  <TouchableOpacity
+                    className="bg-indigo-100 p-2 rounded-full"
+                    onPress={() => playWordSound(currentLearnWord)}
                   >
-                    <Text className="text-blue-500 font-semibold">Skip to Game</Text>
+                    <Ionicons name="volume-high" size={18} color="#6366f1" />
                   </TouchableOpacity>
                 </View>
-                
-                <View className="bg-white rounded-xl p-6 shadow mb-4">
-                  <View className="flex-row items-center mb-2">
-                    <Text className="text-3xl font-bold text-blue-500">{currentLearnWord.luganda}</Text>
-                    <TouchableOpacity 
-                      className="ml-3 p-2 bg-blue-100 rounded-full"
-                      onPress={() => playWordSound(currentLearnWord)}
-                    >
-                      <Image 
-                        source={require('../../assets/images/coin.png')} 
-                        className="w-5 h-5" 
-                        resizeMode="contain"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <Text className="text-xl text-gray-700 font-semibold mb-4">{currentLearnWord.english}</Text>
-                  
-                  <View className="bg-gray-50 p-4 rounded-lg">
-                    <Text className="text-base italic text-gray-700 mb-2">{currentLearnWord.example}</Text>
-                    <Text className="text-base text-gray-500">{currentLearnWord.exampleTranslation}</Text>
-                  </View>
+
+                <Text variant="bold" className="text-3xl text-indigo-700 mb-1">
+                  {currentLearnWord.luganda}
+                </Text>
+                <Text className="text-xl text-slate-700 mb-4">
+                  {currentLearnWord.english}
+                </Text>
+
+                <View className="bg-slate-50 p-4 rounded-lg mb-2">
+                  <Text className="text-base text-slate-800 italic mb-2">
+                    "{currentLearnWord.example}"
+                  </Text>
+                  <Text className="text-sm text-slate-500">
+                    {currentLearnWord.exampleTranslation}
+                  </Text>
                 </View>
-              </View>
-              
-              <View className="flex-row justify-between items-center mt-4">
-                <TouchableOpacity 
-                  className={`py-3 px-5 rounded-xl ${currentLearningIndex === 0 ? 'bg-blue-200' : 'bg-blue-500'}`}
+              </Animated.View>
+
+              <View className="flex-row justify-between mt-auto">
+                <TouchableOpacity
+                  className={`py-3 px-5 rounded-xl ${
+                    currentLearningIndex === 0
+                      ? "bg-slate-200"
+                      : "bg-indigo-500"
+                  }`}
                   onPress={previousLearningWord}
                   disabled={currentLearningIndex === 0}
                 >
-                  <Text className={`font-semibold ${currentLearningIndex === 0 ? 'text-blue-500' : 'text-white'}`}>Previous</Text>
+                  <Text
+                    className={` ${
+                      currentLearningIndex === 0
+                        ? "text-slate-400"
+                        : "text-white"
+                    }`}
+                    variant="bold"
+                  >
+                    Previous
+                  </Text>
                 </TouchableOpacity>
-                
-                <Text className="text-base font-semibold text-gray-600">
-                  {currentLearningIndex + 1} / {currentWords.length}
-                </Text>
-                
+
                 {currentLearningIndex < currentWords.length - 1 ? (
-                  <TouchableOpacity 
-                    className="bg-blue-500 py-3 px-5 rounded-xl"
+                  <TouchableOpacity
+                    className="bg-indigo-500 py-3 px-5 rounded-xl"
                     onPress={nextLearningWord}
                   >
-                    <Text className="text-white font-semibold">Next</Text>
+                    <Text variant="bold" className="text-white">
+                      Next
+                    </Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity 
-                    className="bg-green-500 py-3 px-5 rounded-xl"
+                  <TouchableOpacity
+                    className="bg-emerald-500 py-3 px-5 rounded-xl"
                     onPress={startGame}
                   >
-                    <Text className="text-white font-semibold">Start Game</Text>
+                    <Text variant="bold" className="text-white">
+                      Start Quiz
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
           </View>
-        </ScrollView>
+        ) : (
+          // Portrait layout
+          <ScrollView
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 30 }}
+          >
+            <Animated.View style={{ opacity: fadeAnim }}>
+              <View className="mx-4 my-2">
+                <View className="bg-white p-4 rounded-2xl shadow-sm items-center mb-5">
+                  <Image
+                    source={currentLearnWord.image}
+                    style={{ width: width * 0.7, height: width * 0.5 }}
+                    resizeMode="contain"
+                  />
+                </View>
+
+                <View className="bg-white p-5 rounded-2xl shadow-sm mb-8">
+                  <View className="flex-row justify-between items-center mb-5">
+                    <Text className="text-sm text-indigo-500">
+                      {selectedStage?.title} - {selectedLevel.title}
+                    </Text>
+                    <TouchableOpacity
+                      className="bg-indigo-100 p-2 rounded-full"
+                      onPress={() => playWordSound(currentLearnWord)}
+                    >
+                      <Ionicons name="volume-high" size={18} color="#6366f1" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text
+                    variant="bold"
+                    className="text-3xl text-indigo-700 mb-1"
+                  >
+                    {currentLearnWord.luganda}
+                  </Text>
+                  <Text className="text-xl text-slate-700 mb-4">
+                    {currentLearnWord.english}
+                  </Text>
+
+                  <View className="bg-slate-50 p-4 rounded-lg">
+                    <Text className="text-base text-slate-800 italic mb-2">
+                      "{currentLearnWord.example}"
+                    </Text>
+                    <Text className="text-sm text-slate-500">
+                      {currentLearnWord.exampleTranslation}
+                    </Text>
+                  </View>
+                </View>
+
+                <View className="flex-row justify-between px-2">
+                  <TouchableOpacity
+                    className={`py-3 px-6 rounded-xl ${
+                      currentLearningIndex === 0
+                        ? "bg-slate-200"
+                        : "bg-indigo-500"
+                    }`}
+                    onPress={previousLearningWord}
+                    disabled={currentLearningIndex === 0}
+                  >
+                    <Text
+                      className={` ${
+                        currentLearningIndex === 0
+                          ? "text-slate-400"
+                          : "text-white"
+                      }`}
+                      variant="bold"
+                    >
+                      Previous
+                    </Text>
+                  </TouchableOpacity>
+
+                  {currentLearningIndex < currentWords.length - 1 ? (
+                    <TouchableOpacity
+                      className="bg-indigo-500 py-3 px-6 rounded-xl"
+                      onPress={nextLearningWord}
+                    >
+                      <Text variant="bold" className="text-white">
+                        Next
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      className="bg-emerald-500 py-3 px-6 rounded-xl"
+                      onPress={startGame}
+                    >
+                      <Text variant="bold" className="text-white">
+                        Start Quiz
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </Animated.View>
+          </ScrollView>
+        )}
       </SafeAreaView>
     );
   };
-  
-  // Render the Game Screen - Adapted for landscape orientation
+
+  // GAME SCREEN
   const renderGameScreen = () => {
     if (!currentWord) return null;
-    
+    const layout = isLandscape ? "landscape" : "portrait";
+
     return (
-      <SafeAreaView className="flex-1 bg-blue-50">
-        <TouchableOpacity 
-          style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            zIndex: 10,
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            padding: 8,
-            borderRadius: 20,
-          }}
-          onPress={() => setGameState('learning')}
-        >
-          <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-        </TouchableOpacity>
-        
-        <View className="flex-1 p-4">
-          <View className="flex-row h-full">
-            {/* Left panel - Question */}
-            <View className="w-1/2 justify-center items-center p-4">
-              <View className="w-full">
-                {/* Level info */}
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-base text-blue-500">
-                    Stage {selectedStage?.id}: {selectedStage?.title}
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar style="dark" />
+
+        {/* Header */}
+        <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+          <TouchableOpacity
+            className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+            onPress={() => setGameState("learning")}
+          >
+            <Ionicons name="arrow-back" size={20} color="#7b5af0" />
+          </TouchableOpacity>
+
+          <Text variant="bold" className="text-indigo-800">
+            {selectedLevel?.title} Quiz
+          </Text>
+
+          <View className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-amber-200">
+            <Image
+              source={require("../../assets/images/coin.png")}
+              style={{ width: 20, height: 20, marginRight: 4 }}
+              resizeMode="contain"
+            />
+            <Text variant="bold" className=" text-amber-500">
+              {levelScore}
+            </Text>
+          </View>
+        </View>
+
+        {/* Progress bar */}
+        <View className="px-4 mb-4">
+          <View className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+            <Animated.View
+              className="h-full bg-indigo-500"
+              style={{
+                width: progressWidth.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: ["0%", "100%"],
+                }),
+              }}
+            />
+          </View>
+          <View className="flex-row justify-between mt-1">
+            <Text className="text-xs text-slate-500">
+              Question {currentWordIndex + 1} of {currentWords.length}
+            </Text>
+            <Text className="text-xs text-slate-500">
+              {Math.round((currentWordIndex / currentWords.length) * 100)}%
+              Complete
+            </Text>
+          </View>
+        </View>
+
+        <Animated.View className="flex-1" style={{ opacity: fadeAnim }}>
+          {layout === "landscape" ? (
+            // Landscape layout
+            <View className="flex-1 flex-row px-3">
+              <View className="w-1/2 p-2 justify-center">
+                <View className="bg-white p-6 rounded-2xl shadow-sm">
+                  <Text className="text-lg text-slate-600 mb-6 text-center">
+                    What is the English translation of:
                   </Text>
-                  <Text className="text-base text-blue-500">
-                    Level {selectedLevel?.id}: {selectedLevel?.title}
-                  </Text>
-                </View>
-                
-                {/* Progress & stats */}
-                <View className="w-full h-2 bg-gray-200 rounded mb-4">
-                  <Animated.View 
-                    className="h-full bg-green-500 rounded" 
-                    style={{ 
-                      width: progressWidth.interpolate({
-                        inputRange: [0, 100],
-                        outputRange: ['0%', '100%']
-                      })
-                    }} 
-                  />
-                </View>
-                
-                <View className="flex-row justify-between mb-6">
-                  <View className="flex-row items-center">
-                    <Image 
-                      source={require('../../assets/images/coin.png')} 
-                      className="w-6 h-6 mr-1" 
-                      resizeMode="contain"
-                    />
-                    <Text className="text-lg font-bold text-yellow-500">{levelScore}</Text>
+
+                  <View className="items-center mb-5">
+                    <View className="flex-row items-center">
+                      <Text
+                        variant="bold"
+                        className="text-3xl text-indigo-700 text-center"
+                      >
+                        {currentWord.luganda}
+                      </Text>
+                      <TouchableOpacity
+                        className="ml-3 p-2 bg-indigo-100 rounded-full"
+                        onPress={() => playWordSound()}
+                      >
+                        <Ionicons
+                          name="volume-high"
+                          size={20}
+                          color="#6366f1"
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                  <Text className="text-gray-500">
-                    {currentWordIndex + 1} / {currentWords.length}
-                  </Text>
+
+                  {/* Feedback */}
+                  {isCorrect !== null && (
+                    <View className="items-center my-4">
+                      <Text
+                        className={`text-lg ${
+                          isCorrect ? "text-emerald-500" : "text-red-500"
+                        }`}
+                        variant="bold"
+                      >
+                        {isCorrect ? "Correct! 🎉" : "Try again! 😕"}
+                      </Text>
+                    </View>
+                  )}
                 </View>
-                
-                {/* Question */}
-                <View className="items-center mb-8">
-                  <Text className="text-base text-gray-500 mb-4">Select the correct translation:</Text>
-                  <View className="flex-row items-center justify-center">
-                    <Text className="text-4xl font-bold text-blue-500">{currentWord.luganda}</Text>
-                    <TouchableOpacity 
-                      className="ml-4 p-2 bg-blue-100 rounded-full"
+              </View>
+
+              <View className="w-1/2 p-2 justify-center">
+                <View className="space-y-3">
+                  {options.map((option, index) => (
+                    <Animated.View
+                      key={index}
+                      style={[
+                        option === shakingOption
+                          ? { transform: [{ translateX: shakeAnimation }] }
+                          : {},
+                      ]}
+                    >
+                      <TouchableOpacity
+                        className={`
+                          py-4 px-5 rounded-xl shadow-sm border-2 items-center justify-center
+                          ${
+                            selectedOption === null
+                              ? "bg-white border-slate-200"
+                              : option === currentWord.english
+                              ? "bg-emerald-100 border-emerald-500"
+                              : option === selectedOption
+                              ? "bg-red-100 border-red-500"
+                              : "bg-white border-slate-200"
+                          }
+                        `}
+                        onPress={() => handleOptionSelect(option)}
+                        disabled={selectedOption !== null}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          className={`
+                          ${
+                            selectedOption === null
+                              ? "text-slate-700"
+                              : option === currentWord.english
+                              ? "text-emerald-700"
+                              : option === selectedOption
+                              ? "text-red-700"
+                              : "text-slate-700"
+                          }
+                        `}
+                          variant="bold"
+                        >
+                          {option}
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          ) : (
+            // Portrait layout
+            <View className="flex-1 px-4">
+              <View className="bg-white p-6 rounded-2xl shadow-sm mb-5">
+                <Text className="text-base text-slate-600 mb-5 text-center">
+                  What is the English translation of:
+                </Text>
+
+                <View className="items-center mb-5">
+                  <View className="flex-row items-center">
+                    <Text
+                      variant="bold"
+                      className="text-3xl text-indigo-700 text-center"
+                    >
+                      {currentWord.luganda}
+                    </Text>
+                    <TouchableOpacity
+                      className="ml-3 p-2 bg-indigo-100 rounded-full"
                       onPress={() => playWordSound()}
                     >
-                      <Image 
-                        source={require('../../assets/images/coin.png')} 
-                        className="w-6 h-6" 
-                        resizeMode="contain"
-                      />
+                      <Ionicons name="volume-high" size={20} color="#6366f1" />
                     </TouchableOpacity>
                   </View>
                 </View>
-                
-                {/* Feedback message */}
+
+                {/* Feedback */}
                 {isCorrect !== null && (
-                  <View className="items-center mb-4">
-                    <Text className={`text-2xl font-bold ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-                      {isCorrect ? 'Correct! 🎉' : 'Try again! 😕'}
+                  <View className="items-center my-3">
+                    <Text
+                      variant="bold"
+                      className={`text-lg ${
+                        isCorrect ? "text-emerald-500" : "text-red-500"
+                      }`}
+                    >
+                      {isCorrect ? "Correct! 🎉" : "Try again 😕"}
                     </Text>
                   </View>
                 )}
-                
-                {/* Next button - shown after answering */}
-                {isCorrect === true && (
-                  <TouchableOpacity 
-                    className="bg-green-500 py-3 px-6 rounded-xl self-center mt-4"
-                    onPress={nextWord}
-                  >
-                    <Text className="text-white font-bold text-lg">Continue</Text>
-                  </TouchableOpacity>
-                )}
               </View>
-            </View>
-            
-            {/* Right panel - Options */}
-            <View className="w-1/2 p-4 justify-center">
-              <View className="w-full">
+
+              <View className="space-y-3">
                 {options.map((option, index) => (
-                  <Animated.View 
-                    key={index} 
+                  <Animated.View
+                    key={index}
                     style={[
-                      option === shakingOption ? 
-                      { transform: [{ translateX: shakeAnimation }] } : 
-                      {}
+                      option === shakingOption
+                        ? { transform: [{ translateX: shakeAnimation }] }
+                        : {},
                     ]}
                   >
                     <TouchableOpacity
-                      className={getOptionClassNames(option)}
+                      className={`
+                        py-4 px-5 rounded-xl shadow-sm border-2 items-center
+                        ${
+                          selectedOption === null
+                            ? "bg-white border-slate-200"
+                            : option === currentWord.english
+                            ? "bg-emerald-100 border-emerald-500"
+                            : option === selectedOption
+                            ? "bg-red-100 border-red-500"
+                            : "bg-white border-slate-200"
+                        }
+                      `}
                       onPress={() => handleOptionSelect(option)}
-                      disabled={isCorrect === true}
+                      disabled={selectedOption !== null}
+                      activeOpacity={0.8}
                     >
-                      <Text className="text-lg font-semibold text-gray-700">{option}</Text>
+                      <Text
+                        variant="bold"
+                        className={`
+                        
+                        ${
+                          selectedOption === null
+                            ? "text-slate-700"
+                            : option === currentWord.english
+                            ? "text-emerald-700"
+                            : option === selectedOption
+                            ? "text-red-700"
+                            : "text-slate-700"
+                        }
+                      `}
+                      >
+                        {option}
+                      </Text>
                     </TouchableOpacity>
                   </Animated.View>
                 ))}
               </View>
+
+              {/* Animated confetti when correct */}
+              {isCorrect === true && (
+                <Animated.View
+                  className="items-center justify-center mt-6"
+                  style={{
+                    opacity: confettiAnim.interpolate({
+                      inputRange: [0, 0.2, 1],
+                      outputRange: [0, 1, 0],
+                    }),
+                  }}
+                >
+                  <View className="flex-row">
+                    <Text className="text-3xl">🎉</Text>
+                    <Text className="text-3xl">✨</Text>
+                    <Text className="text-3xl">🎊</Text>
+                  </View>
+                </Animated.View>
+              )}
             </View>
-          </View>
-        </View>
-        
-        {/* Force landscape orientation */}
-        <StatusBar hidden />
+          )}
+        </Animated.View>
       </SafeAreaView>
     );
   };
-  
-  // Level completion screen
+
+  // LEVEL COMPLETION SCREEN
   const renderLevelCompletionScreen = () => {
     return (
-      <SafeAreaView className="flex-1 bg-blue-50 justify-center items-center">
-        <LinearGradient
-          colors={[selectedStage?.color || '#4F85E6', (selectedStage?.color || '#4F85E6') + '99']}
-          className="p-8 rounded-2xl w-2/3 items-center"
-        >
-          <Text className="text-3xl font-bold text-white mb-4">Level Complete!</Text>
-          <Image 
-            source={require('../../assets/images/coin.png')} 
-            className="w-20 h-20 mb-6" 
-            resizeMode="contain"
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar style="dark" />
+
+        <View className="flex-1 justify-center items-center p-6">
+          <ImageBackground
+            source={require("../../assets/images/coin.png")} // Replace with confetti image
+            className="w-full h-full absolute opacity-10"
+            resizeMode="cover"
           />
-          <Text className="text-xl text-white mb-2">Score: {levelScore}</Text>
-          <Text className="text-white mb-6">You've learned {currentWords.length} new Luganda words!</Text>
-          <TouchableOpacity 
-            className="bg-white py-3 px-6 rounded-xl mt-2"
-            onPress={() => setGameState('levelSelect')}
+
+          <LinearGradient
+            colors={[
+              selectedStage?.color || "#6366f1",
+              (selectedStage?.color || "#6366f1") + "CC",
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="p-8 rounded-3xl w-11/12 max-w-md items-center shadow-lg"
           >
-            <Text className="text-blue-500 font-bold">Continue</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+            <View className="bg-white w-24 h-24 rounded-full mb-6 justify-center items-center">
+              <Text className="text-5xl">🏆</Text>
+            </View>
+
+            <Text variant="bold" className="text-3xl text-white mb-2">
+              Level Complete!
+            </Text>
+            <Text className="text-white text-center mb-6">
+              Congratulations, you've completed {selectedLevel?.title}!
+            </Text>
+
+            <View className="bg-white/20 w-full rounded-2xl p-5 mb-6">
+              <View className="flex-row justify-between mb-3">
+                <Text variant="bold" className="text-white">
+                  Words Learned:
+                </Text>
+                <Text variant="bold" className="text-white">
+                  {currentWords.length}
+                </Text>
+              </View>
+              <View className="flex-row justify-between mb-3">
+                <Text variant="bold" className="text-white ">
+                  Score Earned:
+                </Text>
+                <Text variant="bold" className="text-white">
+                  {levelScore}
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <Text variant="bold" className="text-white">
+                  Total Score:
+                </Text>
+                <Text variant="bold" className="text-white">
+                  {totalScore}
+                </Text>
+              </View>
+            </View>
+
+            <View className="flex-row space-x-3">
+              <TouchableOpacity
+                className="bg-white py-3 px-5 rounded-xl"
+                onPress={() => setGameState("levelSelect")}
+              >
+                <Text variant="bold" className="text-indigo-600">
+                  Choose Level
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="bg-emerald-500 py-3 px-5 rounded-xl"
+                onPress={() => setGameState("stageSelect")}
+              >
+                <Text variant="bold" className="text-white">
+                  Home
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
       </SafeAreaView>
     );
   };
-  
+
+  // Loading screen
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#6366f1" />
+        <Text className="mt-4 text-slate-600">
+          Loading your learning journey...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
   // Main render function that switches between game states
   switch (gameState) {
-    case 'stageSelect':
+    case "stageSelect":
       return renderStageSelectScreen();
-    case 'levelSelect':
+    case "levelSelect":
       return renderLevelSelectScreen();
-    case 'learning':
+    case "learning":
       return renderLearningScreen();
-    case 'playing':
+    case "playing":
       return renderGameScreen();
+    case "levelComplete":
+      return renderLevelCompletionScreen();
     default:
       return renderStageSelectScreen();
   }
