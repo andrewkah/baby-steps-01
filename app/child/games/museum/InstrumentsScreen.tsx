@@ -6,9 +6,13 @@ import {
   TouchableOpacity,
   Image,
   Animated,
+  SafeAreaView,
+  BackHandler,
 } from "react-native";
 import { Audio, AVPlaybackSource } from "expo-av";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 export default function InstrumentsScreen() {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
@@ -22,6 +26,27 @@ export default function InstrumentsScreen() {
   } | null>(null);
   const [playingId, setPlayingId] = useState<number | null>(null);
   const pulseAnim = new Animated.Value(1);
+  const router = useRouter();
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (selectedInstrument) {
+          // Close modal if open
+          setSelectedInstrument(null);
+          if (sound) {
+            sound.stopAsync();
+          }
+          return true;
+        }
+        router.back();
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [router, selectedInstrument, sound]);
 
   const instruments = [
     {
@@ -98,7 +123,10 @@ export default function InstrumentsScreen() {
     }
   }, [playingId]);
 
-  async function playSound(audioFile: AVPlaybackSource, instrumentId: number | null) {
+  async function playSound(
+    audioFile: AVPlaybackSource,
+    instrumentId: number | null
+  ) {
     // Stop previous sound if playing
     if (sound) {
       await sound.stopAsync();
@@ -127,7 +155,21 @@ export default function InstrumentsScreen() {
   }, [sound]);
 
   return (
-    <View className="flex-1 bg-amber-50">
+    <SafeAreaView className="flex-1 bg-amber-50">
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          zIndex: 10,
+          backgroundColor: "rgba(255, 255, 255, 0.8)",
+          padding: 8,
+          borderRadius: 20,
+        }}
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+      </TouchableOpacity>
       <View className="py-4 px-6 bg-amber-800">
         <Text className="text-2xl font-bold text-white text-center">
           Buganda Musical Instruments
@@ -251,13 +293,13 @@ export default function InstrumentsScreen() {
                   className="bg-amber-600 py-2 px-6 rounded-full"
                   onPress={() => setSelectedInstrument(null)}
                 >
-                  <Text className="text-white font-bold">Close</Text>
+                  <Text className="text-white font-bold">Close </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

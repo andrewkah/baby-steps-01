@@ -1,7 +1,16 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  SafeAreaView,
+  BackHandler,
+} from "react-native";
 import { Audio, AVPlaybackSource } from "expo-av";
 import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 export default function ArtifactsScreen() {
@@ -14,6 +23,25 @@ export default function ArtifactsScreen() {
   } | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const router = useRouter();
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (selectedArtifact) {
+          // Close modal if open
+          setSelectedArtifact(null);
+          if (sound) {
+            sound.stopAsync();
+          }
+          return true;
+        }
+        router.back();
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [router, selectedArtifact, sound]);
 
   const artifacts = [
     {
@@ -84,7 +112,7 @@ export default function ArtifactsScreen() {
     description: string;
     audio: AVPlaybackSource;
   }) => {
-      setSelectedArtifact(artifact);
+    setSelectedArtifact(artifact);
   };
 
   const closeModal = () => {
@@ -95,7 +123,21 @@ export default function ArtifactsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-amber-50">
+    <SafeAreaView className="flex-1 bg-amber-50">
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          zIndex: 10,
+          backgroundColor: "rgba(255, 255, 255, 0.8)",
+          padding: 8,
+          borderRadius: 20,
+        }}
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+      </TouchableOpacity>
       <View className="py-4 px-6 bg-amber-800">
         <Text className="text-2xl font-bold text-white text-center">
           Buganda Artifacts
@@ -164,13 +206,13 @@ export default function ArtifactsScreen() {
                   className="bg-amber-600 py-2 px-6 rounded-full"
                   onPress={closeModal}
                 >
-                  <Text className="text-white font-bold">Close</Text>
+                  <Text className="text-white font-bold">Close </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  BackHandler,
 } from "react-native";
 import { Audio, AVPlaybackSource } from "expo-av";
-import { MaterialIcons, Feather } from "@expo/vector-icons";
+import { MaterialIcons, Feather, Ionicons } from "@expo/vector-icons";
 import {
   Gesture,
   GestureDetector,
@@ -19,6 +20,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { useRouter } from "expo-router";
 
 interface Textile {
   id: number;
@@ -33,6 +35,35 @@ export default function TextilesScreen() {
   const [selectedTextile, setSelectedTextile] = useState<Textile | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const windowWidth = Dimensions.get("window").width;
+  const router = useRouter();
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (selectedTextile) {
+        setSelectedTextile(null);
+        setIsModalVisible(false);
+        return true;
+      }
+
+      if (!isModalVisible) {
+        router.back();
+      }
+      return true;
+    });
+
+    return () => backHandler.remove();
+  }, [router, selectedTextile, isModalVisible]);
+
+  const handleOpenModal = (textile: Textile) => {
+    setSelectedTextile(textile);
+    setIsModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTextile(null);
+    setIsModalVisible(false);
+  };
 
   const textiles = [
     {
@@ -95,7 +126,7 @@ export default function TextilesScreen() {
     return (
       <TouchableOpacity
         className="mb-6 bg-white rounded-xl overflow-hidden shadow-lg"
-        onPress={() => setSelectedTextile(item)}
+        onPress={() => handleOpenModal(item)}
       >
         <GestureDetector gesture={pinchGesture}>
           <Animated.View style={animatedStyle}>
@@ -115,7 +146,7 @@ export default function TextilesScreen() {
             <View className="flex-row">
               <TouchableOpacity
                 className="bg-amber-200 p-2 rounded-full mr-2"
-                onPress={() => setSelectedTextile(item)}
+                onPress={() => handleOpenModal(item)}
               >
                 <Feather name="zoom-in" size={20} color="#78350f" />
               </TouchableOpacity>
@@ -140,7 +171,7 @@ export default function TextilesScreen() {
     );
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     return sound
       ? () => {
           sound.unloadAsync();
@@ -150,6 +181,20 @@ export default function TextilesScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          zIndex: 10,
+          backgroundColor: "rgba(255, 255, 255, 0.8)",
+          padding: 8,
+          borderRadius: 20,
+        }}
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+      </TouchableOpacity>
       <View className="flex-1 bg-amber-50">
         <View className="py-4 px-6 bg-amber-800">
           <Text className="text-2xl font-bold text-white text-center">
@@ -209,9 +254,9 @@ export default function TextilesScreen() {
                   <View className="flex-row justify-center">
                     <TouchableOpacity
                       className="bg-amber-600 py-2 px-6 rounded-full"
-                      onPress={() => setSelectedTextile(null)}
+                      onPress={handleCloseModal}
                     >
-                      <Text className="text-white font-bold">Close</Text>
+                      <Text className="text-white font-bold">Close </Text>
                     </TouchableOpacity>
                   </View>
                 </View>

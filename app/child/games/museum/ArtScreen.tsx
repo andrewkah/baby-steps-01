@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,12 @@ import {
   Modal,
   Linking,
   Platform,
+  SafeAreaView,
+  BackHandler,
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { WebView } from "react-native-webview";
+import { useRouter } from "expo-router";
 
 export default function ArtScreen() {
   const [selectedArtwork, setSelectedArtwork] = useState<{
@@ -25,6 +28,23 @@ export default function ArtScreen() {
   const [contrastLevel, setContrastLevel] = useState("normal");
   const [videoModalVisible, setVideoModalVisible] = useState(false);
   const windowWidth = Dimensions.get("window").width;
+  const router = useRouter();
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (selectedArtwork) {
+          // Close modal if open
+          setSelectedArtwork(null);
+          return true;
+        }
+        router.back();
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [router, selectedArtwork]);
 
   const artworks = [
     {
@@ -102,7 +122,21 @@ export default function ArtScreen() {
   };
 
   return (
-    <View className="flex-1 bg-amber-50">
+    <SafeAreaView className="flex-1 bg-amber-50">
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          zIndex: 10,
+          backgroundColor: "rgba(255, 255, 255, 0.8)",
+          padding: 8,
+          borderRadius: 20,
+        }}
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+      </TouchableOpacity>
       <View className="py-4 px-6 bg-amber-800">
         <Text className="text-2xl font-bold text-white text-center">
           Buganda Art Gallery
@@ -192,7 +226,7 @@ export default function ArtScreen() {
                     className="bg-amber-600 py-2 px-6 rounded-full"
                     onPress={() => setSelectedArtwork(null)}
                   >
-                    <Text className="text-white font-bold">Close</Text>
+                    <Text className="text-white font-bold">Close </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -230,6 +264,6 @@ export default function ArtScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
