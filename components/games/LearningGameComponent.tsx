@@ -607,11 +607,11 @@ const LugandaLearningGame: React.FC = () => {
     if (!selectedStage) return null;
 
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView className="flex-1 bg-slate-50 pt-3">
         <StatusBar style="dark" />
 
-        {/* Header with back button and stage info */}
-        <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+        {/* Fixed Header with back button and stage info */}
+        <View className="flex-row justify-between items-center px-4 pt-4 pb-2">
           <TouchableOpacity
             className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
             onPress={() => setGameState("stageSelect")}
@@ -635,85 +635,94 @@ const LugandaLearningGame: React.FC = () => {
           </View>
         </View>
 
-        <Animated.View
-          className="flex-1 px-4 pt-2"
-          style={{ opacity: fadeAnim }}
+        {/* Scrollable Content Area */}
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 20 }}
         >
-          {/* Stage banner */}
-          <LinearGradient
-            colors={[selectedStage.color, `${selectedStage.color}DD`]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            className="p-4 rounded-xl mb-4 shadow-sm"
-          >
-            <View className="flex-row items-center mb-2">
-              <View className="bg-white p-2 rounded-full mr-3">
-                <Image
-                  source={selectedStage.image}
-                  style={{ width: 30, height: 30 }}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text className="text-white text-opacity-80">
-                  Stage {selectedStage.id}
-                </Text>
-                <Text variant="bold" className="text-white text-xl">
-                  {selectedStage.title}
-                </Text>
-              </View>
-            </View>
+          <Animated.View className="px-4 pt-2" style={{ opacity: fadeAnim }}>
+            {/* More Compact Stage Banner */}
+            <View
+              className="p-3 rounded mb-3 shadow-sm py-8"
+              style={{backgroundColor:selectedStage.color}}
+            >
+              <View className="flex-row items-center">
+                {/* Image and Title in one row */}
+                <View className="bg-white p-2 rounded-full mr-3">
+                  <Image
+                    source={selectedStage.image}
+                    style={{ width: 24, height: 24 }}
+                    resizeMode="contain"
+                  />
+                </View>
 
-            <Text className="text-white text-opacity-90 mb-2">
-              {selectedStage.description}
-            </Text>
+                <View className="flex-1">
+                  <View className="flex-row items-baseline">
+                    <Text className="text-white text-opacity-90 text-xs mr-2">
+                      Stage {selectedStage.id}
+                    </Text>
+                    <Text variant="bold" className="text-white text-lg">
+                      {selectedStage.title}
+                    </Text>
+                  </View>
 
-            {/* Progress bar */}
-            <View className="mt-2">
-              <View className="h-2 w-full bg-white bg-opacity-30 rounded-full overflow-hidden">
-                <View
-                  className="h-full bg-white"
-                  style={{
-                    width: `${
-                      (selectedStage.levels.filter((level) =>
+                  {/* Progress info in the same row */}
+                  <View className="flex-row items-center mt-1">
+                    <Text className="text-white text-opacity-90 text-xs mr-2">
+                      {
+                        selectedStage.levels.filter((level) =>
+                          completedLevels.includes(level.id)
+                        ).length
+                      }{" "}
+                      / {selectedStage.levels.length}
+                    </Text>
+
+                    {/* Progress bar takes remaining space */}
+                    <View className="flex-1 h-1.5 bg-white bg-opacity-30 rounded-full overflow-hidden mr-2">
+                      <View
+                        className="h-full bg-white"
+                        style={{
+                          width: `${
+                            (selectedStage.levels.filter((level) =>
+                              completedLevels.includes(level.id)
+                            ).length /
+                              selectedStage.levels.length) *
+                            100
+                          }%`,
+                        }}
+                      />
+                    </View>
+
+                    <Text className="text-white text-opacity-90 text-xs">
+                      {selectedStage.levels.filter((level) =>
                         completedLevels.includes(level.id)
-                      ).length /
-                        selectedStage.levels.length) *
-                      100
-                    }%`,
-                  }}
-                />
-              </View>
-              <View className="flex-row justify-between mt-1">
-                <Text className="text-white text-opacity-90 text-xs">
-                  {
-                    selectedStage.levels.filter((level) =>
-                      completedLevels.includes(level.id)
-                    ).length
-                  }{" "}
-                  / {selectedStage.levels.length} Completed
-                </Text>
-                <Text className="text-white text-opacity-90 text-xs">
-                  {selectedStage.levels.filter((level) =>
-                    completedLevels.includes(level.id)
-                  ).length === selectedStage.levels.length
-                    ? "Completed"
-                    : "In Progress"}
-                </Text>
+                      ).length === selectedStage.levels.length
+                        ? "Completed"
+                        : "In Progress"}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
-          </LinearGradient>
 
-          {/* Level selection grid */}
-          <Text variant="bold" className="text-lg text-slate-800 mb-3">
-            Select a Level
-          </Text>
+            {/* Level selection grid */}
+            <View className="flex-row justify-between items-center mb-3">
+              <Text variant="bold" className="text-lg text-slate-800">
+                Select a Level
+              </Text>
+              <Text className="text-xs text-slate-500">
+                {selectedStage.levels.length} levels
+              </Text>
+            </View>
 
-          <View className="flex-row flex-wrap justify-between">
-            {selectedStage.levels.map((level) => (
-              <TouchableOpacity
-                key={level.id}
-                className={`w-[48%] mb-4 rounded-xl shadow-sm overflow-hidden border
+            {/* More efficient level grid */}
+            <View className="flex-row flex-wrap justify-between">
+              {selectedStage.levels.map((level) => (
+                <TouchableOpacity
+                  key={level.id}
+                  style={{ width: "48%", marginBottom: 10 }}
+                  className={`rounded shadow-sm overflow-hidden border
                   ${
                     level.isLocked
                       ? "bg-slate-100 border-slate-200"
@@ -722,65 +731,75 @@ const LugandaLearningGame: React.FC = () => {
                       : "bg-white border-indigo-200"
                   }
                 `}
-                onPress={() => selectLevel(level)}
-                disabled={level.isLocked}
-                activeOpacity={level.isLocked ? 1 : 0.7}
-              >
-                <View className="px-3 py-4 items-center">
-                  {level.isLocked ? (
-                    <View className="items-center">
-                      <View className="w-12 h-12 rounded-full bg-slate-200 justify-center items-center mb-3">
-                        <Ionicons
-                          name="lock-closed"
-                          size={22}
-                          color="#94a3b8"
-                        />
+                  onPress={() => selectLevel(level)}
+                  disabled={level.isLocked}
+                  activeOpacity={level.isLocked ? 1 : 0.7}
+                >
+                  <View className="px-2 py-3 items-center">
+                    {level.isLocked ? (
+                      <View className="items-center">
+                        <View className="w-10 h-10 rounded-full bg-slate-200 justify-center items-center mb-2">
+                          <Ionicons
+                            name="lock-closed"
+                            size={18}
+                            color="#94a3b8"
+                          />
+                        </View>
+                        <Text
+                          variant="bold"
+                          className="text-sm text-slate-400 text-center"
+                        >
+                          {level.title}
+                        </Text>
+                        <Text className="text-xs text-slate-400 mt-0.5">
+                          Locked
+                        </Text>
                       </View>
-                      <Text variant="bold" className="text-base text-slate-400">
-                        {level.title}
-                      </Text>
-                      <Text className="text-xs text-slate-400 mt-1">
-                        Locked
-                      </Text>
-                    </View>
-                  ) : completedLevels.includes(level.id) ? (
-                    <View className="items-center">
-                      <View className="w-12 h-12 rounded-full bg-emerald-100 justify-center items-center mb-3">
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={28}
-                          color="#10b981"
-                        />
+                    ) : completedLevels.includes(level.id) ? (
+                      <View className="items-center">
+                        <View className="w-10 h-10 rounded-full bg-emerald-100 justify-center items-center mb-2">
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color="#10b981"
+                          />
+                        </View>
+                        <Text
+                          variant="bold"
+                          className="text-sm text-slate-700 text-center"
+                        >
+                          {level.title}
+                        </Text>
+                        <Text className="text-xs text-emerald-600 mt-0.5">
+                          Completed
+                        </Text>
                       </View>
-                      <Text variant="bold" className="text-slate-700">
-                        {level.title}
-                      </Text>
-                      <Text className="text-xs text-emerald-600 mt-1">
-                        Completed
-                      </Text>
-                    </View>
-                  ) : (
-                    <View className="items-center">
-                      <View className="w-12 h-12 rounded-full bg-indigo-100 justify-center items-center mb-3">
-                        <Ionicons
-                          name="play-circle"
-                          size={28}
-                          color="#7b5af0"
-                        />
+                    ) : (
+                      <View className="items-center">
+                        <View className="w-10 h-10 rounded-full bg-indigo-100 justify-center items-center mb-2">
+                          <Ionicons
+                            name="play-circle"
+                            size={20}
+                            color="#7b5af0"
+                          />
+                        </View>
+                        <Text
+                          variant="bold"
+                          className="text-sm text-slate-700 text-center"
+                        >
+                          {level.title}
+                        </Text>
+                        <Text className="text-xs text-slate-500 mt-0.5">
+                          {level.words.length} Words
+                        </Text>
                       </View>
-                      <Text variant="bold" className="text-slate-700">
-                        {level.title}
-                      </Text>
-                      <Text className="text-xs text-slate-500 mt-1">
-                        {level.words.length} Words
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        </ScrollView>
       </SafeAreaView>
     );
   };
