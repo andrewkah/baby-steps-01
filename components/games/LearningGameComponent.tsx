@@ -1125,7 +1125,7 @@ const LugandaLearningGame: React.FC = () => {
                     <View className="flex-row items-center">
                       <Text
                         variant="bold"
-                        className="text-3xl text-indigo-700 text-center"
+                        className="text-3xl text-indigo-700 text-center pt-3"
                       >
                         {currentWord.luganda}
                       </Text>
@@ -1171,7 +1171,7 @@ const LugandaLearningGame: React.FC = () => {
                     >
                       <TouchableOpacity
                         className={`
-                          py-4 px-5 rounded-xl shadow-sm border-2 items-center justify-center
+                          py-3 px-5 rounded-xl shadow-sm border-2 items-center justify-center mb-2
                           ${
                             selectedOption === null
                               ? "bg-white border-slate-200"
