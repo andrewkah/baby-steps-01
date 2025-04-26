@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   Dimensions,
   Modal,
-  Linking,
-  Platform,
   SafeAreaView,
   BackHandler,
 } from "react-native";

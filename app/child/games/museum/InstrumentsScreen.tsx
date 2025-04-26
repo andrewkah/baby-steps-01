@@ -252,51 +252,53 @@ export default function InstrumentsScreen() {
       {selectedInstrument && (
         <View className="absolute inset-0 bg-black bg-opacity-70 justify-center items-center p-4">
           <View className="bg-white w-full max-w-md rounded-xl overflow-hidden">
-            <Image
-              source={selectedInstrument.image}
-              className="w-full h-64"
-              resizeMode="cover"
-            />
+            <ScrollView style={{ maxHeight: "100%" }}>
+              <Image
+                source={selectedInstrument.image}
+                className="w-full h-64"
+                resizeMode="cover"
+              />
 
-            <View className="p-4">
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-xl font-bold text-amber-900">
-                  {selectedInstrument.name}
+              <View className="p-4">
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="text-xl font-bold text-amber-900">
+                    {selectedInstrument.name}
+                  </Text>
+                  <TouchableOpacity
+                    className="p-2 bg-amber-800 rounded-full"
+                    onPress={() =>
+                      playSound(selectedInstrument.sound, selectedInstrument.id)
+                    }
+                  >
+                    <MaterialCommunityIcons
+                      name="volume-high"
+                      size={24}
+                      color="white"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <Text className="text-base mb-4">
+                  {selectedInstrument.description}
                 </Text>
-                <TouchableOpacity
-                  className="p-2 bg-amber-800 rounded-full"
-                  onPress={() =>
-                    playSound(selectedInstrument.sound, selectedInstrument.id)
-                  }
-                >
-                  <MaterialCommunityIcons
-                    name="volume-high"
-                    size={24}
-                    color="white"
-                  />
-                </TouchableOpacity>
-              </View>
 
-              <Text className="text-base mb-4">
-                {selectedInstrument.description}
-              </Text>
+                <View className="bg-amber-100 p-3 rounded-lg mb-4">
+                  <Text className="font-bold text-amber-900 mb-1">
+                    How to Play:
+                  </Text>
+                  <Text>{selectedInstrument.howToPlay}</Text>
+                </View>
 
-              <View className="bg-amber-100 p-3 rounded-lg mb-4">
-                <Text className="font-bold text-amber-900 mb-1">
-                  How to Play:
-                </Text>
-                <Text>{selectedInstrument.howToPlay}</Text>
+                <View className="flex-row justify-center">
+                  <TouchableOpacity
+                    className="bg-amber-600 py-2 px-6 rounded-full"
+                    onPress={() => setSelectedInstrument(null)}
+                  >
+                    <Text className="text-white font-bold">Close </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-
-              <View className="flex-row justify-center">
-                <TouchableOpacity
-                  className="bg-amber-600 py-2 px-6 rounded-full"
-                  onPress={() => setSelectedInstrument(null)}
-                >
-                  <Text className="text-white font-bold">Close </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            </ScrollView>
           </View>
         </View>
       )}
