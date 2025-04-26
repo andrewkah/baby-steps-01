@@ -86,25 +86,25 @@ export interface LugandaNumber {
   
   // Ugandan currency values
   export const ugandanCurrency: CurrencyItem[] = [
-    { value: 500, name: 'Shs 500 coin', image: 'coin.png', luganda: 'Bitaano' },
-    { value: 1000, name: 'Shs 1,000 note', image: 'coin.png', luganda: 'Lukumi' },
-    { value: 2000, name: 'Shs 2,000 note', image: 'coin.png', luganda: 'Enkumi Bbiri' },
-    { value: 5000, name: 'Shs 5,000 note', image: 'coin.png', luganda: 'Enkumi Ttaano' },
-    { value: 10000, name: 'Shs 10,000 note', image: 'coin.png', luganda: 'Enkumi Kkumi' },
-    { value: 20000, name: 'Shs 20,000 note', image: 'coin.png', luganda: 'Enkumi Abiri' },
-    { value: 50000, name: 'Shs 50,000 note', image: 'coin.png', luganda: 'Enkumi Ataano' }
+    { value: 500, name: 'Shs 500 coin', image: '500.png', luganda: 'Bitaano' },
+    { value: 1000, name: 'Shs 1,000 note', image: '1000.jpeg', luganda: 'Lukumi' },
+    { value: 2000, name: 'Shs 2,000 note', image: '2000.jpeg', luganda: 'Enkumi Bbiri' },
+    { value: 5000, name: 'Shs 5,000 note', image: '5000.jpeg', luganda: 'Enkumi Ttaano' },
+    { value: 10000, name: 'Shs 10,000 note', image: '10000.jpeg', luganda: 'Enkumi Kkumi' },
+    { value: 20000, name: 'Shs 20,000 note', image: '20000.jpeg', luganda: 'Enkumi Abiri' },
+    { value: 50000, name: 'Shs 50,000 note', image: '50000.jpeg', luganda: 'Enkumi Ataano' }
   ];
   
   // Cultural items for counting exercises
   export const culturalItems: CulturalItem[] = [
-    { name: 'matoke', image: 'coin.png' },
-    { name: 'mangoes', image: 'coin.png' },
-    { name: 'goats', image: 'coin.png' },
-    { name: 'baskets', image: 'coin.png' },
-    { name: 'drums', image: 'coin.png' },
-    { name: 'bananas', image: 'coin.png' },
-    { name: 'beans', image: 'coin.png' },
-    { name: 'children', image: 'coin.png' }
+    { name: 'matoke', image: 'matooke.png' },
+    { name: 'mangoes', image: 'mango.png' },
+    { name: 'goats', image: 'goat.png' },
+    { name: 'baskets', image: 'basket.png' },
+    { name: 'drums', image: 'drum.png' },
+    { name: 'bananas', image: 'banana.png' },
+    { name: 'beans', image: 'bean.png' },
+    { name: 'children', image: 'child.png' }
   ];
   
   // Game stages configuration
