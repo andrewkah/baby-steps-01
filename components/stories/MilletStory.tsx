@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions, Animated, Modal, ScrollView } from 'react-native';
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Animated,
+  Modal,
+  ScrollView,
+} from 'react-native';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +16,8 @@ import { useRouter } from 'expo-router';
 import StoryProgress from './StoryProgress';
 import { saveActivity } from '@/lib/utils';
 import { useChild } from '@/context/ChildContext';
+import { StatusBar } from "expo-status-bar";
+import { Text } from "@/components/StyledText";
 
 const { width, height } = Dimensions.get('window');
 
@@ -113,6 +123,7 @@ const MilletStory: React.FC = () => {
       correctAnswer: 1
     }
   ];
+  
   // Load sounds
   useEffect(() => {
     async function loadSounds() {
@@ -227,8 +238,7 @@ const MilletStory: React.FC = () => {
     setUserAnswers(newAnswers);
   };
 
-  // Updated handleQuizSubmit with activity tracking
-  const handleQuizSubmit = async () => { // Made async
+  const handleQuizSubmit = async () => {
     let correctAnswers = 0;
     storyQuestions.forEach((question, index) => {
       if (userAnswers[index] === question.correctAnswer) {
@@ -241,7 +251,6 @@ const MilletStory: React.FC = () => {
       await saveActivity({
         child_id: activeChild.id,
         activity_type: 'stories',
-        // Updated activity name and details for Millet Story
         activity_name: 'Completed Nnambi and the Millet Story Quiz',
         score: `${correctAnswers}/${storyQuestions.length}`,
         completed_at: new Date().toISOString(),
@@ -259,690 +268,484 @@ const MilletStory: React.FC = () => {
     setScore(0);
   };
 
-  // Added handler for StoryProgress callback (can be extended later)
   const handleQuizComplete = (score: number, total: number) => {
     console.log(`Quiz completed with score ${score}/${total}`);
   };
 
   return (
-     // Wrapped the main View with StoryProgress for tracking
     <StoryProgress
-      storyId="millet" // Unique ID for this story
-      storyTitle="Nnambi and the Millet" // Title for tracking
+      storyId="millet"
+      storyTitle="Nnambi and the Millet"
       totalPages={storyPages.length}
       currentPage={currentPage}
-      onQuizComplete={handleQuizComplete} // Pass the handler
+      onQuizComplete={handleQuizComplete}
     >
-      <View style={styles.container}>
+      
+        <StatusBar style="dark" />
         {!showQuestions ? (
-          // Show original story UI
-          <View style={styles.contentContainer}>
-            {/* Back Button - existing code */}
+          // Story UI
+          <View className="flex-1 flex-row p-5 pt-12">
+            {/* Back Button */}
             <TouchableOpacity
-              style={{
-                position: 'absolute',
-                top: 10,
-                left: 10,
-                zIndex: 10,
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                padding: 8,
-                borderRadius: 20,
-              }}
+              className="absolute top-6 left-4 z-10 bg-amber-50/80 p-2 rounded-full shadow-sm"
               onPress={() => router.back()}
             >
-              <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+              <Ionicons name="arrow-back" size={24} color="#8B4513" />
             </TouchableOpacity>
 
-            {/* Left Panel: Story Image - existing code */}
-            <Animated.View style={[styles.imageContainer, { opacity: fadeAnim }]}>
+            {/* Left Panel: Story Image */}
+            <Animated.View
+              className="flex-1 bg-white rounded-3xl p-4 mr-3 shadow-md border border-amber-200"
+              style={{ opacity: fadeAnim }}
+            >
               <Image
                 source={storyPages[currentPage].image}
-                style={styles.storyImage}
+                className="w-full h-full rounded-2xl"
                 resizeMode="contain"
                 accessibilityLabel={storyPages[currentPage].altText}
               />
             </Animated.View>
 
-            {/* Right Panel: Text and Controls - existing code */}
-            <View style={styles.rightPanel}>
-              {/* Settings button - existing code */}
-              <View style={styles.settingsButtonContainer}>
+            {/* Right Panel: Text and Controls */}
+            <View className="flex-1 pl-3">
+              {/* Settings button */}
+              <View className="items-end mb-3">
                 <TouchableOpacity
-                  style={styles.settingsButton}
+                  className="bg-amber-700 px-4 py-2 rounded-full shadow-sm flex-row items-center"
                   onPress={() => setSettingsVisible(true)}
                   accessibilityLabel="Open settings"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
+                  <Ionicons name="settings-outline" size={18} color="#fff" />
+                  <Text className="ml-1.5 text-white">Settings</Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Story Text - existing code */}
-              <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
-                <Text style={styles.storyText}>
+              {/* Story Text */}
+              <Animated.View
+                className="flex-1 bg-white rounded-3xl p-5 mb-3 shadow-md border border-amber-200"
+                style={{ opacity: fadeAnim }}
+              >
+                <Text className="text-slate-800 text-sm pt-3">
                   {words.map((word, index) => (
                     <Text
                       key={index}
-                      style={[
-                        styles.word,
-                        { fontSize: getTextSize() },
-                        index === highlightedIndex && styles.highlightedWord
-                      ]}
+                      className={`${
+                        index === highlightedIndex ? "bg-amber-200 rounded" : ""
+                      }`}
+                      style={{ fontSize: getTextSize() }}
                     >
-                      {word}{' '}
+                      {word}{" "}
                     </Text>
                   ))}
                 </Text>
               </Animated.View>
 
-              {/* Navigation and Controls - existing code */}
-              <View style={styles.navRow}>
+              {/* Navigation and Controls */}
+              <View className="flex-row justify-between items-center mb-3">
                 <TouchableOpacity
-                  style={[styles.navButton, currentPage === 0 && styles.disabledButton]}
-                  onPress={() => handlePageTurn('prev')}
+                  className={`w-12 h-12 rounded-full justify-center items-center shadow ${
+                    currentPage === 0 ? "bg-gray-300" : "bg-amber-700"
+                  }`}
+                  onPress={() => handlePageTurn("prev")}
                   disabled={currentPage === 0}
                   accessibilityLabel="Previous page"
                   accessibilityRole="button"
                   accessibilityState={{ disabled: currentPage === 0 }}
-                  accessibilityHint="Navigate to previous story page"
                 >
-                  <Text style={styles.navButtonText}>←</Text>
+                  <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
 
                 {currentPage === storyPages.length - 1 ? (
                   <TouchableOpacity
-                    style={[styles.readButton, { backgroundColor: '#6495ED' }]}
+                    className="bg-indigo-700 py-3 px-6 rounded-full shadow-md"
                     onPress={() => setShowQuestions(true)}
                     accessibilityLabel="Take the quiz"
                     accessibilityRole="button"
                   >
-                    <Text style={styles.readButtonText}>Take Quiz</Text>
+                    <Text variant="bold" className="text-white text-lg">
+                      Take Quiz
+                    </Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
-                    style={styles.readButton}
+                    className={`py-3 px-6 rounded-full shadow-md ${
+                      isReading ? "bg-red-600" : "bg-emerald-700"
+                    }`}
                     onPress={readStory}
                     accessibilityLabel={isReading ? "Stop reading" : "Read to Me"}
                     accessibilityRole="button"
-                    accessibilityHint={isReading ? "Stop the story narration" : "Start reading the story aloud"}
                   >
-                    <Text style={styles.readButtonText}>
+                    <Text variant="bold" className="text-white text-lg">
                       {isReading ? "Stop" : "Read to Me"}
                     </Text>
                   </TouchableOpacity>
                 )}
 
                 <TouchableOpacity
-                  style={[styles.navButton, currentPage === storyPages.length - 1 && styles.disabledButton]}
-                  onPress={() => handlePageTurn('next')}
+                  className={`w-12 h-12 rounded-full justify-center items-center shadow ${
+                    currentPage === storyPages.length - 1
+                      ? "bg-gray-300"
+                      : "bg-amber-700"
+                  }`}
+                  onPress={() => handlePageTurn("next")}
                   disabled={currentPage === storyPages.length - 1}
                   accessibilityLabel="Next page"
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: currentPage === storyPages.length - 1 }}
-                  accessibilityHint="Navigate to next story page"
+                  accessibilityState={{
+                    disabled: currentPage === storyPages.length - 1,
+                  }}
                 >
-                  <Text style={styles.navButtonText}>→</Text>
+                  <Ionicons name="chevron-forward" size={24} color="#fff" />
                 </TouchableOpacity>
               </View>
 
-              {/* Page indicator - existing code */}
-              <View style={styles.pageIndicator}>
+              {/* Page indicator */}
+              <View className="flex-row justify-center">
                 {storyPages.map((_, index) => (
                   <View
                     key={index}
-                    style={[
-                      styles.pageIndicatorDot,
-                      index === currentPage && styles.currentPageDot
-                    ]}
+                    className={`mx-1 ${
+                      index === currentPage
+                        ? "w-4 h-4 rounded-full bg-amber-700"
+                        : "w-2.5 h-2.5 rounded-full bg-amber-300"
+                    }`}
                   />
                 ))}
               </View>
             </View>
           </View>
         ) : (
-           // Updated Quiz UI with ScrollView - existing code
-          <View style={styles.questionsContainer}>
-            <TouchableOpacity
-              style={{
-                position: 'absolute',
-                top: 10,
-                left: 10,
-                zIndex: 10,
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                padding: 8,
-                borderRadius: 20,
-              }}
-              onPress={() => {
-                setShowQuestions(false);
-                if (quizCompleted) {
-                  setQuizCompleted(false);
-                  setUserAnswers(Array(storyQuestions.length).fill(-1));
-                }
-              }}
-            >
-              <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-            </TouchableOpacity>
+          // Quiz UI
+          <View className="flex-1 pt-3 px-5">
+            {/* Back button and title row */}
+            <View className="flex-row items-center justify-between mt-3 mb-2">
+              <TouchableOpacity
+                className="p-2 rounded-full bg-white/80 shadow-sm"
+                onPress={() => {
+                  setShowQuestions(false);
+                  if (quizCompleted) {
+                    setQuizCompleted(false);
+                    setUserAnswers(Array(storyQuestions.length).fill(-1));
+                  }
+                }}
+              >
+                <Ionicons name="arrow-back" size={24} color="#8B4513" />
+              </TouchableOpacity>
 
-            <View style={styles.quizContent}>
-              {/* Updated Quiz Title */}
-              <Text style={styles.quizTitle}>
-                {quizCompleted ? `Your Score: ${score}/${storyQuestions.length}` : "Nnambi and the Millet - Quiz"}
+              <Text
+                variant="bold"
+                className={`text-xl ${
+                  quizCompleted ? "text-indigo-700" : "text-amber-800"
+                } flex-1 text-center mr-10`}
+              >
+                {quizCompleted
+                  ? score === storyQuestions.length
+                    ? "Perfect Score! 🎉"
+                    : `Your Score: ${score}/${storyQuestions.length}`
+                  : "Nnambi and the Millet - Quiz"}
               </Text>
+            </View>
+
+            {/* Main quiz container without border */}
+            <View className="flex-1 rounded-3xl px-6">
+              {/* Score display for completed quiz */}
+              {quizCompleted && (
+                <View className="bg-indigo-50 p-4 rounded-xl mb-5 items-center">
+                  <Text variant="bold" className="text-2xl text-indigo-700">
+                    {score === storyQuestions.length
+                      ? "You got all answers correct!"
+                      : `You got ${score} out of ${storyQuestions.length} correct`}
+                  </Text>
+                </View>
+              )}
 
               <ScrollView
-                style={styles.questionsScrollView}
+                className="flex-1"
                 showsVerticalScrollIndicator={true}
-                contentContainerStyle={styles.questionsScrollContent}
               >
                 {!quizCompleted ? (
                   <>
                     {storyQuestions.map((question, qIndex) => (
-                      <View key={qIndex} style={styles.questionContainer}>
-                        <Text style={styles.questionText}>{qIndex + 1}. {question.question}</Text>
+                      <View
+                        key={qIndex}
+                        className="mb-6 bg-amber-50 p-4 rounded-xl shadow-sm"
+                      >
+                        <Text
+                          variant="bold"
+                          className="text-lg text-slate-800 mb-3"
+                        >
+                          {qIndex + 1}. {question.question}
+                        </Text>
 
                         {question.options.map((option, oIndex) => (
                           <TouchableOpacity
                             key={oIndex}
-                            style={[
-                              styles.optionButton,
-                              userAnswers[qIndex] === oIndex && styles.selectedOption
-                            ]}
+                            className={`p-3.5 rounded-lg mb-2 ${
+                              userAnswers[qIndex] === oIndex
+                                ? "bg-amber-600 border border-amber-700"
+                                : "bg-amber-100 border border-amber-200"
+                            }`}
                             onPress={() => handleAnswerSelection(qIndex, oIndex)}
                           >
-                            <Text style={styles.optionText}>{option}</Text>
+                            <Text
+                              className={`${
+                                userAnswers[qIndex] === oIndex
+                                  ? "text-white"
+                                  : "text-slate-700"
+                              }`}
+                            >
+                              {option}
+                            </Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                     ))}
+
+                    {/* Submit button moved inside ScrollView at the end */}
+                    <View className="mt-8 mb-4">
+                      <TouchableOpacity
+                        className={`py-4 rounded-xl items-center shadow-sm ${
+                          userAnswers.includes(-1)
+                            ? "bg-gray-300"
+                            : "bg-amber-700"
+                        }`}
+                        onPress={handleQuizSubmit}
+                        disabled={userAnswers.includes(-1)}
+                      >
+                        <Text variant="bold" className="text-white text-lg">
+                          Submit Answers
+                        </Text>
+                      </TouchableOpacity>
+
+                      {userAnswers.includes(-1) && (
+                        <Text className="text-amber-700 text-center mt-3 italic">
+                          Please answer all questions before submitting
+                        </Text>
+                      )}
+                    </View>
                   </>
                 ) : (
                   // Results view
-                  <View style={styles.resultsContainer}>
-                    {storyQuestions.map((question, qIndex) => (
-                      <View key={qIndex} style={styles.resultQuestionContainer}>
-                        <Text style={styles.questionText}>{qIndex + 1}. {question.question}</Text>
-
-                        {question.options.map((option, oIndex) => (
-                          <View
-                            key={oIndex}
-                            style={[
-                              styles.resultOption,
-                              oIndex === question.correctAnswer && styles.correctOption,
-                              userAnswers[qIndex] === oIndex && userAnswers[qIndex] !== question.correctAnswer && styles.incorrectOption
-                            ]}
+                  <>
+                    <View className="mt-2">
+                      {storyQuestions.map((question, qIndex) => (
+                        <View
+                          key={qIndex}
+                          className="mb-6 bg-slate-50 p-4 rounded-xl shadow-sm"
+                        >
+                          <Text
+                            variant="bold"
+                            className="text-lg text-slate-800 mb-3"
                           >
-                            <Text style={styles.resultOptionText}>{option}</Text>
-                            {oIndex === question.correctAnswer && <Text style={styles.correctMark}>✓</Text>}
-                            {userAnswers[qIndex] === oIndex && userAnswers[qIndex] !== question.correctAnswer && <Text style={styles.incorrectMark}>✗</Text>}
-                          </View>
-                        ))}
-                      </View>
-                    ))}
-                  </View>
+                            {qIndex + 1}. {question.question}
+                          </Text>
+
+                          {question.options.map((option, oIndex) => (
+                            <View
+                              key={oIndex}
+                              className={`p-3.5 rounded-lg mb-2 flex-row justify-between items-center ${
+                                oIndex === question.correctAnswer
+                                  ? "bg-emerald-100 border border-emerald-300"
+                                  : userAnswers[qIndex] === oIndex
+                                  ? "bg-red-100 border border-red-300"
+                                  : "bg-white border border-gray-200"
+                              }`}
+                            >
+                              <Text
+                                className={`text-base ${
+                                  oIndex === question.correctAnswer
+                                    ? "text-emerald-800 font-medium"
+                                    : userAnswers[qIndex] === oIndex
+                                    ? "text-red-800 font-medium"
+                                    : "text-slate-600"
+                                }`}
+                              >
+                                {option}
+                              </Text>
+                              {oIndex === question.correctAnswer && (
+                                <View className="bg-emerald-600 w-6 h-6 rounded-full items-center justify-center">
+                                  <Ionicons
+                                    name="checkmark-sharp"
+                                    size={16}
+                                    color="#fff"
+                                  />
+                                </View>
+                              )}
+                              {userAnswers[qIndex] === oIndex &&
+                                userAnswers[qIndex] !== question.correctAnswer && (
+                                  <View className="bg-red-600 w-6 h-6 rounded-full items-center justify-center">
+                                    <Ionicons
+                                      name="close"
+                                      size={16}
+                                      color="#fff"
+                                    />
+                                  </View>
+                                )}
+                            </View>
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Try Again button moved inside ScrollView at the end */}
+                    <View className="mt-8 mb-4">
+                      <TouchableOpacity
+                        className="bg-indigo-700 py-4 rounded-xl items-center shadow-sm"
+                        onPress={handleRestartQuiz}
+                      >
+                        <Text variant="bold" className="text-white text-lg">
+                          Try Again
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
                 )}
               </ScrollView>
-
-              {/* Submit or Try Again button outside ScrollView */}
-              {!quizCompleted ? (
-                <TouchableOpacity
-                  style={[
-                    styles.submitButton,
-                    userAnswers.includes(-1) && styles.disabledButton
-                  ]}
-                  onPress={handleQuizSubmit} // Calls the updated async function
-                  disabled={userAnswers.includes(-1)}
-                >
-                  <Text style={styles.submitButtonText}>Submit Answers</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.submitButton, { marginTop: 20 }]}
-                  onPress={handleRestartQuiz}
-                >
-                  <Text style={styles.submitButtonText}>Try Again</Text>
-                </TouchableOpacity>
-              )}
             </View>
           </View>
         )}
 
-        {/* Settings Modal - existing code */}
+        {/* Settings Modal */}
         <Modal
           animationType="fade"
           transparent={true}
           visible={settingsVisible}
           onRequestClose={() => setSettingsVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Story Settings</Text>
+          <View className="flex-1 bg-black/40 justify-center items-center">
+            <View className="bg-white rounded-2xl p-4 w-3/4 max-w-sm shadow-lg border border-amber-200">
+              <View className="items-center mb-1">
+                <View className="bg-amber-100 rounded-full p-2 mb-1">
+                  <Ionicons name="settings" size={24} color="#8B4513" />
+                </View>
+                <Text className="text-lg text-amber-800">Story Settings</Text>
+              </View>
 
               {/* Text Size Controls */}
-              <View style={styles.settingSection}>
-                <Text style={styles.settingLabel}>Text Size:</Text>
-                <View style={styles.settingsButtonGroup}>
+              <View className="mt-3 mb-3">
+                <Text className="text-sm text-slate-700 mb-1.5">Text Size</Text>
+                <View className="flex-row justify-between">
                   <TouchableOpacity
-                    onPress={() => setTextSize('small')}
-                    accessibilityLabel="Small text size"
-                    accessibilityRole="button"
-                    style={styles.modalButton}
+                    onPress={() => setTextSize("small")}
+                    className={`flex-1 py-2 mx-0.5 rounded-lg border ${
+                      textSize === "small"
+                        ? "bg-amber-700 border-amber-800"
+                        : "bg-white border-slate-300"
+                    }`}
                   >
-                    <Text style={[styles.modalSizeButton, textSize === 'small' && styles.activeSizeButton]}>Small</Text>
+                    <Text
+                      className={`text-center text-sm ${
+                        textSize === "small" ? "text-white" : "text-slate-700"
+                      }`}
+                    >
+                      Small
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => setTextSize('medium')}
-                    accessibilityLabel="Medium text size"
-                    accessibilityRole="button"
-                    style={styles.modalButton}
+                    onPress={() => setTextSize("medium")}
+                    className={`flex-1 py-2 mx-0.5 rounded-lg border ${
+                      textSize === "medium"
+                        ? "bg-amber-700 border-amber-800"
+                        : "bg-white border-slate-300"
+                    }`}
                   >
-                    <Text style={[styles.modalSizeButton, textSize === 'medium' && styles.activeSizeButton]}>Medium</Text>
+                    <Text
+                      className={`text-center text-sm ${
+                        textSize === "medium" ? "text-white" : "text-slate-700"
+                      }`}
+                    >
+                      Medium
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => setTextSize('large')}
-                    accessibilityLabel="Large text size"
-                    accessibilityRole="button"
-                    style={styles.modalButton}
+                    onPress={() => setTextSize("large")}
+                    className={`flex-1 py-2 mx-0.5 rounded-lg border ${
+                      textSize === "large"
+                        ? "bg-amber-700 border-amber-800"
+                        : "bg-white border-slate-300"
+                    }`}
                   >
-                    <Text style={[styles.modalSizeButton, textSize === 'large' && styles.activeSizeButton]}>Large</Text>
+                    <Text
+                      className={`text-center text-sm ${
+                        textSize === "large" ? "text-white" : "text-slate-700"
+                      }`}
+                    >
+                      Large
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
               {/* Reading Speed Controls */}
-              <View style={styles.settingSection}>
-                <Text style={styles.settingLabel}>Reading Speed:</Text>
-                <View style={styles.settingsButtonGroup}>
+              <View className="mb-3">
+                <Text className="text-sm text-slate-700 mb-1.5">
+                  Reading Speed
+                </Text>
+                <View className="flex-row justify-between">
                   <TouchableOpacity
                     onPress={() => setReadingSpeed(0.5)}
-                    accessibilityLabel="Slow reading speed"
-                    accessibilityRole="button"
-                    style={styles.modalButton}
+                    className={`flex-1 py-2 mx-0.5 rounded-lg border ${
+                      readingSpeed === 0.5
+                        ? "bg-amber-700 border-amber-800"
+                        : "bg-white border-slate-300"
+                    }`}
                   >
-                    <Text style={[styles.modalSpeedButton, readingSpeed === 0.5 && styles.activeSpeedButton]}>Slow</Text>
+                    <Text
+                      className={`text-center text-sm ${
+                        readingSpeed === 0.5 ? "text-white" : "text-slate-700"
+                      }`}
+                    >
+                      Slow
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setReadingSpeed(0.8)}
-                    accessibilityLabel="Normal reading speed"
-                    accessibilityRole="button"
-                    style={styles.modalButton}
+                    className={`flex-1 py-2 mx-0.5 rounded-lg border ${
+                      readingSpeed === 0.8
+                        ? "bg-amber-700 border-amber-800"
+                        : "bg-white border-slate-300"
+                    }`}
                   >
-                    <Text style={[styles.modalSpeedButton, readingSpeed === 0.8 && styles.activeSpeedButton]}>Normal</Text>
+                    <Text
+                      className={`text-center text-sm ${
+                        readingSpeed === 0.8 ? "text-white" : "text-slate-700"
+                      }`}
+                    >
+                      Normal
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setReadingSpeed(1.5)}
-                    accessibilityLabel="Fast reading speed"
-                    accessibilityRole="button"
-                    style={styles.modalButton}
+                    className={`flex-1 py-2 mx-0.5 rounded-lg border ${
+                      readingSpeed === 1.5
+                        ? "bg-amber-700 border-amber-800"
+                        : "bg-white border-slate-300"
+                    }`}
                   >
-                    <Text style={[styles.modalSpeedButton, readingSpeed === 1.5 && styles.activeSpeedButton]}>Fast</Text>
+                    <Text
+                      className={`text-center text-sm ${
+                        readingSpeed === 1.5 ? "text-white" : "text-slate-700"
+                      }`}
+                    >
+                      Fast
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
               {/* Close Button */}
               <TouchableOpacity
-                style={styles.closeButton}
+                className="bg-indigo-700 py-2.5 rounded-lg items-center shadow-sm"
                 onPress={() => setSettingsVisible(false)}
-                accessibilityLabel="Close settings"
-                accessibilityRole="button"
               >
-                <Text style={styles.closeButtonText}>Close</Text>
+                <Text className="text-white text-sm">Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
-      </View>
-    </StoryProgress> // Close StoryProgress wrapper
+    </StoryProgress>
   );
 };
-
-// Styles remain unchanged - using the same styles as provided
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5E9BE', // Light beige background
-    padding: 20,
-  },
-  contentContainer: {
-    flex: 1,
-    flexDirection: 'row', // For landscape orientation
-  },
-  imageContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 15,
-    marginRight: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    justifyContent: 'center',
-  },
-  rightPanel: {
-    flex: 1,
-    paddingLeft: 10,
-  },
-  controlsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  controlGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  controlButtonGroup: {
-    flexDirection: 'row',
-    marginLeft: 10,
-  },
-  controlButton: {
-    marginHorizontal: 2,
-  },
-  accessibilityLabel: {
-    fontSize: 16,
-  },
-  sizeButton: {
-    fontSize: 16,
-    padding: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    minWidth: 30,
-    textAlign: 'center',
-  },
-  activeSizeButton: {
-    backgroundColor: '#FF6B95', // Pink
-    color: 'white',
-  },
-  speedButton: {
-    fontSize: 14,
-    padding: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    minWidth: 50,
-    textAlign: 'center',
-  },
-  activeSpeedButton: {
-    backgroundColor: '#FF6B95', // Pink
-    color: 'white',
-  },
-  storyImage: {
-    width: '100%',
-    height: '100%',
-  },
-  textContainer: {
-    backgroundColor: 'white',
-    flex: 1,
-    padding: 15,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  storyText: {
-    fontSize: 18,
-    lineHeight: 26,
-    color: '#333',
-  },
-  word: {
-    fontSize: 18,
-    color: '#333',
-  },
-  highlightedWord: {
-    backgroundColor: '#FFEB3B', // Yellow highlight
-    fontWeight: 'bold',
-    borderRadius: 4,
-  },
-  navRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  navButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#FF6B95', // Pink
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    elevation: 3,
-  },
-  navButtonText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  disabledButton: {
-    backgroundColor: '#ccc',
-    opacity: 0.7,
-  },
-  readButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#4CAF50', // Green
-    borderRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    elevation: 3,
-  },
-  readButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  pageIndicator: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  pageIndicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ccc',
-    marginHorizontal: 4,
-  },
-  currentPageDot: {
-    backgroundColor: '#FF6B95', // Pink
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  // Settings button styles
-  settingsButtonContainer: {
-    alignItems: 'flex-end',
-    marginBottom: 10,
-  },
-  settingsButton: {
-    backgroundColor: '#6495ED', // Cornflower blue
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    elevation: 2,
-  },
-  settingsButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    width: '80%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-    color: '#333',
-  },
-  settingSection: {
-    marginBottom: 20,
-  },
-  settingLabel: {
-    fontSize: 16,
-    marginBottom: 8,
-    fontWeight: '500',
-    color: '#444',
-  },
-  settingsButtonGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  modalSizeButton: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    textAlign: 'center',
-  },
-  modalSpeedButton: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    textAlign: 'center',
-  },
-  closeButton: {
-    backgroundColor: '#FF6B95', // Pink
-    paddingVertical: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  closeButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  questionsContainer: {
-    flex: 1,
-    backgroundColor: '#F5E9BE',
-    padding: 20,
-  },
-  quizContent: {
-    backgroundColor: 'white',
-    marginTop: 50,
-    padding: 20,
-    borderRadius: 20,
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  quizTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#7b5af0',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  questionContainer: {
-    marginBottom: 20,
-  },
-  questionText: {
-    fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 10,
-  },
-  optionButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 5,
-  },
-  selectedOption: {
-    backgroundColor: '#bbd6ff',
-  },
-  optionText: {
-    fontSize: 16,
-  },
-  submitButton: {
-    backgroundColor: '#FF6B95',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  submitButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  resultsContainer: {
-    marginTop: 10,
-  },
-  resultQuestionContainer: {
-    marginBottom: 20,
-  },
-  resultOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 5,
-    backgroundColor: '#f0f0f0',
-  },
-  correctOption: {
-    backgroundColor: '#d4edda',
-  },
-  incorrectOption: {
-    backgroundColor: '#f8d7da',
-  },
-  resultOptionText: {
-    fontSize: 16,
-  },
-  correctMark: {
-    color: 'green',
-    fontWeight: 'bold',
-  },
-  incorrectMark: {
-    color: 'red',
-    fontWeight: 'bold',
-  },
-  questionsScrollView: {
-    flex: 1,
-    marginBottom: 10,
-  },
-  questionsScrollContent: {
-    paddingBottom: 10,
-  },
-});
 
 export default MilletStory;
