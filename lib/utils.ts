@@ -17,7 +17,7 @@ export interface GameActivity {
 
 interface Activity {
   child_id: string;
-  activity_type: 'stories' | 'counting' | 'museum' | 'other';
+  activity_type: 'stories' | 'counting' | 'museum' | 'other' | 'cultural';
   activity_name: string;
   score?: string;
   duration?: number;
