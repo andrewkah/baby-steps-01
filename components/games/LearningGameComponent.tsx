@@ -810,13 +810,12 @@ const LugandaLearningGame: React.FC = () => {
 
     const currentLearnWord = currentWords[currentLearningIndex];
     const layout = isLandscape ? "landscape" : "portrait";
-
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <SafeAreaView className="flex-1 bg-slate-50 pt-6">
         <StatusBar style="dark" />
 
         {/* Header */}
-        <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+        <View className="flex-row justify-between items-center px-4">
           <TouchableOpacity
             className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
             onPress={() => setGameState("levelSelect")}
@@ -855,7 +854,7 @@ const LugandaLearningGame: React.FC = () => {
           <View className="flex-1 flex-row">
             <View className="w-1/2 p-4 justify-center items-center">
               <Animated.View
-                className="bg-white p-5 rounded-2xl shadow-sm w-full h-4/5 justify-center items-center"
+                className="bg-white p-5 rounded-2xl shadow-sm w-full justify-center items-center"
                 style={{ opacity: fadeAnim }}
               >
                 <Image
@@ -868,7 +867,7 @@ const LugandaLearningGame: React.FC = () => {
 
             <View className="w-1/2 p-4">
               <Animated.View
-                className="bg-white p-5 rounded-2xl shadow-sm mb-4"
+                className="bg-white px-5 pt-3 rounded-2xl shadow-sm mb-4"
                 style={{
                   opacity: fadeAnim,
                   transform: [
@@ -881,7 +880,7 @@ const LugandaLearningGame: React.FC = () => {
                   ],
                 }}
               >
-                <View className="flex-row justify-between items-center mb-5">
+                <View className="flex-row justify-between items-center">
                   <Text className="text-sm text-indigo-500">
                     {selectedStage?.title} - {selectedLevel.title}
                   </Text>
@@ -893,7 +892,7 @@ const LugandaLearningGame: React.FC = () => {
                   </TouchableOpacity>
                 </View>
 
-                <Text variant="bold" className="text-3xl text-indigo-700 mb-1">
+                <Text variant="bold" className="text-3xl text-indigo-700 pt-3">
                   {currentLearnWord.luganda}
                 </Text>
                 <Text className="text-xl text-slate-700 mb-4">
@@ -910,7 +909,7 @@ const LugandaLearningGame: React.FC = () => {
                 </View>
               </Animated.View>
 
-              <View className="flex-row justify-between mt-auto">
+              <View className="flex-row justify-between p">
                 <TouchableOpacity
                   className={`py-3 px-5 rounded-xl ${
                     currentLearningIndex === 0
