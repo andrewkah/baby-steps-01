@@ -125,7 +125,9 @@ const WordGame: React.FC = () => {
     setDisplayWord(initialDisplay);
     setCurrentQuestion(level.question);
     setLetters(generateLetterChoices(word));
-    setSelectedLetters([firstLetter]); // First letter is already selected
+
+    // Instead of adding to selectedLetters, we'll check if letter is available in the renderLetters logic
+    setSelectedLetters([]);
 
     // Reset refs
     letterRefs.current = {};
@@ -318,23 +320,41 @@ const WordGame: React.FC = () => {
       }),
     ]).start();
 
-    if (currentWord.includes(letter) && !selectedLetters.includes(letter)) {
-      if (correctSound) {
-        correctSound.replayAsync();
-      }
-
-      const newSelectedLetters = [...selectedLetters, letter];
-      setSelectedLetters(newSelectedLetters);
-
-      const positions = [];
+    if (currentWord.includes(letter)) {
+      // Count remaining occurrences of this letter that still need to be filled
+      let remainingOccurrences = 0;
       for (let i = 0; i < currentWord.length; i++) {
         if (currentWord[i] === letter && displayWord[i] === "_") {
-          positions.push(i);
+          remainingOccurrences++;
         }
       }
 
-      if (positions.length > 0) {
-        animateLetterToWord(letter, letterIndex, positions[0]);
+      if (remainingOccurrences > 0) {
+        if (correctSound) {
+          correctSound.replayAsync();
+        }
+
+        // Only add to selectedLetters if all occurrences are now filled
+        if (remainingOccurrences === 1) {
+          const newSelectedLetters = [...selectedLetters, letter];
+          setSelectedLetters(newSelectedLetters);
+        }
+
+        const positions = [];
+        for (let i = 0; i < currentWord.length; i++) {
+          if (currentWord[i] === letter && displayWord[i] === "_") {
+            positions.push(i);
+            break; // Just get the first unfilled position
+          }
+        }
+
+        if (positions.length > 0) {
+          animateLetterToWord(letter, letterIndex, positions[0]);
+        }
+      } else {
+        if (wrongSound) {
+          wrongSound.replayAsync();
+        }
       }
     } else {
       if (wrongSound) {
@@ -444,24 +464,38 @@ const WordGame: React.FC = () => {
 
           {/* Letter choices */}
           <View className="flex-row flex-wrap justify-center w-full pb-6">
-            {letters.map((letter, index) => (
-              <TouchableOpacity
-                key={index}
-                ref={(ref) => (letterRefs.current[index] = ref)}
-                className={`w-16 h-16 rounded-full m-2 justify-center items-center shadow-lg border-2 ${
-                  selectedLetters.includes(letter)
-                    ? "bg-gray-300 border-gray-400 opacity-70"
-                    : "bg-secondary-500 border-secondary-300"
-                }`}
-                onPress={() => handleLetterPress(letter, index)}
-                disabled={selectedLetters.includes(letter)}
-                activeOpacity={0.8}
-              >
-                <Text variant="bold" className="text-white text-2xl">
-                  {letter}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {letters.map((letter, index) => {
+              // Check if this letter still has any unfilled positions in the word
+              const hasUnfilledPositions = currentWord
+                .split("")
+                .some((char, i) => char === letter && displayWord[i] === "_");
+
+              // A letter is disabled only if it doesn't appear in the word OR has no unfilled positions left
+              const isDisabled =
+                !currentWord.includes(letter) || !hasUnfilledPositions;
+
+              // A letter is greyed out if it's disabled
+              const isGreyedOut = isDisabled && currentWord.includes(letter);
+
+              return (
+                <TouchableOpacity
+                  key={index}
+                  ref={(ref) => (letterRefs.current[index] = ref)}
+                  className={`w-16 h-16 rounded-full m-2 justify-center items-center shadow-lg border-2 ${
+                    isGreyedOut
+                      ? "bg-gray-300 border-gray-400 opacity-70"
+                      : "bg-secondary-500 border-secondary-300"
+                  }`}
+                  onPress={() => handleLetterPress(letter, index)}
+                  disabled={isDisabled}
+                  activeOpacity={0.8}
+                >
+                  <Text variant="bold" className="text-white text-2xl">
+                    {letter}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
