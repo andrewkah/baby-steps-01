@@ -74,6 +74,7 @@ const WordGame: React.FC = () => {
   const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
   const [showLevelIntroModal, setShowLevelIntroModal] = useState<boolean>(false);
   const [showHintModal, setShowHintModal] = useState<boolean>(false);
+  const [showSubHint, setShowSubHint] = useState<boolean>(false);
 
   // Animation values
   const letterScale = useState(new Animated.Value(1))[0];
@@ -771,7 +772,10 @@ const WordGame: React.FC = () => {
             {/* Close button */}
             <TouchableOpacity
               className="absolute -top-3 -right-3 w-10 h-10 bg-white rounded-full items-center justify-center shadow-lg border-2 border-primary-300 z-10"
-              onPress={() => setShowHintModal(false)}
+              onPress={() => {
+                setShowHintModal(false);
+                setShowSubHint(false); // Reset sub-hint visibility when closing modal
+              }}
               activeOpacity={0.7}
             >
               <Ionicons name="close" size={20} color="#7b5af0" />
@@ -806,20 +810,44 @@ const WordGame: React.FC = () => {
               </Text>
             </View>
 
-            {/* Sub Hint - with a different style to distinguish */}
-            <View className="bg-secondary-50/80 w-full rounded-xl px-3 py-2.5 mb-4 border-2 border-secondary-100">
-              <Text
-                variant="medium"
-                className="text-sm text-secondary-700 text-center"
+            {/* Show Sub-Hint Button - only show if sub-hint is hidden */}
+            {!showSubHint && (
+              <TouchableOpacity
+                className="bg-secondary-500 py-2 px-5 rounded-full shadow-md border-2 border-secondary-400 mb-4"
+                onPress={() => setShowSubHint(true)}
+                activeOpacity={0.7}
               >
-                {gameLevels[currentLevelIndex].subHint}
-              </Text>
-            </View>
+                <Text variant="bold" className="text-white text-sm">
+                  Need More Help?
+                </Text>
+              </TouchableOpacity>
+            )}
 
-            {/* Gotcha button */}
+            {/* Sub Hint - only show if requested */}
+            {showSubHint && (
+              <View className="bg-secondary-50/80 w-full rounded-xl px-3 py-2.5 mb-4 border-2 border-secondary-100">
+                <Text
+                  variant="bold" 
+                  className="text-sm text-secondary-700 text-center mb-1"
+                >
+                  Additional Hint:
+                </Text>
+                <Text
+                  variant="medium"
+                  className="text-sm text-secondary-700 text-center"
+                >
+                  {gameLevels[currentLevelIndex].subHint}
+                </Text>
+              </View>
+            )}
+
+            {/* Got it button */}
             <TouchableOpacity
               className="bg-primary-500 py-2 px-7 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
-              onPress={() => setShowHintModal(false)}
+              onPress={() => {
+                setShowHintModal(false);
+                setShowSubHint(false); // Reset sub-hint visibility
+              }}
               activeOpacity={0.7}
             >
               <Text variant="bold" className="text-white text-sm">
