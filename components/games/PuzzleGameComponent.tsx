@@ -18,6 +18,8 @@ import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Text } from "@/components/StyledText";
+import { saveActivity } from "@/lib/utils"; // Import saveActivity
+import { useChild } from "@/context/ChildContext"; // Import useChild context
 
 // Get dimensions for landscape mode
 const { width, height } = Dimensions.get("window");
@@ -128,6 +130,8 @@ const isPuzzleSolvable = (puzzle: (number | null)[][]): boolean => {
 
 const BugandaPuzzleGame: React.FC = () => {
   const router = useRouter();
+  const { activeChild } = useChild(); // Get active child from context
+  const gameStartTime = useRef(Date.now()); // Track when game started
 
   const puzzleImages: PuzzleImage[] = [
     {
@@ -204,6 +208,11 @@ const BugandaPuzzleGame: React.FC = () => {
       }, 3000);
     }
   }, [showPreview, currentPuzzle]); // Added currentPuzzle to re-init on puzzle change
+
+  useEffect(() => {
+    // Reset the game start time whenever a new puzzle starts
+    gameStartTime.current = Date.now();
+  }, [currentPuzzle, showPreview]);
 
   const initializePuzzle = (): void => {
     // 1. Create solved grid
@@ -383,6 +392,25 @@ const BugandaPuzzleGame: React.FC = () => {
     }
   };
 
+  const trackActivity = async (isCompleted: boolean = true) => {
+    if (!activeChild) return;
+
+    // Calculate duration in seconds
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000);
+
+    // Save activity to Supabase
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "puzzle",
+      activity_name: `${puzzleImages[currentPuzzle].name} Puzzle`,
+      score: isCompleted ? "100%" : `${Math.round((moves > 0 ? 100 / moves : 100))}%`,
+      duration,
+      completed_at: new Date().toISOString(),
+      details: `${isCompleted ? 'Completed' : 'Attempted'} the ${puzzleImages[currentPuzzle].name} puzzle in ${moves} moves`,
+      level: currentPuzzle + 1,
+    });
+  };
+
   const checkPuzzleCompletion = (currentGridToCheck: (number | null)[][]): void => {
     let completed = true;
     for (let r = 0; r < GRID_SIZE; r++) {
@@ -407,6 +435,10 @@ const BugandaPuzzleGame: React.FC = () => {
     if (completed) {
       setIsComplete(true);
       soundEffects.success?.replayAsync();
+      
+      // Track the completed activity
+      trackActivity(true);
+      
       Animated.spring(successAnim, {
         toValue: 1,
         friction: 5,
@@ -422,6 +454,8 @@ const BugandaPuzzleGame: React.FC = () => {
             {
               text: "Next Puzzle",
               onPress: () => {
+                // Reset gameStartTime for the next puzzle
+                gameStartTime.current = Date.now();
                 setCurrentPuzzle((prev) => (prev + 1) % puzzleImages.length);
                 setShowPreview(true);
                 previewAnim.setValue(1);
@@ -432,6 +466,27 @@ const BugandaPuzzleGame: React.FC = () => {
       }, 1000);
     }
   };
+
+  const handleReset = () => {
+    // Track the current attempt before resetting
+    if (gameStarted && !showPreview && !isComplete && moves > 0) {
+      trackActivity(false);
+    }
+    
+    // Reset gameStartTime
+    gameStartTime.current = Date.now();
+    initializePuzzle();
+  };
+
+  // When leaving the game, track the unfinished activity
+  useEffect(() => {
+    return () => {
+      // Only track if game was actually played but not completed
+      if (gameStarted && !showPreview && !isComplete && moves > 0) {
+        trackActivity(false);
+      }
+    };
+  }, [gameStarted, showPreview, isComplete, moves]);
 
   const createTilePanResponder = (tileId: number, tileRow: number, tileCol: number) => {
     return PanResponder.create({
@@ -557,7 +612,13 @@ const BugandaPuzzleGame: React.FC = () => {
 
       <TouchableOpacity
         className="w-12 h-12 rounded-full bg-white items-center justify-center shadow-md border-2 border-primary-200 mx-6 mt-6"
-        onPress={() => router.back()}
+        onPress={() => {
+          // Track activity before leaving if puzzle was started but not completed
+          if (gameStarted && !showPreview && !isComplete && moves > 0) {
+            trackActivity(false);
+          }
+          router.back();
+        }}
         activeOpacity={0.7}
       >
         <Ionicons name="arrow-back" size={22} color="#7b5af0" />
@@ -638,7 +699,7 @@ const BugandaPuzzleGame: React.FC = () => {
             {gameStarted && !showPreview && (
               <TouchableOpacity
                 className="bg-purple-700 py-3 px-6 rounded-full shadow-md"
-                onPress={initializePuzzle} // Reset calls initializePuzzle
+                onPress={handleReset} // Use handleReset instead of initializePuzzle directly
                 accessible={true}
                 accessibilityLabel="Reset Puzzle"
                 accessibilityHint="Starts a new shuffled puzzle"
