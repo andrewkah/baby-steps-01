@@ -15,6 +15,8 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { Ionicons } from "@expo/vector-icons";
 import { gameLevels } from "./utils/wordgamewords"; // Import game levels
 import { Text } from "@/components/StyledText";
+import { useChild } from "@/context/ChildContext"; // Import useChild context
+import { saveActivity } from "@/lib/utils"; // Import saveActivity function
 
 // Get screen dimensions
 const { width, height } = Dimensions.get("window");
@@ -53,10 +55,15 @@ const getImageSource = (imageName: string | undefined) => {
     default:
       return require('@/assets/images/coin.png');
   }
-  
 };
 
 const WordGame: React.FC = () => {
+  // Add child context
+  const { activeChild } = useChild();
+  
+  // Add state to track level start time
+  const levelStartTime = useRef<number>(Date.now());
+  
   // State variables
   const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(0);
   const [currentWord, setCurrentWord] = useState<string>("");
@@ -124,12 +131,16 @@ const WordGame: React.FC = () => {
     return allLetters.sort(() => Math.random() - 0.5);
   };
 
-  // Load current level
+  // Modified loadLevel to track level start time
   const loadLevel = (levelIndex: number) => {
     if (levelIndex >= gameLevels.length) {
       setIsGameCompleted(true);
+      trackGameCompletion(); // Track full game completion
       return;
     }
+
+    // Reset the level start time when loading a new level
+    levelStartTime.current = Date.now();
 
     const level = gameLevels[levelIndex];
     const word = level.word;
@@ -153,6 +164,50 @@ const WordGame: React.FC = () => {
 
     // Show the level intro modal
     setShowLevelIntroModal(true);
+  };
+
+  // Function to track level completion
+  const trackLevelCompletion = async () => {
+    if (!activeChild) return;
+
+    const duration = Date.now() - levelStartTime.current; // Duration in milliseconds
+
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "words", // Using 'words' activity type
+      activity_name: `Word Game Level ${currentLevelIndex + 1}`,
+      score: "100%", // They completed the word successfully
+      duration: duration,
+      completed_at: new Date().toISOString(),
+      details: `Completed word: "${currentWord}" - ${currentQuestion}`,
+      level: currentLevelIndex + 1
+    });
+  };
+
+  // Function to track game completion
+  const trackGameCompletion = async () => {
+    if (!activeChild) return;
+
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "words",
+      activity_name: "Word Game Completed",
+      score: `${currentLevelIndex + 1}/${gameLevels.length}`,
+      completed_at: new Date().toISOString(),
+      details: `Completed all ${gameLevels.length} words in the Word Game`
+    });
+  };
+
+  // Modified goToNextLevel to track level completion
+  const goToNextLevel = async () => {
+    // Track completion of current level
+    await trackLevelCompletion();
+    
+    const nextLevelIndex = currentLevelIndex + 1;
+    setCurrentLevelIndex(nextLevelIndex);
+    setShowSuccessModal(false);
+    setSelectedLetters([]);
+    loadLevel(nextLevelIndex);
   };
 
   // Updated useEffect to lock screen orientation and load the first level
@@ -203,6 +258,9 @@ const WordGame: React.FC = () => {
       }
     }
 
+    // Initialize level start time
+    levelStartTime.current = Date.now();
+
     setLandscapeOrientation();
     loadSounds();
     loadLevel(0);
@@ -215,15 +273,6 @@ const WordGame: React.FC = () => {
   }, []);
 
   // Move to next level
-  const goToNextLevel = () => {
-    const nextLevelIndex = currentLevelIndex + 1;
-    setCurrentLevelIndex(nextLevelIndex);
-    setShowSuccessModal(false);
-    setSelectedLetters([]);
-    loadLevel(nextLevelIndex);
-  };
-
-  // Animation logic
   const animateLetterToWord = (
     letter: string,
     letterIndex: number,
@@ -681,9 +730,11 @@ const WordGame: React.FC = () => {
               {/* Button with improved styling */}
               <TouchableOpacity
                 className="bg-primary-500 py-3 px-8 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
-                onPress={() => {
+                onPress={async () => {
                   setIsGameCompleted(false);
                   setCurrentLevelIndex(0);
+                  // Reset level start time
+                  levelStartTime.current = Date.now();
                   loadLevel(0);
                 }}
                 activeOpacity={0.7}
