@@ -39,6 +39,23 @@ type GameLevel = {
   firstLetter: string;
 };
 
+// Add this helper function near the top of your component
+const getImageSource = (imageName: string | undefined) => {
+  // For now, all images will use coin.png as requested
+  if (!imageName) return require("@/assets/images/coin.png");
+  
+  switch (imageName) {
+    case 'wildlife.jpg':
+      return require('@/assets/images/wildlife.jpg');
+    case 'coin.jpg':
+      return require('@/assets/images/coin.png');
+    // Add cases for other images
+    default:
+      return require('@/assets/images/coin.png');
+  }
+  
+};
+
 const WordGame: React.FC = () => {
   // State variables
   const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(0);
@@ -55,6 +72,7 @@ const WordGame: React.FC = () => {
   );
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
+  const [showLevelIntroModal, setShowLevelIntroModal] = useState<boolean>(false);
 
   // Animation values
   const letterScale = useState(new Animated.Value(1))[0];
@@ -125,13 +143,14 @@ const WordGame: React.FC = () => {
     setDisplayWord(initialDisplay);
     setCurrentQuestion(level.question);
     setLetters(generateLetterChoices(word));
-
-    // Instead of adding to selectedLetters, we'll check if letter is available in the renderLetters logic
     setSelectedLetters([]);
 
     // Reset refs
     letterRefs.current = {};
     wordSlotRefs.current = {};
+
+    // Show the level intro modal
+    setShowLevelIntroModal(true);
   };
 
   // Updated useEffect to lock screen orientation and load the first level
@@ -680,6 +699,65 @@ const WordGame: React.FC = () => {
             </View>
           </View>
         </ScrollView>
+      </Modal>
+
+      {/* Level Intro Modal */}
+      <Modal transparent={true} visible={showLevelIntroModal} animationType="fade">
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white rounded-3xl p-6 w-4/5 items-center shadow-xl border-4 border-primary-100">
+            {/* Decorative elements */}
+            <View className="absolute top-4 left-6">
+              <View className="w-8 h-8 rounded-full bg-primary-200 opacity-60" />
+            </View>
+            <View className="absolute bottom-4 right-8">
+              <View className="w-6 h-6 rounded-full bg-secondary-200 opacity-50" />
+            </View>
+
+            {/* Level title */}
+            <Text
+              variant="bold"
+              className="text-2xl text-primary-600 mb-3"
+            >
+              Level {currentLevelIndex + 1}
+            </Text>
+
+            {/* Image - now dynamically loaded based on the level data */}
+            <View className="w-32 h-32 bg-white rounded-full items-center justify-center shadow-lg border-4 border-secondary-200 mb-4">
+              <Image
+                source={getImageSource(gameLevels[currentLevelIndex].image)}
+                className="w-24 h-24 rounded-full"
+                resizeMode="cover"
+              />
+            </View>
+
+            {/* Word hint */}
+            <View className="bg-primary-50/80 w-full rounded-2xl px-4 py-4 mb-6 border-2 border-primary-100">
+              <Text
+                variant="medium"
+                className="text-lg text-primary-700 text-center mb-2"
+              >
+                Find the word:
+              </Text>
+              <Text
+                variant="bold" 
+                className="text-xl text-primary-800 text-center"
+              >
+                {currentQuestion}
+              </Text>
+            </View>
+
+            {/* Button to start the level */}
+            <TouchableOpacity
+              className="bg-primary-500 py-3 px-8 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
+              onPress={() => setShowLevelIntroModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text variant="bold" className="text-white text-lg">
+                Start Level
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );
