@@ -425,16 +425,6 @@ const WordGame: React.FC = () => {
         </View>
       </View>
 
-      {/* Coin display - moved to separate row */}
-      <View className="items-end px-4 py-2">
-        <View className="bg-white p-1 rounded-full shadow-md border-2 border-accent-100">
-          <Image
-            source={require("@/assets/images/wildlife.jpg")}
-            className="w-10 h-10 rounded-full"
-            resizeMode="cover"
-          />
-        </View>
-      </View>
 
       {/* Main content area */}
       <View className="flex-1 flex-row justify-between items-center px-5">
@@ -442,7 +432,7 @@ const WordGame: React.FC = () => {
         <View className="w-[15%] items-center justify-center">
           <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-lg border-4 border-secondary-200">
             <Image
-              source={require("@/assets/images/textile.jpg")}
+              source={getImageSource(gameLevels[currentLevelIndex].image)}
               className="w-20 h-20 rounded-full"
               resizeMode="cover"
             />
@@ -522,7 +512,7 @@ const WordGame: React.FC = () => {
         <View className="w-[15%] items-center justify-center">
           <TouchableOpacity className="w-20 h-20 bg-white rounded-full justify-center items-center shadow-lg border-4 border-accent-200">
             <Image
-              source={require("@/assets/images/river.jpg")}
+              source={require("@/assets/images/info.png")}
               className="w-16 h-16 rounded-full"
               resizeMode="cover"
             />
