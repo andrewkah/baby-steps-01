@@ -703,56 +703,65 @@ const WordGame: React.FC = () => {
 
       {/* Level Intro Modal */}
       <Modal transparent={true} visible={showLevelIntroModal} animationType="fade">
-        <View className="flex-1 justify-center items-center bg-black/50">
-          <View className="bg-white rounded-3xl p-6 w-4/5 items-center shadow-xl border-4 border-primary-100">
-            {/* Decorative elements */}
-            <View className="absolute top-4 left-6">
-              <View className="w-8 h-8 rounded-full bg-primary-200 opacity-60" />
+        <View className="flex-1 justify-center items-center bg-black/50 px-4">
+          <View className="bg-white rounded-2xl p-3 w-[80%] max-w-md items-center shadow-xl border-4 border-primary-100">
+            {/* Close button - repositioned to be more visible */}
+            <TouchableOpacity
+              className="absolute -top-3 -right-3 w-10 h-10 bg-white rounded-full items-center justify-center shadow-lg border-2 border-primary-300 z-10"
+              onPress={() => setShowLevelIntroModal(false)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={20} color="#7b5af0" />
+            </TouchableOpacity>
+            
+            {/* Decorative elements - made smaller and moved closer to edges */}
+            <View className="absolute top-2 left-2">
+              <View className="w-5 h-5 rounded-full bg-primary-200 opacity-60" />
             </View>
-            <View className="absolute bottom-4 right-8">
-              <View className="w-6 h-6 rounded-full bg-secondary-200 opacity-50" />
+            <View className="absolute bottom-2 right-2">
+              <View className="w-3 h-3 rounded-full bg-secondary-200 opacity-50" />
             </View>
 
-            {/* Level title */}
+            {/* Level title - reduced margin */}
             <Text
               variant="bold"
-              className="text-2xl text-primary-600 mb-3"
+              className="text-xl text-primary-600 mb-1"
             >
               Level {currentLevelIndex + 1}
             </Text>
 
-            {/* Image - now dynamically loaded based on the level data */}
-            <View className="w-32 h-32 bg-white rounded-full items-center justify-center shadow-lg border-4 border-secondary-200 mb-4">
+            {/* Image - slightly smaller */}
+            <View className="w-1/2 aspect-square bg-white rounded-xl items-center justify-center shadow-lg border-2 border-secondary-200 mb-2 overflow-hidden">
               <Image
                 source={getImageSource(gameLevels[currentLevelIndex].image)}
-                className="w-24 h-24 rounded-full"
+                className="w-full h-full"
                 resizeMode="cover"
               />
             </View>
 
-            {/* Word hint */}
-            <View className="bg-primary-50/80 w-full rounded-2xl px-4 py-4 mb-6 border-2 border-primary-100">
+            {/* Word hint - more compact */}
+            <View className="bg-primary-50/80 w-full rounded-xl px-2 py-1.5 mb-2 border-2 border-primary-100">
               <Text
                 variant="medium"
-                className="text-lg text-primary-700 text-center mb-2"
+                className="text-xs text-primary-700 text-center"
               >
                 Find the word:
               </Text>
               <Text
                 variant="bold" 
-                className="text-xl text-primary-800 text-center"
+                className="text-base text-primary-800 text-center"
               >
                 {currentQuestion}
               </Text>
             </View>
 
-            {/* Button to start the level */}
+            {/* Button to start the level - more compact */}
             <TouchableOpacity
-              className="bg-primary-500 py-3 px-8 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
+              className="bg-primary-500 py-1.5 px-6 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
               onPress={() => setShowLevelIntroModal(false)}
               activeOpacity={0.7}
             >
-              <Text variant="bold" className="text-white text-lg">
+              <Text variant="bold" className="text-white text-sm">
                 Start Level
               </Text>
             </TouchableOpacity>
