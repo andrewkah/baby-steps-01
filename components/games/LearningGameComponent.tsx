@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   TouchableOpacity,
@@ -18,6 +18,8 @@ import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text } from "@/components/StyledText";
+import { useChild } from "@/context/ChildContext";
+import { saveActivity } from "@/lib/utils";
 
 // Import our data structure
 import {
@@ -42,6 +44,8 @@ type GameState =
 
 const LugandaLearningGame: React.FC = () => {
   const router = useRouter();
+  const { activeChild } = useChild();
+  const gameStartTime = useRef(Date.now());
 
   // Get dimensions for responsive layout
   const { width, height } = Dimensions.get("window");
@@ -244,6 +248,8 @@ const LugandaLearningGame: React.FC = () => {
     if (!stage.isLocked) {
       setSelectedStage(stage);
       setGameState("levelSelect");
+      // Reset timer when selecting a stage
+      gameStartTime.current = Date.now();
     }
   };
 
@@ -253,6 +259,8 @@ const LugandaLearningGame: React.FC = () => {
       setSelectedLevel(level);
       setGameState("learning");
       setCurrentLearningIndex(0);
+      // Reset timer when selecting a level
+      gameStartTime.current = Date.now();
     }
   };
 
@@ -367,6 +375,33 @@ const LugandaLearningGame: React.FC = () => {
     }
   }, [currentWordIndex, currentWords]);
 
+  const trackActivity = async (isStageComplete: boolean = false) => {
+    if (!activeChild) return;
+
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000); // duration in seconds
+
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "language",
+      activity_name: isStageComplete
+        ? `Completed ${selectedStage?.title} Stage`
+        : `Mastered ${selectedLevel?.title} Words`,
+      score: levelScore.toString(),
+      duration,
+      completed_at: new Date().toISOString(),
+      details: `${
+        isStageComplete
+          ? `Completed all levels in ${selectedStage?.title} stage`
+          : `Learned ${currentWords.length} words in ${selectedLevel?.title}`
+      }`,
+      stage: selectedStage?.id,
+      level: selectedLevel?.id,
+    });
+
+    // Reset timer for next activity
+    gameStartTime.current = Date.now();
+  };
+
   const completeLevelAndUpdateProgress = () => {
     const newTotalScore = totalScore + levelScore;
     setTotalScore(newTotalScore);
@@ -386,6 +421,12 @@ const LugandaLearningGame: React.FC = () => {
         if (nextStage && newTotalScore >= nextStage.requiredScore) {
           const updatedStages = unlockNextStage(selectedStage.id, stages);
           setStages(updatedStages);
+
+          // Track stage completion
+          trackActivity(true);
+        } else {
+          // Just track level completion if stage is complete but no new stage unlocked
+          trackActivity(false);
         }
       } else if (selectedStage && selectedLevel) {
         // Unlock next level in current stage
@@ -395,7 +436,13 @@ const LugandaLearningGame: React.FC = () => {
           stages
         );
         setStages(updatedStages);
+
+        // Track regular level completion
+        trackActivity(false);
       }
+    } else {
+      // Even if level was already completed, track the replay
+      trackActivity(false);
     }
 
     // Save progress
@@ -645,7 +692,7 @@ const LugandaLearningGame: React.FC = () => {
             {/* More Compact Stage Banner */}
             <View
               className="p-3 rounded mb-3 shadow-sm py-8"
-              style={{backgroundColor:selectedStage.color}}
+              style={{ backgroundColor: selectedStage.color }}
             >
               <View className="flex-row items-center">
                 {/* Image and Title in one row */}
@@ -1329,8 +1376,6 @@ const LugandaLearningGame: React.FC = () => {
         <StatusBar style="light" />
 
         <View className="flex-1 justify-center items-center">
-          
-
           <LinearGradient
             colors={[
               selectedStage?.color || "#6366f1",
@@ -1381,7 +1426,11 @@ const LugandaLearningGame: React.FC = () => {
             <View className="flex-row space-x-3 mt-2">
               <TouchableOpacity
                 className="bg-white py-3 px-5 rounded-xl"
-                onPress={() => setGameState("levelSelect")}
+                onPress={() => {
+                  setGameState("levelSelect");
+                  // Reset timer for next activity
+                  gameStartTime.current = Date.now();
+                }}
               >
                 <Text variant="bold" className="text-indigo-600">
                   Choose Level
@@ -1390,7 +1439,11 @@ const LugandaLearningGame: React.FC = () => {
 
               <TouchableOpacity
                 className="bg-emerald-500 py-3 px-5 rounded-xl"
-                onPress={() => setGameState("stageSelect")}
+                onPress={() => {
+                  setGameState("stageSelect");
+                  // Reset timer for next activity
+                  gameStartTime.current = Date.now();
+                }}
               >
                 <Text variant="bold" className="text-white">
                   Home
