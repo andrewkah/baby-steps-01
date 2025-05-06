@@ -76,6 +76,56 @@ const generateTileStaticData = (): Record<number, TileStaticData> => {
   return data;
 };
 
+const isPuzzleSolvable = (puzzle: (number | null)[][]): boolean => {
+  // Create a flattened array without the empty tile
+  const flatPuzzle: number[] = [];
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (puzzle[r][c] !== null) {
+        flatPuzzle.push(puzzle[r][c] as number);
+      }
+    }
+  }
+
+  // Count inversions
+  let inversions = 0;
+  for (let i = 0; i < flatPuzzle.length; i++) {
+    for (let j = i + 1; j < flatPuzzle.length; j++) {
+      if (flatPuzzle[i] > flatPuzzle[j]) {
+        inversions++;
+      }
+    }
+  }
+
+  // Find empty position row from bottom (1-indexed)
+  let emptyRow = 0;
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (puzzle[r][c] === null) {
+        // Count from bottom, 1-indexed
+        emptyRow = GRID_SIZE - r;
+        break;
+      }
+    }
+    if (emptyRow > 0) break;
+  }
+
+  // Apply solvability rules
+  if (GRID_SIZE % 2 === 1) {
+    // Grid width is odd
+    return inversions % 2 === 0;
+  } else {
+    // Grid width is even
+    if (emptyRow % 2 === 0) {
+      // Empty row from bottom is even
+      return inversions % 2 === 1;
+    } else {
+      // Empty row from bottom is odd
+      return inversions % 2 === 0;
+    }
+  }
+};
+
 const BugandaPuzzleGame: React.FC = () => {
   const router = useRouter();
 
@@ -194,6 +244,62 @@ const BugandaPuzzleGame: React.FC = () => {
         
         // Update currentEmptySlot to the position where the tile was
         currentEmptySlot = { ...tileToMoveOriginalPos };
+      }
+    }
+
+    // Ensure the puzzle is solvable
+    while (!isPuzzleSolvable(currentShuffledGrid)) {
+      currentShuffledGrid = solvedGrid.map(row => [...row]);
+      currentEmptySlot = { row: GRID_SIZE - 1, col: GRID_SIZE - 1 };
+      for (let i = 0; i < shuffleMoveCount; i++) {
+        const movableTilesPositions: Position[] = [];
+        const { row: er, col: ec } = currentEmptySlot;
+
+        if (er > 0) movableTilesPositions.push({ row: er - 1, col: ec }); // Tile above empty
+        if (er < GRID_SIZE - 1) movableTilesPositions.push({ row: er + 1, col: ec }); // Tile below empty
+        if (ec > 0) movableTilesPositions.push({ row: er, col: ec - 1 }); // Tile left of empty
+        if (ec < GRID_SIZE - 1) movableTilesPositions.push({ row: er, col: ec + 1 }); // Tile right of empty
+        
+        if (movableTilesPositions.length > 0) {
+          const randomMoveIndex = Math.floor(Math.random() * movableTilesPositions.length);
+          const tileToMoveOriginalPos = movableTilesPositions[randomMoveIndex];
+          
+          // Swap tile with empty slot in currentShuffledGrid
+          currentShuffledGrid[currentEmptySlot.row][currentEmptySlot.col] = currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col];
+          currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col] = null;
+          
+          // Update currentEmptySlot to the position where the tile was
+          currentEmptySlot = { ...tileToMoveOriginalPos };
+        }
+      }
+    }
+
+    // Check if the shuffled puzzle is solvable
+    if (!isPuzzleSolvable(currentShuffledGrid)) {
+      // Swap any two tiles to make it solvable
+      let firstNonEmptyTile = null;
+      let secondNonEmptyTile = null;
+      
+      // Find two non-empty tiles
+      outerLoop: for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (currentShuffledGrid[r][c] !== null) {
+            if (firstNonEmptyTile === null) {
+              firstNonEmptyTile = { row: r, col: c };
+            } else {
+              secondNonEmptyTile = { row: r, col: c };
+              break outerLoop;
+            }
+          }
+        }
+      }
+      
+      // Swap them
+      if (firstNonEmptyTile && secondNonEmptyTile) {
+        const temp = currentShuffledGrid[firstNonEmptyTile.row][firstNonEmptyTile.col];
+        currentShuffledGrid[firstNonEmptyTile.row][firstNonEmptyTile.col] = 
+          currentShuffledGrid[secondNonEmptyTile.row][secondNonEmptyTile.col];
+        currentShuffledGrid[secondNonEmptyTile.row][secondNonEmptyTile.col] = temp;
       }
     }
 
