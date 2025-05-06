@@ -20,6 +20,11 @@ interface Child {
   avatar: string;
 }
 
+// Add this helper function near the top of your component
+const capitalizeFirstLetter = (string: string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
 export default function ActivitiesScreen() {
   const router = useRouter();
   interface Activity {
@@ -276,7 +281,7 @@ export default function ActivitiesScreen() {
                     filterCategory === category ? "text-white" : "text-gray-800"
                   }
                 >
-                  {category}
+                  {capitalizeFirstLetter(category)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -361,7 +366,7 @@ export default function ActivitiesScreen() {
                             <View className="flex-row items-center">
                               {activity.category && ( // Conditionally render category if it exists
                                 <Text className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                  {activity.category}
+                                  {capitalizeFirstLetter(activity.category)}
                                 </Text>
                               )}
                             </View>
