@@ -21,9 +21,9 @@ import { Text } from "@/components/StyledText";
 
 // Get dimensions for landscape mode
 const { width, height } = Dimensions.get("window");
-// Use the smaller dimension for the puzzle size to ensure it fits in landscape
-const PUZZLE_CONTAINER_SIZE = Math.min(height - 120, width / 2);
-const GRID_SIZE = 3; // 3x3 puzzle
+// Use the smaller dimension for the puzzle size but make it larger (reduced the subtraction amount)
+const PUZZLE_CONTAINER_SIZE = Math.min(height - 80, width / 1.5); // Increased from (height-120, width/2)
+const GRID_SIZE = 3; // Keep the same 3x3 puzzle grid
 const PUZZLE_PADDING = 20;
 const TILE_SIZE = (PUZZLE_CONTAINER_SIZE - PUZZLE_PADDING * 2) / GRID_SIZE;
 const TILE_MARGIN = 2; // This margin seems to be applied visually by spacing animated views
@@ -564,7 +564,7 @@ const BugandaPuzzleGame: React.FC = () => {
       </TouchableOpacity>
 
       <View className="flex-1 flex-row p-2.5">
-        <View className="flex-1 justify-center items-center px-2.5">
+        <View className="flex-0.8 justify-center items-center px-2.5 ml-auto">
           <View
             className="bg-purple-100 rounded-lg overflow-hidden relative border-2 border-purple-400"
             style={{
@@ -620,7 +620,7 @@ const BugandaPuzzleGame: React.FC = () => {
           </View>
         </View>
 
-        <View className="flex-1 justify-center px-5">
+        <View className="flex-1.2 justify-center px-5">
           <View className="w-full items-center mb-5">
             <Text variant="bold" className="text-2xl text-indigo-800 mb-2.5">
               {puzzleImages[currentPuzzle].name}
