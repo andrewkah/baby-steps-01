@@ -1,6 +1,8 @@
 export type GameLevel = {
   word: string;        // The word to guess
   question: string;    // The clue or question for the word
+  hint: string;        // Hint to help with guessing the word
+  subHint: string;     // Sub-hint to help those who don't know Luganda
   firstLetter?: string; // Optional: explicitly set the first visible letter (defaults to word[0])
   image?: string;      // Optional: path to the image for this word
 };
@@ -10,305 +12,355 @@ export const gameLevels: GameLevel[] = [
   {
     word: "AMAZZI",
     question: "Essential liquid that falls from the sky",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "You drink this every day to stay healthy",
+    subHint: "In English, it's called 'water' - think of the sound 'A-MA-ZI'",
+    image: "wildlife.jpg",
   },
   {
     word: "EMBWA",
     question: "Loyal four-legged companion in homes",
-    image: "coin.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "This animal barks and wags its tail when happy",
+    subHint: "In English, it's called 'dog' - listen for 'EM-BWA'",
+    image: "coin.jpg",
   },
   {
     word: "OMUGGA",
     question: "Flowing water body like the mighty Nile",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "Fish live in it, and it flows from one place to another",
+    subHint: "In English, it's called 'river' - say 'O-MU-GGA'",
+    image: "wildlife.jpg",
   },
   {
     word: "ENYAMA",
     question: "Protein source often grilled at Ugandan celebrations",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "This food comes from animals and is cooked on a BBQ",
+    subHint: "In English, it's called 'meat' - try saying 'E-NYA-MA'",
+    image: "wildlife.jpg",
   },
   {
     word: "EMBUZI",
     question: "Horned animal commonly kept in rural homesteads",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "This animal says 'meh' and gives milk",
+    subHint: "In English, it's called 'goat' - pronounce 'EM-BU-ZI'",
+    image: "wildlife.jpg",
   },
   {
     word: "EMITI",
     question: "Tall plants that provide shade in Kampala streets",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "These have leaves, branches, and strong trunks",
+    subHint: "In English, they're called 'trees' - say 'E-MI-TI'",
+    image: "wildlife.jpg",
   },
   {
     word: "ENKOKO",
     question: "Feathered creature that provides breakfast eggs",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "This bird says 'cluck cluck' and wakes us in the morning",
+    subHint: "In English, it's called 'chicken' - pronounce 'EN-KO-KO'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMWANA",
     question: "Young person treasured in Buganda culture",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "A small person who goes to school and plays games",
+    subHint: "In English, it's called 'child' - say 'O-MWA-NA'",
+    image: "wildlife.jpg",
   },
   {
     word: "EMPETA",
     question: "Circular ornament exchanged during traditional weddings",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "You wear this on your finger when you get married",
+    subHint: "In English, it's called 'ring' - try saying 'EM-PE-TA'",
+    image: "wildlife.jpg",
   },
   {
     word: "EKIBIRA",
     question: "Dense collection of trees like Mabira",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "A place with many trees where monkeys and birds live",
+    subHint: "In English, it's called 'forest' - say 'E-KI-BI-RA'",
+    image: "wildlife.jpg",
   },
   
   // MEDIUM (medium length words or common concepts)
   {
     word: "EKYALO",
     question: "Rural settlement where many Baganda traditions originate",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "Not the city, but where farmers live and grow crops",
+    subHint: "In English, it's called 'village' - say 'E-KYA-LO'",
+    image: "wildlife.jpg",
   },
   {
     word: "OLUNAKU",
     question: "24-hour period from sunrise to sunrise",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "It has morning, afternoon, evening, and night",
+    subHint: "In English, it's called 'day' - try saying 'O-LU-NA-KU'",
+    image: "wildlife.jpg",
   },
   {
     word: "EGGULU",
     question: "Blue expanse where birds and planes fly",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "Look up! It's blue when sunny and gray when rainy",
+    subHint: "In English, it's called 'sky' - pronounce 'E-GGU-LU'",
+    image: "wildlife.jpg",
   },
   {
     word: "EMMERE",
     question: "Nourishment served during meal times",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "You eat this to grow strong and healthy",
+    subHint: "In English, it's called 'food' - say 'E-MME-RE'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUKAZI",
     question: "Female adult in Buganda society",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "She might be a mother, aunt, or teacher",
+    subHint: "In English, it's called 'woman' - try saying 'O-MU-KA-ZI'",
+    image: "wildlife.jpg",
   },
   {
     word: "AKAMBE",
     question: "Cutting tool used to prepare traditional dishes",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "It's sharp and helps cut vegetables and meat",
+    subHint: "In English, it's called 'knife' - say 'A-KA-MBE'",
+    image: "wildlife.jpg",
   },
   {
     word: "AKAANA",
     question: "Infant requiring constant care and attention",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "A very small baby that cries and needs milk",
+    subHint: "In English, it's called 'baby' - pronounce 'A-KA-A-NA'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUSANA",
     question: "Bright light that warms the Equator",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "It makes the day bright and helps plants grow",
+    subHint: "In English, it's called 'sun' - say 'O-MU-SA-NA'",
+    image: "wildlife.jpg",
   },
   {
     word: "EKIKOPO",
     question: "Container for drinking tea or coffee",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "You hold this in your hands when drinking",
+    subHint: "In English, it's called 'cup' - pronounce 'E-KI-KO-PO'",
+    image: "wildlife.jpg",
   },
   {
     word: "AMATOKE",
     question: "Green fruit used to make matooke, Uganda's staple food",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "Green fruit that must be cooked before eating",
+    subHint: "In English, they're called 'plantains' - say 'A-MA-TO-KE'",
+    image: "wildlife.jpg",
   },
   {
     word: "EGGULI",
     question: "Royal headwear worn by the Kabaka",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "A special hat that shows someone is a king",
+    subHint: "In English, it's called 'crown' - try saying 'E-GGU-LI'",
+    image: "wildlife.jpg",
   },
   {
     word: "ABAVUBI",
     question: "Men who catch tilapia on Lake Victoria",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "They use boats and nets to catch food from the water",
+    subHint: "In English, they're called 'fishermen' - say 'A-BA-VU-BI'",
+    image: "wildlife.jpg",
   },
   {
     word: "EKITABO",
     question: "Bound pages containing knowledge or stories",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "You read this to learn or enjoy stories",
+    subHint: "In English, it's called 'book' - pronounce 'E-KI-TA-BO'",
+    image: "wildlife.jpg",
   },
   {
     word: "EBITABO",
     question: "Multiple bound publications in a library",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "Many things to read on shelves in a library",
+    subHint: "In English, they're called 'books' - say 'E-BI-TA-BO'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUSAJJA",
     question: "Adult male figure in a Ugandan household",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "He might be a father, uncle, or grandfather",
+    subHint: "In English, it's called 'man' - pronounce 'O-MU-SA-JJA'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMULENZI",
     question: "Young male who will become an omusajja",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "A male child who plays football and climbs trees",
+    subHint: "In English, it's called 'boy' - say 'O-MU-LE-NZI'",
+    image: "wildlife.jpg",
   },
   {
     word: "AKASOLYA",
     question: "Top covering of a traditional hut",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "It keeps rain out of the house from above",
+    subHint: "In English, it's called 'roof' - pronounce 'A-KA-SO-LYA'",
+    image: "wildlife.jpg",
   },
   {
     word: "OLUGANDA",
     question: "Native tongue of the Baganda people",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "The language we are learning in this game",
+    subHint: "This is the language name itself - say 'O-LU-GA-NDA'",
+    image: "wildlife.jpg",
   },
   {
     word: "ABAANA",
     question: "Young ones who attend school to learn",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "They wear uniforms and carry schoolbags",
+    subHint: "In English, they're called 'children' - say 'A-BA-A-NA'",
+    image: "wildlife.jpg",
   },
   {
     word: "ENNYUMBA",
     question: "Dwelling where families live together",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "The place where you sleep and live with family",
+    subHint: "In English, it's called 'house' - pronounce 'E-NNYU-MBA'",
+    image: "wildlife.jpg",
   },
   
   // HARDER (longer words, abstract concepts, less common terms)
   {
     word: "AKABENJE",
     question: "Unfortunate collision or mishap on the road",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "When cars bump into each other - be careful!",
+    subHint: "In English, it's called 'accident' - say 'A-KA-BE-NJE'",
+    image: "wildlife.jpg",
   },
   {
     word: "AKAWUKA",
     question: "Tiny creature that may bite or sting",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "A very small creature that might make you scratch",
+    subHint: "In English, it's called 'insect' - pronounce 'A-KA-WU-KA'",
+    image: "wildlife.jpg",
   },
   {
     word: "ESSOMERO",
     question: "Institution where children receive education",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "You go here to learn reading, writing and math",
+    subHint: "In English, it's called 'school' - say 'E-SSO-ME-RO'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUCEERE",
     question: "White grain often served with groundnut sauce",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "Small white grains cooked in water until soft",
+    subHint: "In English, it's called 'rice' - pronounce 'O-MU-CEE-RE'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMULIRO",
     question: "Burning element used for cooking and warmth",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "It's hot, bright, and helps cook food",
+    subHint: "In English, it's called 'fire' - say 'O-MU-LI-RO'",
+    image: "wildlife.jpg",
   },
   {
     word: "OLUGENDO",
     question: "Expedition from one place to another",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "Moving from here to there, like on a safari",
+    subHint: "In English, it's called 'journey' - pronounce 'O-LU-GE-NDO'",
+    image: "wildlife.jpg",
   },
   {
     word: "ENSIMBI",
     question: "Currency used for trade in markets",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "Coins and notes used to buy things in shops",
+    subHint: "In English, it's called 'money' - say 'E-NSI-MBI'",
+    image: "wildlife.jpg",
   },
   {
     word: "AMAGEZI",
     question: "Intelligence and knowledge valued by elders",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'A'
+    hint: "Being smart and knowing many important things",
+    subHint: "In English, it's called 'wisdom' - pronounce 'A-MA-GE-ZI'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUKWANO",
     question: "Bond between people who care for each other",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "When two people like each other and play together",
+    subHint: "In English, it's called 'friendship' - say 'O-MU-KWA-NO'",
+    image: "wildlife.jpg",
   },
   {
     word: "EKIZIBU",
     question: "Challenge that requires solution or patience",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "Something difficult that you need to solve",
+    subHint: "In English, it's called 'problem' - pronounce 'E-KI-ZI-BU'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUKUBI",
     question: "Musician who plays traditional percussion",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "Someone who makes rhythm by hitting drums",
+    subHint: "In English, it's called 'drummer' - say 'O-MU-KU-BI'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUKYALA",
     question: "Respected female title in formal settings",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "A polite way to address an important woman",
+    subHint: "In English, it's like saying 'lady' or 'madam' - pronounce 'O-MU-KYA-LA'",
+    image: "wildlife.jpg",
   },
   {
     word: "EKIGAMBO",
     question: "Unit of language that carries meaning",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "Like what you are trying to guess in this game",
+    subHint: "In English, it's called 'word' - say 'E-KI-GA-MBO'",
+    image: "wildlife.jpg",
   },
   {
     word: "OLUZZI",
     question: "Source of fresh water in villages",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "People collect water here using jerry cans",
+    subHint: "In English, it's called 'well' - pronounce 'O-LU-ZZI'",
+    image: "wildlife.jpg",
   },
   {
     word: "EKKUBO",
     question: "Path taken between destinations",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "Youwalk on this to get from one place to another", // Completing the hint for EKKUBO
+    subHint: "In English, it's called 'road' or 'path' - pronounce 'E-KKU-BO'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUZANNYO",
     question: "Activity played for enjoyment or competition",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "Something fun you do with friends for enjoyment",
+    subHint: "In English, it's called 'game' or 'play' - say 'O-MU-ZA-NNYO'",
+    image: "wildlife.jpg",
   },
   {
     word: "ENNYANJA",
     question: "Large body of water like Victoria or Kyoga",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "Bigger than a pond, with lots of fish and water",
+    subHint: "In English, it's called 'lake' - pronounce 'E-NNYA-NJA'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMULANGIRA",
     question: "Son of the Kabaka, heir to Buganda kingdom",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "The king's son who might become king someday",
+    subHint: "In English, it's called 'prince' - say 'O-MU-LA-NGI-RA'",
+    image: "wildlife.jpg",
   },
   {
     word: "EKISAAWE",
     question: "Terminal where planes land and take off",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'E'
+    hint: "A place with runways where people travel by air",
+    subHint: "In English, it's called 'airport' or 'field' - pronounce 'E-KI-SAA-WE'",
+    image: "wildlife.jpg",
   },
   {
     word: "OMUYIMBI",
     question: "Performer who uses voice to create music",
-    image: "wildlife.jpg", // Default image (will be replaced with appropriate ones)
-    // firstLetter defaults to 'O'
+    hint: "Someone who makes beautiful sounds with their mouth",
+    subHint: "In English, it's called 'singer' - say 'O-MU-YI-MBI'",
+    image: "wildlife.jpg",
   }
 ];

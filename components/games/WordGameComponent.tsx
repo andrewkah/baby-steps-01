@@ -73,6 +73,7 @@ const WordGame: React.FC = () => {
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
   const [showLevelIntroModal, setShowLevelIntroModal] = useState<boolean>(false);
+  const [showHintModal, setShowHintModal] = useState<boolean>(false);
 
   // Animation values
   const letterScale = useState(new Animated.Value(1))[0];
@@ -510,7 +511,11 @@ const WordGame: React.FC = () => {
 
         {/* Right hint button */}
         <View className="w-[15%] items-center justify-center">
-          <TouchableOpacity className="w-20 h-20 bg-white rounded-full justify-center items-center shadow-lg border-4 border-accent-200">
+          <TouchableOpacity 
+            className="w-20 h-20 bg-white rounded-full justify-center items-center shadow-lg border-4 border-accent-200"
+            onPress={() => setShowHintModal(true)}
+            activeOpacity={0.8}
+          >
             <Image
               source={require("@/assets/images/info.png")}
               className="w-16 h-16 rounded-full"
@@ -753,6 +758,72 @@ const WordGame: React.FC = () => {
             >
               <Text variant="bold" className="text-white text-sm">
                 Start Level
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Hint Modal */}
+      <Modal transparent={true} visible={showHintModal} animationType="fade">
+        <View className="flex-1 justify-center items-center bg-black/50 px-4">
+          <View className="bg-white rounded-2xl p-4 w-[80%] max-w-md items-center shadow-xl border-4 border-primary-100">
+            {/* Close button */}
+            <TouchableOpacity
+              className="absolute -top-3 -right-3 w-10 h-10 bg-white rounded-full items-center justify-center shadow-lg border-2 border-primary-300 z-10"
+              onPress={() => setShowHintModal(false)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={20} color="#7b5af0" />
+            </TouchableOpacity>
+            
+            {/* Decorative elements */}
+            <View className="absolute top-2 left-2">
+              <View className="w-5 h-5 rounded-full bg-accent-200 opacity-60" />
+            </View>
+            <View className="absolute bottom-2 right-2">
+              <View className="w-3 h-3 rounded-full bg-secondary-200 opacity-50" />
+            </View>
+
+            {/* Title */}
+            <View className="flex-row items-center mb-3">
+              <Ionicons name="bulb-outline" size={22} color="#7b5af0" style={{ marginRight: 6 }} />
+              <Text
+                variant="bold"
+                className="text-xl text-primary-600"
+              >
+                Hint
+              </Text>
+            </View>
+
+            {/* Main Hint */}
+            <View className="bg-primary-50/80 w-full rounded-xl px-3 py-2.5 mb-3 border-2 border-primary-100">
+              <Text
+                variant="medium"
+                className="text-base text-primary-700 text-center"
+              >
+                {gameLevels[currentLevelIndex].hint}
+              </Text>
+            </View>
+
+            {/* Sub Hint - with a different style to distinguish */}
+            <View className="bg-secondary-50/80 w-full rounded-xl px-3 py-2.5 mb-4 border-2 border-secondary-100">
+              <Text
+                variant="medium"
+                className="text-sm text-secondary-700 text-center"
+              >
+                {gameLevels[currentLevelIndex].subHint}
+              </Text>
+            </View>
+
+            {/* Gotcha button */}
+            <TouchableOpacity
+              className="bg-primary-500 py-2 px-7 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
+              onPress={() => setShowHintModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text variant="bold" className="text-white text-sm">
+                Got it!
               </Text>
             </TouchableOpacity>
           </View>
