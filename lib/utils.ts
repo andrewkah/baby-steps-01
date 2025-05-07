@@ -5,7 +5,7 @@ import { supabase } from "./supabase";
 export interface GameActivity {
   id?: string;
   child_id: string;
-  activity_type: 'counting' | 'language' | 'cultural' | 'stories' | 'museum';
+  activity_type: 'counting' | 'language' | 'cultural' | 'stories' | 'museum' | 'other' | 'words' | 'puzzle';
   activity_name: string;
   score?: number | string;
   duration?: number;
@@ -17,7 +17,7 @@ export interface GameActivity {
 
 interface Activity {
   child_id: string;
-  activity_type: 'stories' | 'counting' | 'museum' | 'other';
+  activity_type: 'stories' | 'counting' | 'museum' | 'other' | 'cultural' | 'words' | 'puzzle' | 'language';
   activity_name: string;
   score?: string;
   duration?: number;

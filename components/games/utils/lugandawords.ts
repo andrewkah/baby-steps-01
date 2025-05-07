@@ -42,7 +42,7 @@ const createWordItem = (
     audio: 'correct.mp3', // Default audio file
     example,
     exampleTranslation,
-    image: require('@/assets/images/coin.png'), // Default image
+    image: require('@/assets/images/learning-beginner.jpg'), // Default image
   };
 };
 

@@ -1,29 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  Image, 
-  TouchableOpacity, 
-  Dimensions, 
-  Animated, 
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Animated,
   Alert,
-  ImageSourcePropType
-} from 'react-native';
-import { PanResponder, GestureResponderEvent, PanResponderGestureState } from 'react-native';
-import { Audio } from 'expo-av';
-import { StatusBar } from 'expo-status-bar';
+  ImageSourcePropType,
+} from "react-native";
+import {
+  PanResponder,
+  GestureResponderEvent,
+  PanResponderGestureState,
+} from "react-native";
+import { Audio } from "expo-av";
+import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from 'expo-router';
+import { useRouter } from "expo-router";
+import { Text } from "@/components/StyledText";
+import { saveActivity } from "@/lib/utils"; // Import saveActivity
+import { useChild } from "@/context/ChildContext"; // Import useChild context
 
 // Get dimensions for landscape mode
-const { width, height } = Dimensions.get('window');
-// Use the smaller dimension for the puzzle size to ensure it fits in landscape
-const PUZZLE_CONTAINER_SIZE = Math.min(height - 120, width / 2);
-const GRID_SIZE = 3; // 3x3 puzzle
+const { width, height } = Dimensions.get("window");
+// Use the smaller dimension for the puzzle size but make it larger (reduced the subtraction amount)
+const PUZZLE_CONTAINER_SIZE = Math.min(height - 80, width / 1.5); // Increased from (height-120, width/2)
+const GRID_SIZE = 3; // Keep the same 3x3 puzzle grid
 const PUZZLE_PADDING = 20;
-const TILE_SIZE = (PUZZLE_CONTAINER_SIZE - (PUZZLE_PADDING * 2)) / GRID_SIZE;
-const TILE_MARGIN = 2;
+const TILE_SIZE = (PUZZLE_CONTAINER_SIZE - PUZZLE_PADDING * 2) / GRID_SIZE;
+const TILE_MARGIN = 2; // This margin seems to be applied visually by spacing animated views
 
 // Define TypeScript interfaces
 interface Position {
@@ -31,12 +36,12 @@ interface Position {
   col: number;
 }
 
-interface Tile {
+// Stores static data for each tile (ID, correct pos, image crop)
+interface TileStaticData {
   id: number;
-  correctPosition: Position;
-  currentPosition: Position;
-  imageX: number;
-  imageY: number;
+  correctPosition: Position; // The solved position for this tile ID
+  imageX: number; // Crop X for the full image
+  imageY: number; // Crop Y for the full image
 }
 
 interface PuzzleImage {
@@ -56,38 +61,105 @@ interface SoundEffects {
   success: Audio.Sound | null;
 }
 
-const BugandaPuzzleGame: React.FC = () => {
-    const router = useRouter();
-    
-    // Add this debug utility function
-    const isMiddlePosition = (position: Position): boolean => {
-        return position.row === 1 && position.col === 1;
+// Helper to generate tile static data
+const generateTileStaticData = (): Record<number, TileStaticData> => {
+  const data: Record<number, TileStaticData> = {};
+  for (let i = 0; i < GRID_SIZE * GRID_SIZE - 1; i++) {
+    const id = i + 1;
+    const row = Math.floor(i / GRID_SIZE);
+    const col = i % GRID_SIZE;
+    data[id] = {
+      id,
+      correctPosition: { row, col },
+      imageX: col * TILE_SIZE,
+      imageY: row * TILE_SIZE,
     };
+  }
+  return data;
+};
 
-  // Different puzzle images representing Buganda cultural elements
+const isPuzzleSolvable = (puzzle: (number | null)[][]): boolean => {
+  // Create a flattened array without the empty tile
+  const flatPuzzle: number[] = [];
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (puzzle[r][c] !== null) {
+        flatPuzzle.push(puzzle[r][c] as number);
+      }
+    }
+  }
+
+  // Count inversions
+  let inversions = 0;
+  for (let i = 0; i < flatPuzzle.length; i++) {
+    for (let j = i + 1; j < flatPuzzle.length; j++) {
+      if (flatPuzzle[i] > flatPuzzle[j]) {
+        inversions++;
+      }
+    }
+  }
+
+  // Find empty position row from bottom (1-indexed)
+  let emptyRow = 0;
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (puzzle[r][c] === null) {
+        // Count from bottom, 1-indexed
+        emptyRow = GRID_SIZE - r;
+        break;
+      }
+    }
+    if (emptyRow > 0) break;
+  }
+
+  // Apply solvability rules
+  if (GRID_SIZE % 2 === 1) {
+    // Grid width is odd
+    return inversions % 2 === 0;
+  } else {
+    // Grid width is even
+    if (emptyRow % 2 === 0) {
+      // Empty row from bottom is even
+      return inversions % 2 === 1;
+    } else {
+      // Empty row from bottom is odd
+      return inversions % 2 === 0;
+    }
+  }
+};
+
+const BugandaPuzzleGame: React.FC = () => {
+  const router = useRouter();
+  const { activeChild } = useChild(); // Get active child from context
+  const gameStartTime = useRef(Date.now()); // Track when game started
+
   const puzzleImages: PuzzleImage[] = [
     {
       id: 1,
-      name: 'Kasubi Tombs',
-      source: require('../../assets/puzzles/kasubi-tombs.png'),
-      description: 'A UNESCO World Heritage site and burial ground of Buganda kings'
+      name: "Kasubi Tombs",
+      source: require("../../assets/puzzles/kasubi-tombs.png"),
+      description:
+        "A UNESCO World Heritage site and burial ground of Buganda kings",
     },
     {
       id: 2,
-      name: 'Buganda Royal Drums',
-      source: require('../../assets/puzzles/buganda-drums.png'),
-      description: 'Traditional royal drums used in Buganda ceremonies'
+      name: "Buganda Royal Drums",
+      source: require("../../assets/puzzles/buganda-drums.png"),
+      description: "Traditional royal drums used in Buganda ceremonies",
     },
     {
       id: 3,
-      name: 'Lubiri Palace',
-      source: require('../../assets/puzzles/lubiri-palace.png'),
-      description: 'The palace of the Kabaka (King) of Buganda'
-    }
+      name: "Lubiri Palace",
+      source: require("../../assets/puzzles/lubiri-palace.png"),
+      description: "The palace of the Kabaka (King) of Buganda",
+    },
   ];
 
   const [currentPuzzle, setCurrentPuzzle] = useState<number>(0);
-  const [tiles, setTiles] = useState<Tile[]>([]);
+  const [grid, setGrid] = useState<(number | null)[][]>([]);
+  const [emptySlotPosition, setEmptySlotPosition] = useState<Position>({ row: GRID_SIZE -1, col: GRID_SIZE -1 });
+  const [tileStaticData, _setTileStaticData] = useState<Record<number, TileStaticData>>(generateTileStaticData());
+  
   const [isComplete, setIsComplete] = useState<boolean>(false);
   const [moves, setMoves] = useState<number>(0);
   const [gameStarted, setGameStarted] = useState<boolean>(false);
@@ -96,42 +168,34 @@ const BugandaPuzzleGame: React.FC = () => {
     tileMove: null,
     success: null,
   });
-  const [animatedPositions, setAnimatedPositions] = useState<Record<number, AnimatedPosition>>({});
-  
+  const [animatedPositions, setAnimatedPositions] = useState<
+    Record<number, AnimatedPosition>
+  >({});
+
   const previewAnim = useRef(new Animated.Value(1)).current;
   const successAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Load sound effects
     const loadSounds = async () => {
       const tileMoveSound = new Audio.Sound();
       const successSound = new Audio.Sound();
-      
       try {
-        await tileMoveSound.loadAsync(require('../../assets/audio/page-turn.mp3'));
-        await successSound.loadAsync(require('../../assets/audio/complete.mp3'));
-        
-        setSoundEffects({
-          tileMove: tileMoveSound,
-          success: successSound,
-        });
+        await tileMoveSound.loadAsync(require("../../assets/audio/page-turn.mp3"));
+        await successSound.loadAsync(require("../../assets/audio/complete.mp3"));
+        setSoundEffects({ tileMove: tileMoveSound, success: successSound });
       } catch (error) {
-        console.error('Failed to load sounds', error);
+        console.error("Failed to load sounds", error);
       }
     };
-    
     loadSounds();
-    
-    // Cleanup function
     return () => {
-      if (soundEffects.tileMove) soundEffects.tileMove.unloadAsync();
-      if (soundEffects.success) soundEffects.success.unloadAsync();
+      soundEffects.tileMove?.unloadAsync();
+      soundEffects.success?.unloadAsync();
     };
   }, []);
 
   useEffect(() => {
     if (showPreview) {
-      // Show the full image for 3 seconds before starting the game
       setTimeout(() => {
         Animated.timing(previewAnim, {
           toValue: 0,
@@ -143,463 +207,507 @@ const BugandaPuzzleGame: React.FC = () => {
         });
       }, 3000);
     }
-  }, [showPreview]);
+  }, [showPreview, currentPuzzle]); // Added currentPuzzle to re-init on puzzle change
+
+  useEffect(() => {
+    // Reset the game start time whenever a new puzzle starts
+    gameStartTime.current = Date.now();
+  }, [currentPuzzle, showPreview]);
 
   const initializePuzzle = (): void => {
-    const newTiles: Tile[] = [];
-    const newAnimatedPositions: Record<number, AnimatedPosition> = {};
-    let tileCount = 0;
-    
-    // Create tiles (except for the last one which will be empty)
-    for (let row = 0; row < GRID_SIZE; row++) {
-      for (let col = 0; col < GRID_SIZE; col++) {
-        tileCount++;
-        if (tileCount < GRID_SIZE * GRID_SIZE) {
-          // Create the tile
-          newTiles.push({
-            id: tileCount,
-            correctPosition: { row, col },
-            currentPosition: { row, col },
-            imageX: col * TILE_SIZE,
-            imageY: row * TILE_SIZE,
-          });
-          
-          // Create animated values for this tile
-          newAnimatedPositions[tileCount] = {
-            left: new Animated.Value(col * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING),
-            top: new Animated.Value(row * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING),
-          };
+    // 1. Create solved grid
+    const solvedGrid: (number | null)[][] = [];
+    let tileCounter = 1;
+    for (let r = 0; r < GRID_SIZE; r++) {
+      solvedGrid[r] = [];
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (r === GRID_SIZE - 1 && c === GRID_SIZE - 1) {
+          solvedGrid[r][c] = null; // Last slot is empty
+        } else {
+          solvedGrid[r][c] = tileCounter++;
         }
       }
     }
     
-    // Shuffle the tiles
-    const shuffledTiles = shuffleTiles([...newTiles]);
-    
-    // Update animated positions for shuffled tiles
-    shuffledTiles.forEach(tile => {
-      const left = tile.currentPosition.col * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING;
-      const top = tile.currentPosition.row * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING;
+    let currentShuffledGrid = solvedGrid.map(row => [...row]);
+    let currentEmptySlot = { row: GRID_SIZE - 1, col: GRID_SIZE - 1 };
+
+    // 2. Shuffle by making random valid moves
+    const shuffleMoveCount = 100 + Math.floor(Math.random() * 50); // Ensure enough shuffles
+    for (let i = 0; i < shuffleMoveCount; i++) {
+      const movableTilesPositions: Position[] = [];
+      const { row: er, col: ec } = currentEmptySlot;
+
+      if (er > 0) movableTilesPositions.push({ row: er - 1, col: ec }); // Tile above empty
+      if (er < GRID_SIZE - 1) movableTilesPositions.push({ row: er + 1, col: ec }); // Tile below empty
+      if (ec > 0) movableTilesPositions.push({ row: er, col: ec - 1 }); // Tile left of empty
+      if (ec < GRID_SIZE - 1) movableTilesPositions.push({ row: er, col: ec + 1 }); // Tile right of empty
       
-      newAnimatedPositions[tile.id].left.setValue(left);
-      newAnimatedPositions[tile.id].top.setValue(top);
+      if (movableTilesPositions.length > 0) {
+        const randomMoveIndex = Math.floor(Math.random() * movableTilesPositions.length);
+        const tileToMoveOriginalPos = movableTilesPositions[randomMoveIndex];
+        
+        // Swap tile with empty slot in currentShuffledGrid
+        currentShuffledGrid[currentEmptySlot.row][currentEmptySlot.col] = currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col];
+        currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col] = null;
+        
+        // Update currentEmptySlot to the position where the tile was
+        currentEmptySlot = { ...tileToMoveOriginalPos };
+      }
+    }
+
+    // Ensure the puzzle is solvable
+    while (!isPuzzleSolvable(currentShuffledGrid)) {
+      currentShuffledGrid = solvedGrid.map(row => [...row]);
+      currentEmptySlot = { row: GRID_SIZE - 1, col: GRID_SIZE - 1 };
+      for (let i = 0; i < shuffleMoveCount; i++) {
+        const movableTilesPositions: Position[] = [];
+        const { row: er, col: ec } = currentEmptySlot;
+
+        if (er > 0) movableTilesPositions.push({ row: er - 1, col: ec }); // Tile above empty
+        if (er < GRID_SIZE - 1) movableTilesPositions.push({ row: er + 1, col: ec }); // Tile below empty
+        if (ec > 0) movableTilesPositions.push({ row: er, col: ec - 1 }); // Tile left of empty
+        if (ec < GRID_SIZE - 1) movableTilesPositions.push({ row: er, col: ec + 1 }); // Tile right of empty
+        
+        if (movableTilesPositions.length > 0) {
+          const randomMoveIndex = Math.floor(Math.random() * movableTilesPositions.length);
+          const tileToMoveOriginalPos = movableTilesPositions[randomMoveIndex];
+          
+          // Swap tile with empty slot in currentShuffledGrid
+          currentShuffledGrid[currentEmptySlot.row][currentEmptySlot.col] = currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col];
+          currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col] = null;
+          
+          // Update currentEmptySlot to the position where the tile was
+          currentEmptySlot = { ...tileToMoveOriginalPos };
+        }
+      }
+    }
+
+    // Check if the shuffled puzzle is solvable
+    if (!isPuzzleSolvable(currentShuffledGrid)) {
+      // Swap any two tiles to make it solvable
+      let firstNonEmptyTile = null;
+      let secondNonEmptyTile = null;
+      
+      // Find two non-empty tiles
+      outerLoop: for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (currentShuffledGrid[r][c] !== null) {
+            if (firstNonEmptyTile === null) {
+              firstNonEmptyTile = { row: r, col: c };
+            } else {
+              secondNonEmptyTile = { row: r, col: c };
+              break outerLoop;
+            }
+          }
+        }
+      }
+      
+      // Swap them
+      if (firstNonEmptyTile && secondNonEmptyTile) {
+        const temp = currentShuffledGrid[firstNonEmptyTile.row][firstNonEmptyTile.col];
+        currentShuffledGrid[firstNonEmptyTile.row][firstNonEmptyTile.col] = 
+          currentShuffledGrid[secondNonEmptyTile.row][secondNonEmptyTile.col];
+        currentShuffledGrid[secondNonEmptyTile.row][secondNonEmptyTile.col] = temp;
+      }
+    }
+
+    setGrid(currentShuffledGrid);
+    setEmptySlotPosition(currentEmptySlot);
+
+    // 3. Initialize animated positions for tiles based on the shuffled grid
+    const newAnimatedPositions: Record<number, AnimatedPosition> = {};
+    currentShuffledGrid.forEach((rowItems, r) => {
+      rowItems.forEach((tileId, c) => {
+        if (tileId !== null) {
+          newAnimatedPositions[tileId] = {
+            left: new Animated.Value(c * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING),
+            top: new Animated.Value(r * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING),
+          };
+        }
+      });
     });
-    
-    setTiles(shuffledTiles);
     setAnimatedPositions(newAnimatedPositions);
+
     setGameStarted(true);
     setMoves(0);
     setIsComplete(false);
+    successAnim.setValue(0); // Reset success animation
   };
-
-  const shuffleTiles = (tilesArray: Tile[]): Tile[] => {
-    // Fisher-Yates shuffle algorithm
-    for (let i = tilesArray.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [tilesArray[i].currentPosition, tilesArray[j].currentPosition] = 
-      [tilesArray[j].currentPosition, tilesArray[i].currentPosition];
-    }
-    
-    // Ensure the puzzle is solvable
-    if (!isPuzzleSolvable(tilesArray)) {
-      // Swap the first two tiles to make it solvable
-      [tilesArray[0].currentPosition, tilesArray[1].currentPosition] = 
-      [tilesArray[1].currentPosition, tilesArray[0].currentPosition];
-    }
-    
-    return tilesArray;
-  };
-
-  const isPuzzleSolvable = (tilesArray: Tile[]): boolean => {
-    // This is a simplified check - in a real game you'd need a more robust algorithm
-    // For a 3x3 puzzle, counting inversions works
-    let inversions = 0;
-    for (let i = 0; i < tilesArray.length; i++) {
-      for (let j = i + 1; j < tilesArray.length; j++) {
-        if (tilesArray[i].id > tilesArray[j].id) {
-          inversions++;
-        }
-      }
-    }
-    return inversions % 2 === 0;
-  };
-
-  const getEmptyPosition = (): Position => {
-    // Find the position that doesn't have a tile
-    for (let row = 0; row < GRID_SIZE; row++) {
-      for (let col = 0; col < GRID_SIZE; col++) {
-        let tileFound = false;
-        for (let t = 0; t < tiles.length; t++) {
-          if (tiles[t].currentPosition.row === row && tiles[t].currentPosition.col === col) {
-            tileFound = true;
-            break;
-          }
-        }
-        if (!tileFound) {
-          return { row, col };
-        }
-      }
-    }
-    return { row: 0, col: 0 }; // Fallback (should never happen in a valid puzzle)
-  };
-
-  const canMoveTile = (tilePosition: Position, emptyPosition: Position): boolean => {
-    // Check if the tile is adjacent to the empty position
-    const rowDiff = Math.abs(tilePosition.row - emptyPosition.row);
-    const colDiff = Math.abs(tilePosition.col - emptyPosition.col);
-    
-    // Add debugging for middle position
-    if (isMiddlePosition(tilePosition)) {
-      console.log(`Middle position check: rowDiff=${rowDiff}, colDiff=${colDiff}`);
-      console.log(`Can middle tile move? ${(rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)}`);
-    }
-    
-    return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
-  };
-
+  
   const moveTile = (tileId: number): void => {
-    if (isComplete) return;
-    
-    const tileIndex = tiles.findIndex(t => t.id === tileId);
-    if (tileIndex === -1) {
-      console.log(`Tile ${tileId} not found`);
+    if (isComplete || !grid.length) return;
+
+    let tilePos: Position | null = null;
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (grid[r][c] === tileId) {
+          tilePos = { row: r, col: c };
+          break;
+        }
+      }
+      if (tilePos) break;
+    }
+
+    if (!tilePos) {
+      console.error(`Tile ${tileId} not found in grid.`);
       return;
     }
-    
-    const tile = tiles[tileIndex];
-    const emptyPos = getEmptyPosition();
-    
-    console.log(`Attempting to move tile ${tileId} from (${tile.currentPosition.row}, ${tile.currentPosition.col}) to empty space at (${emptyPos.row}, ${emptyPos.col})`);
-    
-    if (canMoveTile(tile.currentPosition, emptyPos)) {
-      console.log(`Tile ${tileId} can move and will be moved`);
-      
-      // Special debug for middle tile
-      if (tileId === 5) {
-        console.log("Middle tile is moving!");
-      }
-      
-      // Play sound effect
-      if (soundEffects.tileMove) {
-        soundEffects.tileMove.replayAsync();
-      }
-      
-      // Calculate new position for animation
-      const newLeft = emptyPos.col * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING;
-      const newTop = emptyPos.row * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING;
-      
-      // Animate the tile movement
+
+    const { row: tr, col: tc } = tilePos;
+    const { row: er, col: ec } = emptySlotPosition;
+
+    // Check if the tile is adjacent to the empty slot
+    const isAdjacent = Math.abs(tr - er) + Math.abs(tc - ec) === 1;
+
+    if (isAdjacent) {
+      soundEffects.tileMove?.replayAsync();
+
+      const newLeft = ec * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING;
+      const newTop = er * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING;
+
+      const newGrid = grid.map(r_ => [...r_]); // Deep copy grid
+      newGrid[er][ec] = tileId;       // Move tile to empty slot's old position
+      newGrid[tr][tc] = null;         // Tile's old position becomes empty
+
       Animated.parallel([
         Animated.timing(animatedPositions[tileId].left, {
           toValue: newLeft,
           duration: 150,
-          useNativeDriver: false, // We need to use false for layout properties
+          useNativeDriver: false,
         }),
         Animated.timing(animatedPositions[tileId].top, {
           toValue: newTop,
           duration: 150,
-          useNativeDriver: false, // We need to use false for layout properties
-        })
-      ]).start();
-      
-      // Update tile position in state
-      const newTiles = [...tiles];
-      newTiles[tileIndex] = {
-        ...tile,
-        currentPosition: { ...emptyPos }
-      };
-      
-      setTiles(newTiles);
-      setMoves(moves + 1);
-      
-      // Check if puzzle is complete
-      setTimeout(() => {
-        checkPuzzleCompletion(newTiles);
-      }, 300);
-    } else {
-      console.log(`Tile ${tileId} cannot move`);
+          useNativeDriver: false,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) {
+          setGrid(newGrid); // Update grid state after animation
+          setEmptySlotPosition({ row: tr, col: tc }); // Update empty slot to tile's old position
+          checkPuzzleCompletion(newGrid); // Pass the new grid for completion check
+        }
+      });
+      setMoves(m => m + 1);
     }
   };
 
-  const checkPuzzleCompletion = (currentTiles: Tile[]): void => {
-    const isCompleted = currentTiles.every(tile => 
-      tile.correctPosition.row === tile.currentPosition.row && 
-      tile.correctPosition.col === tile.currentPosition.col
-    );
-    
-    if (isCompleted) {
-      setIsComplete(true);
-      
-      // Play success sound
-      if (soundEffects.success) {
-        soundEffects.success.replayAsync();
+  const trackActivity = async (isCompleted: boolean = true) => {
+    if (!activeChild) return;
+
+    // Calculate duration in seconds
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000);
+
+    // Save activity to Supabase
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "puzzle",
+      activity_name: `${puzzleImages[currentPuzzle].name} Puzzle`,
+      score: isCompleted ? "100%" : `${Math.round((moves > 0 ? 100 / moves : 100))}%`,
+      duration,
+      completed_at: new Date().toISOString(),
+      details: `${isCompleted ? 'Completed' : 'Attempted'} the ${puzzleImages[currentPuzzle].name} puzzle in ${moves} moves`,
+      level: currentPuzzle + 1,
+    });
+  };
+
+  const checkPuzzleCompletion = (currentGridToCheck: (number | null)[][]): void => {
+    let completed = true;
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const tileIdInGrid = currentGridToCheck[r][c];
+        if (r === GRID_SIZE - 1 && c === GRID_SIZE - 1) { // Last slot should be empty
+          if (tileIdInGrid !== null) {
+            completed = false;
+            break;
+          }
+        } else {
+          const expectedTileId = r * GRID_SIZE + c + 1;
+          if (tileIdInGrid !== expectedTileId) {
+            completed = false;
+            break;
+          }
+        }
       }
+      if (!completed) break;
+    }
+
+    if (completed) {
+      setIsComplete(true);
+      soundEffects.success?.replayAsync();
       
-      // Show success animation
+      // Track the completed activity
+      trackActivity(true);
+      
       Animated.spring(successAnim, {
         toValue: 1,
         friction: 5,
         tension: 40,
         useNativeDriver: true,
       }).start();
-      
-      // Show completion message
+
       setTimeout(() => {
         Alert.alert(
           "Congratulations!",
-          `You completed the ${puzzleImages[currentPuzzle].name} puzzle in ${moves} moves!`,
+          `You completed the ${puzzleImages[currentPuzzle].name} puzzle in ${moves + 1} moves!`, // moves+1 because setMoves is async
           [
-            { 
-              text: "Next Puzzle", 
+            {
+              text: "Next Puzzle",
               onPress: () => {
-                successAnim.setValue(0);
-                setCurrentPuzzle((currentPuzzle + 1) % puzzleImages.length);
+                // Reset gameStartTime for the next puzzle
+                gameStartTime.current = Date.now();
+                setCurrentPuzzle((prev) => (prev + 1) % puzzleImages.length);
                 setShowPreview(true);
                 previewAnim.setValue(1);
-              } 
-            }
+              },
+            },
           ]
         );
       }, 1000);
     }
   };
 
-  const createTilePanResponder = (tileId: number) => {
+  const handleReset = () => {
+    // Track the current attempt before resetting
+    if (gameStarted && !showPreview && !isComplete && moves > 0) {
+      trackActivity(false);
+    }
+    
+    // Reset gameStartTime
+    gameStartTime.current = Date.now();
+    initializePuzzle();
+  };
+
+  // When leaving the game, track the unfinished activity
+  useEffect(() => {
+    return () => {
+      // Only track if game was actually played but not completed
+      if (gameStarted && !showPreview && !isComplete && moves > 0) {
+        trackActivity(false);
+      }
+    };
+  }, [gameStarted, showPreview, isComplete, moves]);
+
+  const createTilePanResponder = (tileId: number, tileRow: number, tileCol: number) => {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => !isComplete,
-      onMoveShouldSetPanResponder: (_: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        // Reduce the threshold for the middle position tile to make it more responsive
+      onMoveShouldSetPanResponder: (
+        _: GestureResponderEvent,
+        gestureState: PanResponderGestureState
+      ) => {
         const { dx, dy } = gestureState;
-        const tileIndex = tiles.findIndex(t => t.id === tileId);
-        if (tileIndex !== -1 && isMiddlePosition(tiles[tileIndex].currentPosition)) {
-          console.log(`Middle tile pan detected: dx=${dx}, dy=${dy}`);
-          // Use a lower threshold for the middle position
-          return !isComplete && (Math.abs(dx) > 5 || Math.abs(dy) > 5);
-        }
-        
-        // Regular threshold for other tiles
         return !isComplete && (Math.abs(dx) > 10 || Math.abs(dy) > 10);
       },
-      onPanResponderRelease: (_: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+      onPanResponderRelease: (
+        _: GestureResponderEvent,
+        gestureState: PanResponderGestureState
+      ) => {
         const { dx, dy } = gestureState;
-        const tileIndex = tiles.findIndex(t => t.id === tileId);
-        const tile = tiles[tileIndex];
-        const emptyPos = getEmptyPosition();
+        const { row: emptyRow, col: emptyCol } = emptySlotPosition;
 
-        // Determine swipe direction (use the dominant axis)
-        if (Math.abs(dx) > Math.abs(dy)) {
-          // Horizontal swipe
-          if (dx > 0 && tile.currentPosition.col + 1 === emptyPos.col && 
-              tile.currentPosition.row === emptyPos.row) {
-            // Swipe right
-            moveTile(tileId);
-          } else if (dx < 0 && tile.currentPosition.col - 1 === emptyPos.col && 
-                    tile.currentPosition.row === emptyPos.row) {
-            // Swipe left
-            moveTile(tileId);
+        let canSwipeMove = false;
+        if (Math.abs(dx) > Math.abs(dy)) { // Horizontal swipe
+          if (dx > 0 && tileRow === emptyRow && tileCol + 1 === emptyCol) { // Swipe Right towards empty
+            canSwipeMove = true;
+          } else if (dx < 0 && tileRow === emptyRow && tileCol - 1 === emptyCol) { // Swipe Left towards empty
+            canSwipeMove = true;
           }
-        } else {
-          // Vertical swipe
-          if (dy > 0 && tile.currentPosition.row + 1 === emptyPos.row && 
-              tile.currentPosition.col === emptyPos.col) {
-            // Swipe down
-            moveTile(tileId);
-          } else if (dy < 0 && tile.currentPosition.row - 1 === emptyPos.row && 
-                    tile.currentPosition.col === emptyPos.col) {
-            // Swipe up
-            moveTile(tileId);
+        } else { // Vertical swipe
+          if (dy > 0 && tileCol === emptyCol && tileRow + 1 === emptyRow) { // Swipe Down towards empty
+            canSwipeMove = true;
+          } else if (dy < 0 && tileCol === emptyCol && tileRow - 1 === emptyRow) { // Swipe Up towards empty
+            canSwipeMove = true;
           }
         }
-      }
+
+        if (canSwipeMove) {
+          moveTile(tileId);
+        }
+      },
     });
   };
 
-  const renderTile = (tile: Tile) => {
-    const emptyPos = getEmptyPosition();
-    const canMove = canMoveTile(tile.currentPosition, emptyPos);
-    const panResponder = createTilePanResponder(tile.id);
-    
-    // Check if this tile is in the middle position
-    const isInMiddle = isMiddlePosition(tile.currentPosition);
-    
-    // Find the animated position for the current tile
-    const animatedPos = animatedPositions[tile.id];
-    if (!animatedPos) {
-      console.warn(`Animated position not found for tile ${tile.id}`);
-      return null;
+  const renderPuzzleTiles = () => {
+    if (showPreview || !grid.length || Object.keys(animatedPositions).length === 0) {
+        return null;
     }
-    
-    return (
-      <Animated.View
-        key={tile.id}
-        style={[
-          styles.tile,
-          {
-            width: TILE_SIZE,
-            height: TILE_SIZE,
-            left: animatedPos.left,
-            top: animatedPos.top,
-            // Give the middle position a higher zIndex to ensure it's above other tiles
-            zIndex: isInMiddle ? 5 : 1,
-            // Make debugging visible with a subtle border if tile is in middle position
-            borderColor: isInMiddle ? '#ff0000' : '#873600',
-            borderWidth: isInMiddle ? 2 : 1,
-          }
-        ]}
-        {...panResponder.panHandlers}
-      >
-        <TouchableOpacity
-          style={{ 
-            width: '100%', 
-            height: '100%',
-            justifyContent: 'center',
-            alignItems: 'center',
-            // Highlight middle position for debugging
-            backgroundColor: isInMiddle ? 'rgba(255,220,220,0.1)' : 'transparent'
-          }}
-          // Increase hitSlop for the middle position tile to improve touch detection
-          hitSlop={{ top: isInMiddle ? 15 : 5, bottom: isInMiddle ? 15 : 5, 
-                   left: isInMiddle ? 15 : 5, right: isInMiddle ? 15 : 5 }}
-          onPress={() => {
-            // Add special debugging for middle position
-            if (isInMiddle) {
-              console.log(`🔴 MIDDLE POSITION TILE (ID: ${tile.id}) PRESSED. Can move: ${canMove}`);
-              console.log(`Middle tile at position (${tile.currentPosition.row}, ${tile.currentPosition.col})`);
-              console.log(`Empty space at (${emptyPos.row}, ${emptyPos.col})`);
-            } else {
-              console.log(`Tile ${tile.id} pressed. Can move: ${canMove}`);
-            }
-            
-            // Force the move attempt
-            moveTile(tile.id);
-          }}
-          activeOpacity={0.6}
-          accessible={true}
-          accessibilityLabel={`Tile ${tile.id}`}
-          accessibilityHint={canMove ? "Double tap to move this tile or swipe it toward an empty space" : "This tile cannot be moved"}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canMove }}
-        >
-          <Image
-            source={puzzleImages[currentPuzzle].source}
+
+    return grid.flatMap((rowItems, r) =>
+      rowItems.map((tileId, c) => {
+        if (tileId === null) return null; // Don't render for the empty slot
+
+        const staticInfo = tileStaticData[tileId];
+        if (!staticInfo) {
+          console.warn(`Static data not found for tile ${tileId}`);
+          return null;
+        }
+
+        const animPos = animatedPositions[tileId];
+        if (!animPos) {
+          // console.warn(`Animated position not found for tile ${tileId}`);
+          return null; // Can happen briefly during init
+        }
+
+        const panResponder = createTilePanResponder(tileId, r, c);
+        const isTileAdjacentToEmpty = Math.abs(r - emptySlotPosition.row) + Math.abs(c - emptySlotPosition.col) === 1;
+
+        return (
+          <Animated.View
+            key={tileId}
+            className={`absolute rounded-md overflow-hidden justify-center items-center border border-purple-700`}
             style={{
-              width: PUZZLE_CONTAINER_SIZE - (PUZZLE_PADDING * 2),
-              height: PUZZLE_CONTAINER_SIZE - (PUZZLE_PADDING * 2),
-              position: 'absolute',
-              top: -tile.imageY,
-              left: -tile.imageX,
+              width: TILE_SIZE,
+              height: TILE_SIZE,
+              left: animPos.left,
+              top: animPos.top,
+              zIndex: 1,
             }}
-            accessible={false}
-          />
-          <View style={[
-            styles.tileNumber, 
-            { 
-              opacity: 0.9,
-              // Make the number more visible for middle position
-              backgroundColor: isInMiddle ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.7)',
-            }
-          ]}>
-            <Text style={styles.tileNumberText}>{tile.id}</Text>
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
+            {...panResponder.panHandlers}
+          >
+            <TouchableOpacity
+              className="w-full h-full justify-center items-center"
+              hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
+              onPress={() => {
+                moveTile(tileId);
+              }}
+              activeOpacity={0.6}
+              accessible={true}
+              accessibilityLabel={`Tile ${tileId}`}
+              accessibilityHint={
+                isTileAdjacentToEmpty
+                  ? "Double tap to move this tile or swipe it toward the empty space"
+                  : "This tile cannot be moved"
+              }
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !isTileAdjacentToEmpty }}
+            >
+              <Image
+                source={puzzleImages[currentPuzzle].source}
+                className="absolute"
+                style={{
+                  width: PUZZLE_CONTAINER_SIZE - PUZZLE_PADDING * 2,
+                  height: PUZZLE_CONTAINER_SIZE - PUZZLE_PADDING * 2,
+                  top: -staticInfo.imageY,
+                  left: -staticInfo.imageX,
+                }}
+                accessible={false}
+              />
+              <View
+                className={`absolute bottom-[5px] right-[5px] bg-white/70 rounded-full w-5 h-5 justify-center items-center`}
+              >
+                <Text variant="bold" className="text-xs text-purple-800">
+                  {tileId}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })
     );
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="auto" />
+    <View className="flex-1 bg-indigo-50">
+      <StatusBar style="dark" />
 
-      {/* Add Back Button */}
-      <TouchableOpacity 
-        style={{
-          position: 'absolute',
-          top: 10,
-          left: 10,
-          zIndex: 10,
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          padding: 8,
-          borderRadius: 20,
+      <TouchableOpacity
+        className="w-12 h-12 rounded-full bg-white items-center justify-center shadow-md border-2 border-primary-200 mx-6 mt-6"
+        onPress={() => {
+          // Track activity before leaving if puzzle was started but not completed
+          if (gameStarted && !showPreview && !isComplete && moves > 0) {
+            trackActivity(false);
+          }
+          router.back();
         }}
-        onPress={() => router.back()}
+        activeOpacity={0.7}
       >
-        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+        <Ionicons name="arrow-back" size={22} color="#7b5af0" />
       </TouchableOpacity>
-      
-      {/* For landscape layout, we'll use a row layout with puzzle on the left and info on the right */}
-      <View style={styles.landscapeContainer}>
-        {/* Left side - Puzzle */}
-        <View style={styles.puzzleSection}>
-          <View style={styles.puzzleContainer}>
-            {/* Show full image preview */}
+
+      <View className="flex-1 flex-row p-2.5">
+        <View className="flex-0.8 justify-center items-center px-2.5 ml-auto">
+          <View
+            className="bg-purple-100 rounded-lg overflow-hidden relative border-2 border-purple-400"
+            style={{
+              width: PUZZLE_CONTAINER_SIZE,
+              height: PUZZLE_CONTAINER_SIZE,
+            }}
+          >
             {showPreview && (
-              <Animated.View 
-                style={[
-                  styles.previewContainer,
-                  { opacity: previewAnim }
-                ]}
+              <Animated.View
+                className="absolute w-full h-full justify-center items-center bg-purple-50 z-10"
+                style={{ opacity: previewAnim }}
               >
                 <Image
                   source={puzzleImages[currentPuzzle].source}
-                  style={styles.previewImage}
+                  className="w-4/5 h-4/5"
                   resizeMode="contain"
                 />
-                <Text style={styles.previewText}>Memorize the image</Text>
+                <Text variant="bold" className="text-lg text-purple-700 mt-2.5">
+                  Memorize the image
+                </Text>
               </Animated.View>
             )}
-            
-            {/* Show puzzle tiles */}
-            {!showPreview && tiles.map(tile => renderTile(tile))}
-            
-            {/* Success animation overlay */}
-            <Animated.View 
-              style={[
-                styles.successOverlay,
-                {
-                  opacity: successAnim,
-                  transform: [
-                    { scale: successAnim.interpolate({
+
+            {renderPuzzleTiles()}
+
+            <Animated.View
+              className="absolute w-full h-full justify-center items-center bg-purple-400/90 z-20"
+              style={{
+                opacity: successAnim,
+                transform: [
+                  {
+                    scale: successAnim.interpolate({
                       inputRange: [0, 0.5, 1],
-                      outputRange: [0.5, 1.2, 1]
-                    })}
-                  ]
-                }
-              ]}
+                      outputRange: [0.5, 1.2, 1],
+                    }),
+                  },
+                ],
+              }}
+              pointerEvents={isComplete ? "auto" : "none"}
             >
               <Image
                 source={puzzleImages[currentPuzzle].source}
-                style={styles.successImage}
+                className="w-[70%] h-[60%] rounded-lg border-3 border-white"
                 resizeMode="contain"
               />
-              <Text style={styles.successText}>Well done!</Text>
+              <Text
+                variant="bold"
+                className="text-2xl text-white mt-5 shadow-sm"
+              >
+                Well done!
+              </Text>
             </Animated.View>
           </View>
         </View>
-        
-        {/* Right side - Info and controls */}
-        <View style={styles.infoSection}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{puzzleImages[currentPuzzle].name}</Text>
+
+        <View className="flex-1.2 justify-center px-5">
+          <View className="w-full items-center mb-5">
+            <Text variant="bold" className="text-2xl text-indigo-800 mb-2.5">
+              {puzzleImages[currentPuzzle].name}
+            </Text>
             {gameStarted && (
-              <Text style={styles.moves}>Moves: {moves}</Text>
+              <Text className="text-xl text-indigo-500">Moves: {moves}</Text>
             )}
           </View>
-          
-          <View style={styles.footer}>
-            <Text style={styles.description}>
+
+          <View className="w-full items-center my-5">
+            <Text className="text-lg text-center text-slate-600 mb-6">
               {puzzleImages[currentPuzzle].description}
             </Text>
-            
+
             {gameStarted && !showPreview && (
-              <TouchableOpacity 
-                style={styles.resetButton}
-                onPress={initializePuzzle}
+              <TouchableOpacity
+                className="bg-purple-700 py-3 px-6 rounded-full shadow-md"
+                onPress={handleReset} // Use handleReset instead of initializePuzzle directly
                 accessible={true}
                 accessibilityLabel="Reset Puzzle"
                 accessibilityHint="Starts a new shuffled puzzle"
                 accessibilityRole="button"
               >
-                <Text style={styles.resetButtonText}>Reset Puzzle</Text>
+                <Text variant="bold" className="text-lg text-white">
+                  Reset Puzzle
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -608,150 +716,5 @@ const BugandaPuzzleGame: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF9E6', // Light cream background
-  },
-  landscapeContainer: {
-    flex: 1,
-    flexDirection: 'row', // For landscape layout
-    padding: 10,
-  },
-  puzzleSection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-  },
-  infoSection: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  header: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#873600', // Brown color for Buganda theme
-    marginBottom: 10,
-  },
-  moves: {
-    fontSize: 20,
-    color: '#555',
-  },
-  puzzleContainer: {
-    width: PUZZLE_CONTAINER_SIZE,
-    height: PUZZLE_CONTAINER_SIZE,
-    backgroundColor: '#E6CCB2', // Light brown background
-    borderRadius: 10,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 2,
-    borderColor: '#873600',
-  },
-  tile: {
-    position: 'absolute',
-    borderRadius: 5,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#873600',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tileNumber: {
-    position: 'absolute',
-    bottom: 5,
-    right: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tileNumberText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#873600',
-  },
-  previewContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF9E6',
-    zIndex: 10,
-  },
-  previewImage: {
-    width: '80%',
-    height: '80%',
-  },
-  previewText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#873600',
-    marginTop: 10,
-  },
-  successOverlay: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 249, 230, 0.9)',
-    zIndex: 20,
-  },
-  successImage: {
-    width: '70%',
-    height: '60%',
-    borderRadius: 10,
-    borderWidth: 3,
-    borderColor: '#873600',
-  },
-  successText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#873600',
-    marginTop: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  footer: {
-    width: '100%',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  description: {
-    fontSize: 18,
-    textAlign: 'center',
-    color: '#5D4037',
-    marginBottom: 25,
-    fontStyle: 'italic',
-  },
-  resetButton: {
-    backgroundColor: '#873600',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-  },
-  resetButtonText: {
-    color: '#FFF9E6',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
 
 export default BugandaPuzzleGame;

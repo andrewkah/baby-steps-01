@@ -1,14 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import {
-  View,
-  TouchableOpacity,
-  Animated,
-  FlatList,
-  StatusBar, // Added StatusBar import
-} from "react-native"
+import { View, TouchableOpacity, Animated, FlatList, StatusBar } from "react-native"
 import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
 import { FontAwesome5 } from "@expo/vector-icons"
 import { useRouter } from "expo-router"
 import { supabase } from "../lib/supabase"
@@ -108,7 +103,7 @@ export default function ChildListScreen() {
   const navigateToProfile = (childId: string) => {
     // Navigate to profile and pass the child ID
     router.push({
-      pathname: "/child/(tabs)/profile",
+      pathname: "/parent/child-detail/1" as any,
       params: { childId },
     })
   }
@@ -167,25 +162,25 @@ export default function ChildListScreen() {
         <View className="px-5 py-4 bg-white border-b border-gray-200">
           <View className="flex-row items-center mb-2">
             <TouchableOpacity
-              onPress={() => router.push("./parent/index")}
+              onPress={() => router.push("/")}
               className="w-10 h-10 rounded-full bg-primary-100 items-center justify-center mr-3"
             >
               <FontAwesome5 name="arrow-left" size={16} color="#3e4685" />
             </TouchableOpacity>
-            <Text variant="bold" className="text-2xl text-primary-800">
+            <TranslatedText variant="bold" className="text-2xl text-primary-800">
               Child Profiles
-            </Text>
+            </TranslatedText>
           </View>
-          <Text className="text-sm text-neutral-400 mt-1 ml-1">Personalized learning journeys</Text>
+          <TranslatedText className="text-sm text-neutral-400 mt-1 ml-1">Personalized learning journeys</TranslatedText>
         </View>
 
         {/* Main content */}
         {loading ? (
           <View className="flex-1 justify-center items-center">
             <FontAwesome5 name="child" size={150} color="#6366f1" />
-            <Text variant="medium" className="mt-5 text-base text-neutral-500">
+            <TranslatedText variant="medium" className="mt-5 text-base text-neutral-500">
               Loading profiles...
-            </Text>
+            </TranslatedText>
           </View>
         ) : (
           <>
@@ -207,9 +202,9 @@ export default function ChildListScreen() {
                     activeOpacity={0.8}
                   >
                     <FontAwesome5 name="plus" size={18} color="#fff" />
-                    <Text variant="bold" className="text-white text-base ml-2">
+                    <TranslatedText variant="bold" className="text-white text-base ml-2">
                       Add Another Child
-                    </Text>
+                    </TranslatedText>
                   </TouchableOpacity>
                 </View>
               </>
@@ -241,13 +236,13 @@ export default function ChildListScreen() {
                   <Text variant="bold" className="text-[80px] mb-4">
                     👶
                   </Text>
-                  <Text variant="bold" className="text-2xl text-neutral-800 mb-3 text-center">
+                  <TranslatedText variant="bold" className="text-2xl text-neutral-800 mb-3 text-center">
                     No Child Profiles Yet
-                  </Text>
-                  <Text className="text-base text-neutral-500 text-center mb-6 leading-6">
+                  </TranslatedText>
+                  <TranslatedText className="text-base text-neutral-500 text-center mb-6 leading-6">
                     You haven't added any child profiles yet. Create a profile to start your child's personalized
                     learning journey!
-                  </Text>
+                  </TranslatedText>
 
                   <TouchableOpacity
                     className="flex-row bg-primary-500 py-4 px-6 rounded-full items-center justify-center w-full shadow-lg"
@@ -255,9 +250,9 @@ export default function ChildListScreen() {
                     activeOpacity={0.8}
                   >
                     <FontAwesome5 name="plus" size={18} color="#fff" />
-                    <Text variant="bold" className="text-white text-base ml-2">
+                    <TranslatedText variant="bold" className="text-white text-base ml-2">
                       Add Child Profile
-                    </Text>
+                    </TranslatedText>
                   </TouchableOpacity>
                 </View>
               </Animated.View>
@@ -268,4 +263,3 @@ export default function ChildListScreen() {
     </>
   )
 }
-

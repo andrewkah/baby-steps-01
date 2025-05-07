@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+"use client"
+
+import type React from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   View,
   Image,
@@ -8,81 +11,77 @@ import {
   ScrollView,
   Animated,
   Easing,
-  BackHandler, // Add this import
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { useRouter, usePathname, useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import * as Speech from "expo-speech";
-import { Text } from "@/components/StyledText";
-import { SafeAreaView } from "react-native-safe-area-context";
-import * as ScreenOrientation from 'expo-screen-orientation';
-import { useCallback } from 'react';
-import { useChild } from '@/context/ChildContext';
+  BackHandler,
+} from "react-native"
+import { StatusBar } from "expo-status-bar"
+import { useRouter, usePathname, useFocusEffect } from "expo-router"
+import { Ionicons } from "@expo/vector-icons"
+import * as Speech from "expo-speech"
+import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
+import { SafeAreaView } from "react-native-safe-area-context"
+import * as ScreenOrientation from "expo-screen-orientation"
+import { useCallback } from "react"
+import { useChild } from "@/context/ChildContext"
 
 // Define types
 type LearningCard = {
-  id: string;
-  title: string;
-  image: any;
-  description: string;
-  targetPage: string; // Add this property to specify which page to navigate to
-};
+  id: string
+  title: string
+  image: any
+  description: string
+  targetPage: string // Add this property to specify which page to navigate to
+}
 
 type NavItem = {
-  id: string;
-  icon: any;
-  label: string;
-};
+  id: string
+  icon: any
+  label: string
+}
 
 const AfricanThemeGameInterface: React.FC = () => {
-  const [selectedLevel, setSelectedLevel] = useState<string>("Basic");
-  const [selectedNavItem, setSelectedNavItem] = useState<string>("home");
-  const [learningCards, setLearningCards] = useState<LearningCard[]>([]);
-  const router = useRouter();
-  const { activeChild } = useChild();
+  const [selectedLevel, setSelectedLevel] = useState<string>("Basic")
+  const [selectedNavItem, setSelectedNavItem] = useState<string>("home")
+  const [learningCards, setLearningCards] = useState<LearningCard[]>([])
+  const router = useRouter()
+  const { activeChild } = useChild()
 
   // Animation values for avatar
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const bounceAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current
+  const bounceAnim = useRef(new Animated.Value(0)).current
 
   useFocusEffect(
     useCallback(() => {
-      console.log("AfricanThemeGameInterface focused - locking to landscape");
+      console.log("AfricanThemeGameInterface focused - locking to landscape")
       const lockToLandscape = async () => {
         try {
-          await ScreenOrientation.lockAsync(
-            ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
-          );
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT)
         } catch (error) {
-          console.error("Failed to lock orientation:", error);
+          console.error("Failed to lock orientation:", error)
         }
-      };
+      }
 
-      lockToLandscape();
+      lockToLandscape()
 
       return () => {
-        // No cleanup needed here as we want to keep landscape 
+        // No cleanup needed here as we want to keep landscape
         // when navigating to games
-      };
-    }, [])
-  );
+      }
+    }, []),
+  )
 
   useEffect(() => {
-    console.log("AfricanThemeGameInterface arrived - locking to landscape");
-      const lockToLandscape = async () => {
-        try {
-          await ScreenOrientation.lockAsync(
-            ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
-          );
-        } catch (error) {
-          console.error("Failed to lock orientation:", error);
-        }
-      };
+    console.log("AfricanThemeGameInterface arrived - locking to landscape")
+    const lockToLandscape = async () => {
+      try {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT)
+      } catch (error) {
+        console.error("Failed to lock orientation:", error)
+      }
+    }
 
-      lockToLandscape();
-    }, []);
-
+    lockToLandscape()
+  }, [])
 
   // Set up animation
   useEffect(() => {
@@ -101,8 +100,8 @@ const AfricanThemeGameInterface: React.FC = () => {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
-    );
+      ]),
+    )
 
     const bounceSequence = Animated.loop(
       Animated.sequence([
@@ -118,43 +117,43 @@ const AfricanThemeGameInterface: React.FC = () => {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
-    );
+      ]),
+    )
 
     // Start animations
-    pulseSequence.start();
-    bounceSequence.start();
+    pulseSequence.start()
+    bounceSequence.start()
 
     return () => {
       // Clean up animations
-      pulseSequence.stop();
-      bounceSequence.stop();
-    };
-  }, []);
+      pulseSequence.stop()
+      bounceSequence.stop()
+    }
+  }, [])
 
   // Add this effect to handle hardware back button
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
       // Navigate to parent gate instead of default back behavior
-      router.push('/child/parent-gate');
-      return true; // Prevents default back behavior
-    });
+      router.push("/child/parent-gate")
+      return true // Prevents default back behavior
+    })
 
-    return () => backHandler.remove(); // Clean up on unmount
-  }, [router]);
+    return () => backHandler.remove() // Clean up on unmount
+  }, [router])
 
   // Get the current path to determine which tab we're on
-  const pathname = usePathname();
-  const tabId = pathname.split("/").pop() || "profile"; // Extract tab ID from path
+  const pathname = usePathname()
+  const tabId = pathname.split("/").pop() || "profile" // Extract tab ID from path
 
   // Set the title based on the tab
-  const [screenTitle, setScreenTitle] = useState("Games");
+  const [screenTitle, setScreenTitle] = useState("Games")
 
   useEffect(() => {
     // Set cards based on the selected tab
     switch (tabId) {
       case "profile": // Games
-        setScreenTitle("Games");
+        setScreenTitle("Games")
         setLearningCards([
           {
             id: "words",
@@ -191,12 +190,11 @@ const AfricanThemeGameInterface: React.FC = () => {
             description: "Count with traditional Luganda number systems",
             targetPage: "child/games/lugandacountinggame",
           },
-      
-        ]);
-        break;
+        ])
+        break
 
       case "coloring":
-        setScreenTitle("Coloring");
+        setScreenTitle("Coloring")
         setLearningCards([
           {
             id: "emblem",
@@ -233,19 +231,17 @@ const AfricanThemeGameInterface: React.FC = () => {
             description: "Color traditional African masks",
             targetPage: "child/games/coloring/mask",
           },
-
-        ]);
-        break;
+        ])
+        break
 
       case "Stories":
-        setScreenTitle("Stories");
+        setScreenTitle("Stories")
         setLearningCards([
           {
             id: "kintu",
             title: "Kintu",
             image: require("@/assets/images/kintu.jpg"),
-            description:
-              "Learn about Kintu, the first person on Earth according to Buganda mythology",
+            description: "Learn about Kintu, the first person on Earth according to Buganda mythology",
             targetPage: "child/stories/kintustory",
           },
           {
@@ -259,13 +255,12 @@ const AfricanThemeGameInterface: React.FC = () => {
             id: "kasubi",
             title: "Kasubi Tombs",
             image: require("@/assets/images/kasubi.jpg"),
-            description:
-              "Explore the UNESCO World Heritage Site of Kasubi Tombs",
+            description: "Explore the UNESCO World Heritage Site of Kasubi Tombs",
             targetPage: "child/stories/kasubitombsstory",
           },
           {
             id: "walumbe",
-            title: "Walumbe and Death", 
+            title: "Walumbe and Death",
             image: require("@/assets/images/buganda-kingdom.jpg"),
             description: "Learn about the story of Walumbe and the origin of death",
             targetPage: "child/stories/walumbestory",
@@ -274,8 +269,7 @@ const AfricanThemeGameInterface: React.FC = () => {
             id: "ssezibwa",
             title: "Ssezibwa Falls",
             image: require("@/assets/images/kabaka-trail.jpg"),
-            description:
-              "Follow the historical origin of Ssezibwa Falls",
+            description: "Follow the historical origin of Ssezibwa Falls",
             targetPage: "child/stories/ssezibwafallsstory",
           },
           {
@@ -299,134 +293,45 @@ const AfricanThemeGameInterface: React.FC = () => {
             description: "Discover the story of the generous fig tree",
             targetPage: "child/stories/figtreestory",
           },
-        ]);
-        break;
-
-      // case "quizz":
-      //   setScreenTitle("Quizz");
-      //   setLearningCards([
-      //     {
-      //       id: "history",
-      //       title: "History",
-      //       image: require("@/assets/images/history.jpg"), // Replace with appropriate image
-      //       description: "Test your knowledge of African history",
-      //       targetPage: "tester",
-      //     },
-      //     {
-      //       id: "geography",
-      //       title: "Geography",
-      //       image: require("@/assets/images/geography.jpg"), // Replace with appropriate image
-      //       description: "Quiz about African countries and landmarks",
-      //       targetPage: "tester",
-      //     },
-      //     {
-      //       id: "culture",
-      //       title: "Culture",
-      //       image: require("@/assets/images/culture.jpg"), // Replace with appropriate image
-      //       description: "Learn about diverse African cultures",
-      //       targetPage: "tester",
-      //     },
-      //     {
-      //       id: "wildlife",
-      //       title: "Wildlife",
-      //       image: require("@/assets/images/wildlife.jpg"), // Replace with appropriate image
-      //       description: "Test your knowledge of African animals",
-      //       targetPage: "tester",
-      //     },
-      //     {
-      //       id: "languages",
-      //       title: "Languages",
-      //       image: require("@/assets/images/language.jpg"), // Replace with appropriate image
-      //       description: "Learn words from different African languages",
-      //       targetPage: "tester",
-      //     },
-      //   ]);
-      //   break;
-
-      // case "nature":
-      //   setScreenTitle("Nature");
-      //   setLearningCards([
-      //     {
-      //       id: "savanna",
-      //       title: "Savanna",
-      //       image: require("@/assets/images/savannah.jpg"), // Replace with appropriate image
-      //       description: "Explore the African savanna ecosystem",
-      //       targetPage: "tester",
-      //     },
-      //     {
-      //       id: "rainforest",
-      //       title: "Rainforest",
-      //       image: require("@/assets/images/rainforest.jpg"), // Replace with appropriate image
-      //       description: "Discover the Congo rainforest",
-      //       targetPage: "tester",
-      //     },
-      //     {
-      //       id: "desert",
-      //       title: "Desert",
-      //       image: require("@/assets/images/desert.jpg"), // Replace with appropriate image
-      //       description: "Learn about the Sahara and Kalahari deserts",
-      //       targetPage: "tester",
-      //     },
-      //     {
-      //       id: "mountains",
-      //       title: "Mountains",
-      //       image: require("@/assets/images/mountain.jpg"), // Replace with appropriate image
-      //       description: "Explore African mountains like Kilimanjaro",
-      //       targetPage: "tester",
-      //     },
-      //     {
-      //       id: "rivers",
-      //       title: "Rivers",
-      //       image: require("@/assets/images/river.jpg"), // Replace with appropriate image
-      //       description: "Learn about the Nile, Congo, and other major rivers",
-      //       targetPage: "tester",
-      //     },
-      //   ]);
-      //   break;
+        ])
+        break
 
       case "museum":
-        setScreenTitle("Museum");
+        setScreenTitle("Museum")
         setLearningCards([
           {
             id: "artifacts",
             title: "Artifacts",
-            image: require("@/assets/images/artifacts.jpg"), // Replace with appropriate image
+            image: require("@/assets/images/artifacts.jpg"),
             description: "Explore ancient African artifacts",
             targetPage: "child/games/museum/ArtifactsScreen",
           },
           {
             id: "art",
             title: "Art",
-            image: require("@/assets/images/art.jpg"), // Replace with appropriate image
+            image: require("@/assets/images/art.jpg"),
             description: "Discover traditional and contemporary African art",
             targetPage: "child/games/museum/ArtScreen",
           },
           {
             id: "instruments",
             title: "Instruments",
-            image: require("@/assets/images/drum.jpg"), // Replace with appropriate image
+            image: require("@/assets/images/drum.jpg"),
             description: "Learn about traditional African musical instruments",
             targetPage: "child/games/museum/InstrumentsScreen",
           },
           {
             id: "textiles",
             title: "Textiles",
-            image: require("@/assets/images/textile.jpg"), // Replace with appropriate image
+            image: require("@/assets/images/textile.jpg"),
             description: "Explore the rich tradition of African textiles",
             targetPage: "child/games/museum/TextilesScreen",
           },
-          // {
-          //   id: "sculptures",
-          //   title: "Sculptures",
-          //   image: require("@/assets/images/sculpture.jpg"), // Replace with appropriate image
-          //   description: "View famous African sculptures and carvings",
-          //   targetPage: "child/games/museum/SculptureScreen",
-          // },
-        ]);
-        break;
+        ])
+        break
       default:
         // Default to games if no tab is specified
-        setScreenTitle("Games");
+        setScreenTitle("Games")
         setLearningCards([
           {
             id: "logic",
@@ -463,26 +368,26 @@ const AfricanThemeGameInterface: React.FC = () => {
             description: "Learn through African folktales and proverbs",
             targetPage: "tester",
           },
-        ]);
+        ])
     }
-  }, [tabId]);
+  }, [tabId])
 
   const handleParentalPress = () => {
     Speech.speak("For parents only", {
       language: "en",
       pitch: 1,
       rate: 1,
-    });
-    router.push("/child/parent-gate" as any);
-  };
+    })
+    router.push("/child/parent-gate" as any)
+  }
 
   // Updated function to navigate to the card's target page with type assertion
   const handleCardPress = (card: LearningCard) => {
     // Use type assertion to tell TypeScript this is a valid route
-    router.push(`/${card.targetPage}` as any);
-  };
+    router.push(`/${card.targetPage}` as any)
+  }
 
-  const { width } = Dimensions.get("window");
+  const { width } = Dimensions.get("window")
 
   return (
     <>
@@ -490,10 +395,7 @@ const AfricanThemeGameInterface: React.FC = () => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       {/* ImageBackground now covers the entire screen including status bar */}
-      <ImageBackground
-        source={require("@/assets/images/gameBackground.png")}
-        className="flex-1 bg-cover"
-      >
+      <ImageBackground source={require("@/assets/images/gameBackground.png")} className="flex-1 bg-cover">
         {/* SafeAreaView moved inside ImageBackground */}
         <SafeAreaView className="flex-1" edges={["right", "bottom", "left"]}>
           {/* Main content area */}
@@ -516,11 +418,6 @@ const AfricanThemeGameInterface: React.FC = () => {
                   {activeChild?.name || "Learner"}
                 </Text>
                 <Text className="text-white/80 text-sm">{activeChild ? `Age ${activeChild.age}` : "Age 9+"}</Text>
-                {/* <View className="absolute -top-1.5 right-[60px] bg-[#FFD700] w-6 h-6 rounded-full justify-center items-center">
-                  <Text variant="bold" className="text-[#5A3CBE] text-sm">
-                    1
-                  </Text>
-                </View> */}
               </View>
             </View>
 
@@ -529,12 +426,9 @@ const AfricanThemeGameInterface: React.FC = () => {
               {/* Header */}
               <View className="flex-row justify-between items-center mb-5 ml-[45%]">
                 <View className="flex-row items-center">
-                  <Text
-                    variant="bold"
-                    className="text-white text-3xl mr-2.5 pt-3"
-                  >
+                  <TranslatedText variant="bold" className="text-white text-3xl mr-2.5 pt-3">
                     {screenTitle}
-                  </Text>
+                  </TranslatedText>
                 </View>
 
                 <TouchableOpacity
@@ -542,12 +436,9 @@ const AfricanThemeGameInterface: React.FC = () => {
                   onPress={handleParentalPress}
                 >
                   <Ionicons name="people-sharp" size={30} color="#FF6F61" />
-                  <Text
-                    variant="medium"
-                    className="text-[#5A3CBE] text-base ml-1"
-                  >
+                  <TranslatedText variant="medium" className="text-[#5A3CBE] text-base ml-1">
                     For parents
-                  </Text>
+                  </TranslatedText>
                 </TouchableOpacity>
               </View>
 
@@ -560,11 +451,11 @@ const AfricanThemeGameInterface: React.FC = () => {
               >
                 {/* Start card */}
                 <View className="bg-white/15 rounded-2xl p-4 mt-5 mr-2.5 w-[200px] mb-6">
-                  <Text variant="bold" className="text-white text-2xl">
+                  <TranslatedText variant="bold" className="text-white text-2xl">
                     Start
-                  </Text>
-                  <Text className="text-white text-base">of learning</Text>
-                  <Text className="text-white text-base">journey</Text>
+                  </TranslatedText>
+                  <TranslatedText className="text-white text-base">of learning</TranslatedText>
+                  <TranslatedText className="text-white text-base">journey</TranslatedText>
 
                   {/* Optional Adinkra symbol */}
                   <View className="mt-2.5">
@@ -580,25 +471,14 @@ const AfricanThemeGameInterface: React.FC = () => {
                     activeOpacity={0.7}
                     onPress={() => handleCardPress(card)}
                   >
-                    <Image
-                      source={card.image}
-                      className="w-full h-[60%] object-cover"
-                      resizeMode="cover"
-                    />
+                    <Image source={card.image} className="w-full h-[60%] object-cover" resizeMode="cover" />
                     <View className="p-3 bg-white h-[40%] justify-center">
-                      <Text
-                        variant="bold"
-                        className="text-base text-[#5A3CBE] mb-1"
-                        numberOfLines={1}
-                      >
+                      <TranslatedText variant="bold" className="text-base text-[#5A3CBE] mb-1" numberOfLines={1}>
                         {card.title}
-                      </Text>
-                      <Text
-                        className="text-xs text-neutral-600 leading-4"
-                        numberOfLines={2}
-                      >
+                      </TranslatedText>
+                      <TranslatedText className="text-xs text-neutral-600 leading-4" numberOfLines={2}>
                         {card.description}
-                      </Text>
+                      </TranslatedText>
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -608,7 +488,7 @@ const AfricanThemeGameInterface: React.FC = () => {
         </SafeAreaView>
       </ImageBackground>
     </>
-  );
-};
+  )
+}
 
-export default AfricanThemeGameInterface;
+export default AfricanThemeGameInterface
