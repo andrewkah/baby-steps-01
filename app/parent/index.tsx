@@ -10,6 +10,7 @@ import { Ionicons, FontAwesome5 } from "@expo/vector-icons"
 import { supabase } from "@/lib/supabase"
 import { getActivityStats } from "@/lib/utils"
 import { TranslatedText } from "@/components/translated-text"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 type ChildProfile = {
   id: string
@@ -24,7 +25,20 @@ type ChildProfile = {
   lastActive?: string
   topSkill?: string
   avatar?: string
+  // Game progress data
+  gameProgress?: {
+    counting: any | null
+    puzzle: any | null
+    card: any | null
+    learning: any | null
+  }
 }
+
+// Storage keys for the game states
+const COUNTING_GAME_STORAGE_KEY = "luganda_counting_game_state"
+const PUZZLE_GAME_STORAGE_KEY = "buganda_puzzle_game_state"
+const CARD_GAME_STORAGE_KEY = "cards_matching_game_state"
+const LEARNING_GAME_STORAGE_KEY = "learning_game_state"
 
 const ParentDashboard = () => {
   const router = useRouter()
@@ -34,12 +48,107 @@ const ParentDashboard = () => {
   const [weeklyStats, setWeeklyStats] = useState({
     dailyMinutes: [0, 0, 0, 0, 0, 0, 0],
     totalActivities: 0,
-    averageScore: 0
+    averageScore: 0,
   })
+  const [gameActivities, setGameActivities] = useState<any[]>([])
 
   useEffect(() => {
     fetchChildProfiles()
   }, [])
+
+  // Load game progress for a specific child and game
+  const loadGameProgress = async (childId: string, storageKey: string) => {
+    try {
+      const savedState = await AsyncStorage.getItem(`${storageKey}_${childId}`)
+
+      if (savedState) {
+        const gameState = JSON.parse(savedState)
+
+        // Check if the saved state is from within the last 30 days
+        const isRecent = Date.now() - gameState.lastPlayed < 30 * 24 * 60 * 60 * 1000
+
+        if (isRecent) {
+          // Format the progress data based on the game type
+          if (storageKey === COUNTING_GAME_STORAGE_KEY) {
+            return {
+              currentStage: gameState.currentStage,
+              currentLevel: gameState.currentLevel,
+              score: gameState.score,
+              lastPlayed: new Date(gameState.lastPlayed).toLocaleDateString(),
+            }
+          } else if (storageKey === PUZZLE_GAME_STORAGE_KEY) {
+            return {
+              level: gameState.level,
+              completedPuzzles: gameState.completedPuzzles,
+              score: gameState.score,
+              lastPlayed: new Date(gameState.lastPlayed).toLocaleDateString(),
+            }
+          } else if (storageKey === CARD_GAME_STORAGE_KEY) {
+            return {
+              level: gameState.level,
+              matchesMade: gameState.matchesMade,
+              score: gameState.score,
+              lastPlayed: new Date(gameState.lastPlayed).toLocaleDateString(),
+            }
+          } else if (storageKey === LEARNING_GAME_STORAGE_KEY) {
+            return {
+              level: gameState.level,
+              wordsLearned: gameState.wordsLearned,
+              score: gameState.score,
+              lastPlayed: new Date(gameState.lastPlayed).toLocaleDateString(),
+            }
+          }
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.error(`Error loading game progress for ${storageKey}:`, error)
+      return null
+    }
+  }
+
+  // Create a game activity entry for the dashboard
+  const createGameActivity = (childName: string, gameType: string, gameProgress: any) => {
+    if (!gameProgress) return null
+
+    let activity = ""
+    let icon = "gamepad"
+    let color = "#7b5af0"
+
+    switch (gameType) {
+      case "counting":
+        activity = `completed Stage ${gameProgress.currentStage}, Level ${gameProgress.currentLevel} in Counting Game`
+        icon = "sort-numeric-up"
+        color = "#6366f1"
+        break
+      case "puzzle":
+        activity = `completed ${gameProgress.completedPuzzles} puzzles at Level ${gameProgress.level}`
+        icon = "puzzle-piece"
+        color = "#8b5cf6"
+        break
+      case "card":
+        activity = `made ${gameProgress.matchesMade} matches at Level ${gameProgress.level} in Card Game`
+        icon = "clone"
+        color = "#ec4899"
+        break
+      case "learning":
+        activity = `learned ${gameProgress.wordsLearned} words at Level ${gameProgress.level}`
+        icon = "book"
+        color = "#10b981"
+        break
+    }
+
+    return {
+      id: `game-${gameType}-${childName}-${Date.now()}`,
+      childName,
+      activity,
+      time: gameProgress.lastPlayed,
+      score: `Score: ${gameProgress.score}`,
+      icon,
+      color,
+    }
+  }
 
   const fetchChildProfiles = async () => {
     try {
@@ -65,7 +174,7 @@ const ParentDashboard = () => {
       }
 
       // Transform the data to include UI display properties
-      const transformedData =
+      const transformedData: ChildProfile[] =
         data?.map((child) => ({
           ...child,
           level: 1, // Default level
@@ -73,8 +182,82 @@ const ParentDashboard = () => {
           lastActive: "Today", // Default last active
           topSkill: child.reason || "Learning", // Use reason as top skill or default
           avatar: child.gender === "male" ? "👦" : child.gender === "female" ? "👧" : "👶",
+          gameProgress: {
+            counting: null,
+            puzzle: null,
+            card: null,
+            learning: null,
+          },
         })) || []
 
+      // Load game progress for each child
+      const gameActivitiesArray = []
+
+      for (const child of transformedData) {
+        // Load progress for all games
+        const countingProgress = await loadGameProgress(child.id, COUNTING_GAME_STORAGE_KEY)
+        const puzzleProgress = await loadGameProgress(child.id, PUZZLE_GAME_STORAGE_KEY)
+        const cardProgress = await loadGameProgress(child.id, CARD_GAME_STORAGE_KEY)
+        const learningProgress = await loadGameProgress(child.id, LEARNING_GAME_STORAGE_KEY)
+
+        // Store progress in child object
+        if (child.gameProgress) {
+          child.gameProgress.counting = countingProgress
+          child.gameProgress.puzzle = puzzleProgress
+          child.gameProgress.card = cardProgress
+          child.gameProgress.learning = learningProgress
+        }
+
+        // Calculate total score and level based on game progress
+        let totalScore = 0
+        let gamesPlayed = 0
+
+        if (countingProgress) {
+          totalScore += countingProgress.score
+          gamesPlayed++
+          // Create activity entry
+          const activity = createGameActivity(child.name, "counting", countingProgress)
+          if (activity) gameActivitiesArray.push(activity)
+        }
+
+        if (puzzleProgress) {
+          totalScore += puzzleProgress.score
+          gamesPlayed++
+          // Create activity entry
+          const activity = createGameActivity(child.name, "puzzle", puzzleProgress)
+          if (activity) gameActivitiesArray.push(activity)
+        }
+
+        if (cardProgress) {
+          totalScore += cardProgress.score
+          gamesPlayed++
+          // Create activity entry
+          const activity = createGameActivity(child.name, "card", cardProgress)
+          if (activity) gameActivitiesArray.push(activity)
+        }
+
+        if (learningProgress) {
+          totalScore += learningProgress.score
+          gamesPlayed++
+          // Create activity entry
+          const activity = createGameActivity(child.name, "learning", learningProgress)
+          if (activity) gameActivitiesArray.push(activity)
+        }
+
+        // Update child level and progress based on game data
+        if (gamesPlayed > 0) {
+          child.level = Math.max(1, Math.floor(totalScore / 100) + 1)
+          child.progress = Math.min(0.95, totalScore / (child.level * 100))
+        }
+      }
+
+      // Sort game activities by date (most recent first)
+      gameActivitiesArray.sort((a, b) => {
+        return new Date(b.time).getTime() - new Date(a.time).getTime()
+      })
+
+      // Add game activities to the state
+      setGameActivities(gameActivitiesArray)
       setChildProfiles(transformedData)
       setLoading(false)
     } catch (error) {
@@ -99,8 +282,8 @@ const ParentDashboard = () => {
         if (!children?.length) return
 
         // Fetch activities for all children
-        const childIds = children.map(child => child.id)
-        const promises = childIds.map(id => getActivityStats(id))
+        const childIds = children.map((child) => child.id)
+        const promises = childIds.map((id) => getActivityStats(id))
         const allStats = await Promise.all(promises)
 
         // Combine all activities and stats
@@ -114,7 +297,7 @@ const ParentDashboard = () => {
           if (stats) {
             const activities = await stats.recentActivities
             combinedActivities.push(...activities)
-            stats.dailyMinutes.forEach((minutes, i) => {
+            stats.dailyMinutes.forEach((minutes: number, i: number) => {
               weeklyMinutes[i] += minutes
             })
             totalActivities += stats.totalActivities
@@ -130,31 +313,44 @@ const ParentDashboard = () => {
         combinedActivities.sort((a, b) => {
           // If activities have date and time properties already formatted
           if (a.date && a.time && b.date && b.time) {
-            const dateTimeA = `${a.date} ${a.time}`;
-            const dateTimeB = `${b.date} ${b.time}`;
-            return dateTimeB.localeCompare(dateTimeA);
+            const dateTimeA = `${a.date} ${a.time}`
+            const dateTimeB = `${b.date} ${b.time}`
+            return dateTimeB.localeCompare(dateTimeA)
           }
-          
+
           // If activities have a combined time property
           // This fallback uses the existing code which might be working with a different format
-          return new Date(b.time).getTime() - new Date(a.time).getTime();
-        });
+          return new Date(b.time).getTime() - new Date(a.time).getTime()
+        })
 
-        setRecentActivities(combinedActivities.slice(0, 3)) // Show 3 most recent
+        // Combine database activities with game activities
+        const allActivities = [...combinedActivities, ...gameActivities]
+        allActivities.sort((a, b) => {
+          // Simple sort by time string (most recent first)
+          if (typeof a.time === "string" && typeof b.time === "string") {
+            return b.time.localeCompare(a.time)
+          }
+          return 0
+        })
+
+        setRecentActivities(allActivities.slice(0, 5)) // Show 5 most recent
         setWeeklyStats({
           dailyMinutes: weeklyMinutes,
-          totalActivities,
-          averageScore: activitiesWithScore ? Math.round(totalScore / activitiesWithScore) : 0
+          totalActivities: totalActivities + gameActivities.length,
+          averageScore: activitiesWithScore ? Math.round(totalScore / activitiesWithScore) : 0,
         })
       } catch (error) {
         console.error("Error fetching activities:", error)
       }
     }
 
-    fetchActivities()
+    if (gameActivities.length > 0) {
+      fetchActivities()
+    }
+
     const interval = setInterval(fetchActivities, 30000) // Refresh every 30 seconds
     return () => clearInterval(interval)
-  }, [])
+  }, [gameActivities])
 
   return (
     <>
@@ -254,6 +450,14 @@ const ParentDashboard = () => {
                           <Text className="text-gray-500 text-xs text-right mt-1">
                             {Math.round((child.progress || 0) * 100)}%
                           </Text>
+
+                          {/* Game indicators */}
+                          <View className="flex-row justify-center mt-2 space-x-1">
+                            {child.gameProgress?.counting && <View className="w-2 h-2 rounded-full bg-indigo-500" />}
+                            {child.gameProgress?.puzzle && <View className="w-2 h-2 rounded-full bg-purple-500" />}
+                            {child.gameProgress?.card && <View className="w-2 h-2 rounded-full bg-pink-500" />}
+                            {child.gameProgress?.learning && <View className="w-2 h-2 rounded-full bg-green-500" />}
+                          </View>
                         </TouchableOpacity>
                       ))
                     : null}
@@ -274,6 +478,98 @@ const ParentDashboard = () => {
                   </TouchableOpacity>
                 </ScrollView>
               )}
+            </View>
+
+            {/* Game Progress Summary */}
+            <View className="mb-6">
+              <TranslatedText variant="bold" className="text-gray-800 text-lg mb-3">
+                Learning Games Progress
+              </TranslatedText>
+
+              <View className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <View className="flex-row flex-wrap justify-between">
+                  {/* Counting Game */}
+                  <View className="w-[48%] mb-4">
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-8 h-8 rounded-full bg-indigo-100 items-center justify-center mr-2">
+                        <FontAwesome5 name="sort-numeric-up" size={14} color="#6366f1" />
+                      </View>
+                      <Text variant="medium" className="text-gray-800 text-sm">
+                        Counting Game
+                      </Text>
+                    </View>
+                    <Text className="text-xs text-gray-500 mb-1">
+                      {childProfiles.filter((child) => child.gameProgress?.counting).length} children playing
+                    </Text>
+                    <TouchableOpacity
+                      className="bg-indigo-100 py-1 rounded-md"
+                      onPress={() => router.push("/child/games/wordgame")}
+                    >
+                      <Text className="text-indigo-600 text-xs text-center">Play</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Puzzle Game */}
+                  <View className="w-[48%] mb-4">
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-8 h-8 rounded-full bg-purple-100 items-center justify-center mr-2">
+                        <FontAwesome5 name="puzzle-piece" size={14} color="#8b5cf6" />
+                      </View>
+                      <Text variant="medium" className="text-gray-800 text-sm">
+                        Puzzle Game
+                      </Text>
+                    </View>
+                    <Text className="text-xs text-gray-500 mb-1">
+                      {childProfiles.filter((child) => child.gameProgress?.puzzle).length} children playing
+                    </Text>
+                    <TouchableOpacity
+                      className="bg-purple-100 py-1 rounded-md"
+                      onPress={() => router.push("/child")}
+                    >
+                      <Text className="text-purple-600 text-xs text-center">Play</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Card Game */}
+                  <View className="w-[48%]">
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-8 h-8 rounded-full bg-pink-100 items-center justify-center mr-2">
+                        <FontAwesome5 name="clone" size={14} color="#ec4899" />
+                      </View>
+                      <Text variant="medium" className="text-gray-800 text-sm">
+                        Card Game
+                      </Text>
+                    </View>
+                    <Text className="text-xs text-gray-500 mb-1">
+                      {childProfiles.filter((child) => child.gameProgress?.card).length} children playing
+                    </Text>
+                    <TouchableOpacity className="bg-pink-100 py-1 rounded-md" onPress={() => router.push("/child")}>
+                      <Text className="text-pink-600 text-xs text-center">Play</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Learning Game */}
+                  <View className="w-[48%]">
+                    <View className="flex-row items-center mb-2">
+                      <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center mr-2">
+                        <FontAwesome5 name="book" size={14} color="#10b981" />
+                      </View>
+                      <Text variant="medium" className="text-gray-800 text-sm">
+                        Learning Game
+                      </Text>
+                    </View>
+                    <Text className="text-xs text-gray-500 mb-1">
+                      {childProfiles.filter((child) => child.gameProgress?.learning).length} children playing
+                    </Text>
+                    <TouchableOpacity
+                      className="bg-green-100 py-1 rounded-md"
+                      onPress={() => router.push("/child")}
+                    >
+                      <Text className="text-green-600 text-xs text-center">Play</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
             </View>
 
             {/* Recent activities section */}
@@ -336,15 +632,15 @@ const ParentDashboard = () => {
                       <View
                         className="bg-[#7b5af0] rounded-t-lg w-[80%] max-w-6"
                         style={{
-                          height: (minutes / Math.max(...weeklyStats.dailyMinutes)) * 100,
-                          opacity: 0.6 + (minutes / Math.max(...weeklyStats.dailyMinutes)) * 0.4,
+                          height: (minutes / Math.max(...weeklyStats.dailyMinutes, 1)) * 100,
+                          opacity: 0.6 + (minutes / Math.max(...weeklyStats.dailyMinutes, 1)) * 0.4,
                         }}
                       />
                     </View>
                   ))}
                 </View>
                 <View className="flex-row justify-between">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, index) => (
                     <View key={index} className="items-center flex-1">
                       <Text className="text-gray-500 text-xs">{day}</Text>
                       <Text className="text-gray-700 text-xs mt-1">{weeklyStats.dailyMinutes[index]}m</Text>

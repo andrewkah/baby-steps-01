@@ -1,29 +1,37 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  TouchableOpacity,
-  ScrollView,
-  Dimensions,
-  StyleSheet,
-  Animated,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { Audio } from "expo-av";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { Text } from "@/components/StyledText";
-import { useChild } from "@/context/ChildContext";  // Add this import
-import { saveActivity } from "@/lib/utils";  // Add this import
+"use client"
+
+import type React from "react"
+import { useState, useEffect, useRef } from "react"
+import { View, TouchableOpacity, ScrollView, Dimensions, Animated } from "react-native"
+import { StatusBar } from "expo-status-bar"
+import { Audio } from "expo-av"
+import { useRouter } from "expo-router"
+import { Ionicons } from "@expo/vector-icons"
+import { LinearGradient } from "expo-linear-gradient"
+import { Text } from "@/components/StyledText"
+import { useChild } from "@/context/ChildContext"
+import { saveActivity } from "@/lib/utils"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+
+// Storage key for the game state
+const CARD_GAME_STORAGE_KEY = "cards_matching_game_state"
 
 // Define card interface
 interface Card {
-  id: number;
-  value: string;
-  flipped: boolean;
-  matched: boolean;
-  info: string;
-  imageSymbol: string;
+  id: number
+  value: string
+  flipped: boolean
+  matched: boolean
+  info: string
+  imageSymbol: string
+}
+
+// Game state interface for persistence
+interface CardGameState {
+  level: number
+  matchesMade: number
+  score: number
+  lastPlayed: number
 }
 
 // Define Buganda cultural items data
@@ -68,7 +76,7 @@ const bugandaItems = [
     info: "Traditional fables and stories that teach moral lessons in Buganda culture.",
     imageSymbol: "📚",
   },
-];
+]
 
 // Card gradient colors for backside based on position
 const cardGradients: string[][] = [
@@ -78,37 +86,46 @@ const cardGradients: string[][] = [
   ["#E2F0CB", "#FFDAC1"], // Light Green to Peach
   ["#C7CEEA", "#FF9AA2"], // Light Blue to Pink
   ["#FFB7B2", "#B5EAD7"], // Light Pink to Teal
-];
+]
 
 const BugandaMatchingGame: React.FC = () => {
-  const router = useRouter();
-  const { activeChild } = useChild();  // Add this line to get active child
-  const [cards, setCards] = useState<Card[]>([]);
-  const [flippedCards, setFlippedCards] = useState<Card[]>([]);
-  const [matchedCount, setMatchedCount] = useState(0);
-  const [moves, setMoves] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
+  const router = useRouter()
+  const { activeChild } = useChild()
+  const [cards, setCards] = useState<Card[]>([])
+  const [flippedCards, setFlippedCards] = useState<Card[]>([])
+  const [matchedCount, setMatchedCount] = useState(0)
+  const [moves, setMoves] = useState(0)
+  const [gameOver, setGameOver] = useState(false)
+  const [level, setLevel] = useState(1)
+  const [totalScore, setTotalScore] = useState(0)
   const [infoModal, setInfoModal] = useState<{
-    show: boolean;
-    info: string;
-    value: string;
-    symbol: string;
+    show: boolean
+    info: string
+    value: string
+    symbol: string
   }>({
     show: false,
     info: "",
     value: "",
     symbol: "",
-  });
+  })
 
   // Animation references
-  const bounceAnim = useRef(new Animated.Value(1)).current;
-  
+  const bounceAnim = useRef(new Animated.Value(1)).current
+
   // Add game start time reference for duration tracking
-  const gameStartTime = useRef(Date.now());
+  const gameStartTime = useRef(Date.now())
+
+  // Load game progress on mount
+  useEffect(() => {
+    if (activeChild) {
+      loadGameProgress()
+    }
+  }, [activeChild])
 
   // Initialize game
   useEffect(() => {
-    initGame();
+    initGame()
 
     // Initial bounce animation
     Animated.sequence([
@@ -122,73 +139,118 @@ const BugandaMatchingGame: React.FC = () => {
         friction: 4,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]).start()
 
     // Reset start time whenever game initializes
-    gameStartTime.current = Date.now();
-  }, []);
+    gameStartTime.current = Date.now()
+  }, [])
+
+  // Load game progress from AsyncStorage
+  const loadGameProgress = async () => {
+    if (!activeChild) return
+
+    try {
+      const savedState = await AsyncStorage.getItem(`${CARD_GAME_STORAGE_KEY}_${activeChild.id}`)
+
+      if (savedState) {
+        const gameState: CardGameState = JSON.parse(savedState)
+        setLevel(gameState.level)
+        setTotalScore(gameState.score)
+      }
+    } catch (error) {
+      console.error("Error loading game progress:", error)
+    }
+  }
+
+  // Save game progress to AsyncStorage
+  const saveGameProgress = async () => {
+    if (!activeChild) return
+
+    try {
+      const gameState: CardGameState = {
+        level,
+        matchesMade: matchedCount,
+        score: totalScore,
+        lastPlayed: Date.now(),
+      }
+
+      await AsyncStorage.setItem(`${CARD_GAME_STORAGE_KEY}_${activeChild.id}`, JSON.stringify(gameState))
+    } catch (error) {
+      console.error("Error saving game progress:", error)
+    }
+  }
 
   // Shuffle function for cards
   const shuffleCards = <T,>(array: T[]): T[] => {
-    const shuffled = [...array];
+    const shuffled = [...array]
     for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
-    return shuffled;
-  };
+    return shuffled
+  }
 
   const initGame = () => {
     // Create pairs of cards
-    const cardPairs: Card[] = [...bugandaItems, ...bugandaItems].map(
-      (item, index) => ({
-        id: index,
-        value: item.value,
-        flipped: false,
-        matched: false,
-        info: item.info,
-        imageSymbol: item.imageSymbol,
-      })
-    );
+    const cardPairs: Card[] = [...bugandaItems, ...bugandaItems].map((item, index) => ({
+      id: index,
+      value: item.value,
+      flipped: false,
+      matched: false,
+      info: item.info,
+      imageSymbol: item.imageSymbol,
+    }))
 
     // Shuffle cards
-    const shuffledCards = shuffleCards(cardPairs);
-    setCards(shuffledCards);
-    setFlippedCards([]);
-    setMatchedCount(0);
-    setMoves(0);
-    setGameOver(false);
-    setInfoModal({ show: false, info: "", value: "", symbol: "" });
-    
+    const shuffledCards = shuffleCards(cardPairs)
+    setCards(shuffledCards)
+    setFlippedCards([])
+    setMatchedCount(0)
+    setMoves(0)
+    setGameOver(false)
+    setInfoModal({ show: false, info: "", value: "", symbol: "" })
+
     // Reset start time when restarting game
-    gameStartTime.current = Date.now();
-  };
+    gameStartTime.current = Date.now()
+  }
 
   // Track activity when a match is found
   const trackMatchActivity = async (matchedCard: Card) => {
-    if (!activeChild) return;
-    
+    if (!activeChild) return
+
     await saveActivity({
       child_id: activeChild.id,
       activity_type: "cultural",
       activity_name: "Matched Cultural Cards",
-      score: `${matchedCount+1}/${bugandaItems.length}`,
+      score: `${matchedCount + 1}/${bugandaItems.length}`,
       completed_at: new Date().toISOString(),
-      details: `Found a match: ${matchedCard.value} - ${matchedCard.info.substring(0, 30)}...`
-    });
-  };
+      details: `Found a match: ${matchedCard.value} - ${matchedCard.info.substring(0, 30)}...`,
+    })
+  }
 
   // Track activity when game completes
   const trackGameCompletion = async () => {
-    if (!activeChild) return;
-    
+    if (!activeChild) return
+
     // Calculate efficiency - lower moves is better
-    const perfectMoves = bugandaItems.length; // Perfect score would be one move per match
-    const efficiency = Math.max(0, 100 - Math.floor(((moves - perfectMoves) / perfectMoves) * 50));
-    
+    const perfectMoves = bugandaItems.length // Perfect score would be one move per match
+    const efficiency = Math.max(0, 100 - Math.floor(((moves - perfectMoves) / perfectMoves) * 50))
+
     // Calculate duration in seconds
-    const duration = Math.round((Date.now() - gameStartTime.current) / 1000);
-    
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000)
+
+    // Update total score
+    const newScore = totalScore + efficiency
+    setTotalScore(newScore)
+
+    // Update level if all matches were found
+    if (matchedCount === bugandaItems.length) {
+      setLevel((prevLevel) => prevLevel + 1)
+    }
+
+    // Save progress to AsyncStorage
+    await saveGameProgress()
+
     await saveActivity({
       child_id: activeChild.id,
       activity_type: "cultural",
@@ -196,62 +258,58 @@ const BugandaMatchingGame: React.FC = () => {
       score: `${efficiency}%`,
       duration: duration,
       completed_at: new Date().toISOString(),
-      details: `Completed Buganda Cultural Cards matching game in ${moves} moves and ${duration} seconds`
-    });
-  };
+      details: `Completed Buganda Cultural Cards matching game in ${moves} moves and ${duration} seconds`,
+    })
+  }
 
   const handleCardPress = async (card: Card) => {
     // Prevent flipping if card is already flipped or matched, or if two cards are already flipped
     if (card.flipped || card.matched || flippedCards.length >= 2) {
-      return;
+      return
     }
 
     // Play sound effect
-    const soundObject = new Audio.Sound();
+    const soundObject = new Audio.Sound()
     try {
-      await soundObject.loadAsync(require("@/assets/audio/page-turn.mp3"));
-      await soundObject.playAsync();
+      await soundObject.loadAsync(require("@/assets/audio/page-turn.mp3"))
+      await soundObject.playAsync()
     } catch (error) {
-      console.log("Error playing sound", error);
+      console.log("Error playing sound", error)
     }
 
     // Flip the card
-    const updatedCards = cards.map((c) =>
-      c.id === card.id ? { ...c, flipped: true } : c
-    );
+    const updatedCards = cards.map((c) => (c.id === card.id ? { ...c, flipped: true } : c))
 
-    setCards(updatedCards);
+    setCards(updatedCards)
 
-    const updatedFlippedCards = [...flippedCards, card];
-    setFlippedCards(updatedFlippedCards);
+    const updatedFlippedCards = [...flippedCards, card]
+    setFlippedCards(updatedFlippedCards)
 
     // If this is the second flipped card
     if (updatedFlippedCards.length === 2) {
-      setMoves((prevMoves) => prevMoves + 1);
+      setMoves((prevMoves) => prevMoves + 1)
 
       // Check for a match
-      const [firstCard, secondCard] = updatedFlippedCards;
+      const [firstCard, secondCard] = updatedFlippedCards
       if (firstCard.value === secondCard.value) {
         // It's a match
         setTimeout(async () => {
-          const matchedCards = cards.map((c) =>
-            c.value === firstCard.value ? { ...c, matched: true } : c
-          );
+          const matchedCards = cards.map((c) => (c.value === firstCard.value ? { ...c, matched: true } : c))
 
-          setCards(matchedCards);
-          setFlippedCards([]);
-          setMatchedCount((prevCount) => prevCount + 1);
-          
+          setCards(matchedCards)
+          setFlippedCards([])
+          setMatchedCount((prevCount) => prevCount + 1)
+
           // Track match activity
-          await trackMatchActivity(firstCard);
+          await trackMatchActivity(firstCard)
 
           // Play match sound
-          const matchSound = new Audio.Sound();
+          const matchSound = new Audio.Sound()
           try {
-            await matchSound.loadAsync(require("@/assets/sounds/correct.mp3"));
-            await matchSound.playAsync();
+            await matchSound.loadAsync(require("@/assets/sounds/correct.mp3"))
+            await matchSound.playAsync()
           } catch (error) {
-            console.log("Error playing sound", error);
+            console.log("Error playing sound", error)
           }
 
           // Show info modal with symbol
@@ -260,7 +318,7 @@ const BugandaMatchingGame: React.FC = () => {
             info: firstCard.info,
             value: firstCard.value,
             symbol: firstCard.imageSymbol,
-          });
+          })
 
           // Celebrate with animation
           Animated.sequence([
@@ -274,57 +332,55 @@ const BugandaMatchingGame: React.FC = () => {
               friction: 4,
               useNativeDriver: true,
             }),
-          ]).start();
+          ]).start()
 
           // Check if all pairs are matched
           if (matchedCount + 1 === bugandaItems.length) {
             setTimeout(async () => {
               // Track game completion before showing game over screen
-              await trackGameCompletion();
-              setGameOver(true);
-            }, 1000);
+              await trackGameCompletion()
+              setGameOver(true)
+            }, 1000)
           }
-        }, 500);
+        }, 500)
       } else {
         // Not a match, flip cards back
         setTimeout(() => {
           const resetCards = cards.map((c) =>
-            (c.id === firstCard.id || c.id === secondCard.id) && !c.matched
-              ? { ...c, flipped: false }
-              : c
-          );
-          setCards(resetCards);
-          setFlippedCards([]);
-        }, 1000);
+            (c.id === firstCard.id || c.id === secondCard.id) && !c.matched ? { ...c, flipped: false } : c,
+          )
+          setCards(resetCards)
+          setFlippedCards([])
+        }, 1000)
       }
     }
-  };
+  }
 
   const closeInfoModal = () => {
-    setInfoModal({ ...infoModal, show: false });
-  };
+    setInfoModal({ ...infoModal, show: false })
+  }
 
   // Calculate optimal number of columns and card size
-  const screenWidth = Dimensions.get("window").width;
-  const screenHeight = Dimensions.get("window").height;
-  const isLandscape = screenWidth > screenHeight;
+  const screenWidth = Dimensions.get("window").width
+  const screenHeight = Dimensions.get("window").height
+  const isLandscape = screenWidth > screenHeight
 
   // Determine number of columns based on device orientation
-  const numColumns = isLandscape ? 8 : 4;
+  const numColumns = isLandscape ? 8 : 4
 
   // Calculate card size to fit the screen width perfectly
-  const cardWidth = (screenWidth - 32) / numColumns - 6; // 32 for outer padding, 6 for margin between cards
+  const cardWidth = (screenWidth - 32) / numColumns - 6 // 32 for outer padding, 6 for margin between cards
   // Adjust card height to be shorter (originally 1.4x width)
-  const cardHeight = cardWidth * 1.25; // Reduced aspect ratio to show more rows
+  const cardHeight = cardWidth * 1.25 // Reduced aspect ratio to show more rows
 
   // Calculate how much vertical space we need for 3 rows plus header
-  const neededHeight = cardHeight * 3 + 32; // 3 rows + gaps + padding
+  const neededHeight = cardHeight * 3 + 32 // 3 rows + gaps + padding
 
   // Get gradient colors for a card based on its index
   const getCardGradient = (index: number): readonly [string, string] => {
-    const colors = cardGradients[index % cardGradients.length];
-    return [colors[0], colors[1]] as const;
-  };
+    const colors = cardGradients[index % cardGradients.length]
+    return [colors[0], colors[1]] as const
+  }
 
   return (
     <View className="flex-1 flex-col bg-primary-50">
@@ -354,22 +410,26 @@ const BugandaMatchingGame: React.FC = () => {
 
         {/* Game title in the middle */}
         <View className="flex-1 mx-2 bg-white/95 px-4 py-2.5 rounded-2xl shadow-md border-2 border-secondary-100">
-          <Text
-            className=" text-primary-700 text-center"
-            variant="bold"
-            numberOfLines={1}
-          >
+          <Text className="text-primary-700 text-center" variant="bold" numberOfLines={1}>
             Buganda Cultural Cards
           </Text>
         </View>
 
         {/* Right side container for stats and new game button */}
         <View className="flex-row items-center space-x-2">
+          {/* Level indicator */}
+          <View className="bg-white px-2 py-1 rounded-xl shadow-md border-2 border-primary-200">
+            <View className="flex-row items-center">
+              <Text className="text-xs text-primary-500 mr-1">Level:</Text>
+              <Text className="text-sm text-primary-700">{level}</Text>
+            </View>
+          </View>
+
           {/* Moves counter */}
           <View className="bg-white px-2 py-1 rounded-xl shadow-md border-2 border-primary-200">
             <View className="flex-row items-center">
               <Text className="text-xs text-primary-500 mr-1">Moves:</Text>
-              <Text className="text-sm  text-primary-700">{moves}</Text>
+              <Text className="text-sm text-primary-700">{moves}</Text>
             </View>
           </View>
 
@@ -377,7 +437,7 @@ const BugandaMatchingGame: React.FC = () => {
           <View className="bg-white px-2 py-1 rounded-xl shadow-md border-2 border-primary-200">
             <View className="flex-row items-center">
               <Text className="text-xs text-primary-500 mr-1">Matches:</Text>
-              <Text className="text-sm  text-primary-700">
+              <Text className="text-sm text-primary-700">
                 {matchedCount}/{bugandaItems.length}
               </Text>
             </View>
@@ -389,7 +449,7 @@ const BugandaMatchingGame: React.FC = () => {
             onPress={initGame}
             activeOpacity={0.7}
           >
-            <Text className="text-primary-700 text-xs ">New</Text>
+            <Text className="text-primary-700 text-xs">New</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -439,15 +499,12 @@ const BugandaMatchingGame: React.FC = () => {
                       ${card.matched ? "bg-green-100" : "bg-blue-100"}
                     `}
                     >
-                      <Text
-                        variant="bold"
-                        style={{ fontSize: cardWidth * 0.35 }}
-                      >
+                      <Text variant="bold" style={{ fontSize: cardWidth * 0.35 }}>
                         {card.imageSymbol}
                       </Text>
                     </View>
                     <Text
-                      className="text-center text-primary-700  px-1"
+                      className="text-center text-primary-700 px-1"
                       numberOfLines={1}
                       style={{ fontSize: Math.max(10, cardWidth * 0.15) }}
                       variant="bold"
@@ -457,10 +514,7 @@ const BugandaMatchingGame: React.FC = () => {
                   </LinearGradient>
                 ) : (
                   // Back of card (unflipped) with gradient
-                  <LinearGradient
-                    colors={getCardGradient(index)}
-                    className="flex-1 w-full justify-center items-center"
-                  >
+                  <LinearGradient colors={getCardGradient(index)} className="flex-1 w-full justify-center items-center">
                     {/* Fun question mark design */}
                     <View
                       style={{
@@ -469,10 +523,7 @@ const BugandaMatchingGame: React.FC = () => {
                       }}
                       className="bg-white/30 rounded-full justify-center items-center"
                     >
-                      <Text
-                        className=" text-primary-700"
-                        style={{ fontSize: cardWidth * 0.3 }}
-                      >
+                      <Text className="text-primary-700" style={{ fontSize: cardWidth * 0.3 }}>
                         ?
                       </Text>
                     </View>
@@ -493,9 +544,7 @@ const BugandaMatchingGame: React.FC = () => {
       {/* Info modal when match is found - with fun styling */}
       {infoModal.show && (
         <View className="absolute inset-0 bg-black/50 justify-center items-center">
-          <View
-            className="w-4/5 rounded-3xl p-6 items-center shadow-xl border-4 border-primary-200 bg-white"
-          >
+          <View className="w-4/5 rounded-3xl p-6 items-center shadow-xl border-4 border-primary-200 bg-white">
             {/* Symbol display at top */}
             <View className="absolute -top-8 bg-yellow-100 w-16 h-16 rounded-full border-4 border-white justify-center items-center">
               <Text className="text-4xl">{infoModal.symbol}</Text>
@@ -509,21 +558,21 @@ const BugandaMatchingGame: React.FC = () => {
               <Text className="text-xl">🎉</Text>
             </View>
 
-            <Text variant="bold" className="text-2xl  text-primary-700 mb-2 mt-4">
+            <Text variant="bold" className="text-2xl text-primary-700 mb-2 mt-4">
               {infoModal.value}
             </Text>
 
             <View className="bg-primary-50 w-full rounded-xl p-4 mb-5">
-              <Text className="text-lg text-primary-700 text-center">
-                {infoModal.info}
-              </Text>
+              <Text className="text-lg text-primary-700 text-center">{infoModal.info}</Text>
             </View>
 
             <TouchableOpacity
               className="bg-primary-500 py-3 px-7 rounded-full shadow-md border-2 border-primary-400"
               onPress={closeInfoModal}
             >
-              <Text variant="bold" className="text-white text-lg ">Continue</Text>
+              <Text variant="bold" className="text-white text-lg">
+                Continue
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -532,9 +581,7 @@ const BugandaMatchingGame: React.FC = () => {
       {/* Game over modal with celebration styling */}
       {gameOver && (
         <View className="absolute inset-0 bg-black/50 justify-center items-center">
-          <View
-            className="w-4/5 rounded-3xl p-6 items-center shadow-xl border-4 border-primary-200 bg-white"
-          >
+          <View className="w-4/5 rounded-3xl p-6 items-center shadow-xl border-4 border-primary-200 bg-white">
             {/* Trophy at top */}
             <View className="absolute -top-8 bg-yellow-300 w-20 h-20 rounded-full border-4 border-white justify-center items-center">
               <Text className="text-5xl">🏆</Text>
@@ -554,7 +601,7 @@ const BugandaMatchingGame: React.FC = () => {
               <Text className="text-2xl">⭐</Text>
             </View>
 
-            <Text variant="bold" className="text-3xl  text-primary-600 mb-2 mt-6">
+            <Text variant="bold" className="text-3xl text-primary-600 mb-2 mt-6">
               Congratulations!
             </Text>
 
@@ -562,19 +609,23 @@ const BugandaMatchingGame: React.FC = () => {
               <Text className="text-xl text-primary-700 text-center font-medium">
                 You've completed the game in {moves} moves!
               </Text>
+              <Text className="text-base text-primary-700 text-center mt-2">Total Score: {totalScore}</Text>
+              <Text className="text-base text-primary-700 text-center">Level: {level}</Text>
             </View>
 
             <TouchableOpacity
               className="bg-primary-500 py-4 px-8 rounded-full shadow-md border-2 border-primary-400"
               onPress={initGame}
             >
-              <Text variant="bold" className="text-white text-xl ">Play Again</Text>
+              <Text variant="bold" className="text-white text-xl">
+                Play Again
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
     </View>
-  );
-};
+  )
+}
 
-export default BugandaMatchingGame;
+export default BugandaMatchingGame

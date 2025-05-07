@@ -1,5 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./supabase";
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+import { saveActivityToStorage, updateChildProgress } from "@/utils/storage"
 
 // Activity type definitions
 export interface GameActivity {
@@ -30,7 +33,7 @@ interface Activity {
 /**
  * Save activity to Supabase
  */
-export const saveActivity = async (activity: Activity): Promise<boolean> => {
+export const saveNewActivity = async (activity: Activity): Promise<boolean> => {
   try {
     // Get child's name first
     const { data: childData } = await supabase
@@ -244,3 +247,143 @@ export const getActivityStats = async (childId: string) => {
     return null;
   }
 };
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+// Interface for activity data
+export interface ActivityData {
+  child_id: string
+  activity_type: "counting" | "cultural" | "puzzle" | "language"
+  activity_name: string
+  score: string
+  duration?: number
+  completed_at: string
+  details?: string
+  level?: number
+  stage?: number
+}
+
+// Save activity and update child progress
+export const saveActivity = async (activityData: ActivityData): Promise<void> => {
+  try {
+    if (!activityData.child_id) {
+      console.error("No child ID provided for activity")
+      return
+    }
+
+    // Add timestamp if not provided
+    if (!activityData.completed_at) {
+      activityData.completed_at = new Date().toISOString()
+    }
+
+    // Save activity to storage
+    await saveActivityToStorage(activityData.child_id, activityData)
+
+    // Update child's overall progress based on activity type
+    const progressUpdate: any = {}
+
+    switch (activityData.activity_type) {
+      case "counting":
+        progressUpdate.countingGameProgress = {
+          lastPlayed: activityData.completed_at,
+          lastScore: activityData.score,
+          level: activityData.level || 1,
+        }
+        break
+      case "cultural":
+        progressUpdate.culturalGameProgress = {
+          lastPlayed: activityData.completed_at,
+          lastScore: activityData.score,
+          level: activityData.level || 1,
+        }
+        break
+      case "puzzle":
+        progressUpdate.puzzleGameProgress = {
+          lastPlayed: activityData.completed_at,
+          lastScore: activityData.score,
+          level: activityData.level || 1,
+        }
+        break
+      case "language":
+        progressUpdate.languageGameProgress = {
+          lastPlayed: activityData.completed_at,
+          lastScore: activityData.score,
+          level: activityData.level || 1,
+          stage: activityData.stage || 1,
+        }
+        break
+    }
+
+    // Update child's overall progress
+    await updateChildProgress(activityData.child_id, progressUpdate)
+  } catch (error) {
+    console.error("Error saving activity:", error)
+  }
+}
+
+// Calculate child's overall level based on game progress
+export const calculateChildLevel = async (childId: string): Promise<number> => {
+  try {
+    // Get all game progress for the child
+    const countingKey = `counting_game_${childId}`
+    const culturalKey = `cards_matching_${childId}`
+    const puzzleKey = `puzzle_game_${childId}`
+    const languageKey = `learning_game_${childId}`
+
+    const [countingData, culturalData, puzzleData, languageData] = await Promise.all([
+      AsyncStorage.getItem(countingKey),
+      AsyncStorage.getItem(culturalKey),
+      AsyncStorage.getItem(puzzleKey),
+      AsyncStorage.getItem(languageKey),
+    ])
+
+    // Parse data and extract levels
+    const countingLevel = countingData ? JSON.parse(countingData).level || 1 : 1
+    const culturalLevel = culturalData ? JSON.parse(culturalData).level || 1 : 1
+    const puzzleLevel = puzzleData ? JSON.parse(puzzleData).level || 1 : 1
+    const languageLevel = languageData ? JSON.parse(languageData).level || 1 : 1
+
+    // Calculate average level (weighted if needed)
+    const totalLevel = countingLevel + culturalLevel + puzzleLevel + languageLevel
+    const averageLevel = Math.ceil(totalLevel / 4)
+
+    return averageLevel
+  } catch (error) {
+    console.error("Error calculating child level:", error)
+    return 1 // Default level
+  }
+}
+
+// Get formatted date string
+export const formatDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+// Get time ago string (e.g., "2 hours ago")
+export const getTimeAgo = (dateString: string): string => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+
+  const diffSecs = Math.floor(diffMs / 1000)
+  const diffMins = Math.floor(diffSecs / 60)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffDays > 0) {
+    return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`
+  } else if (diffHours > 0) {
+    return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`
+  } else if (diffMins > 0) {
+    return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`
+  } else {
+    return "Just now"
+  }
+}

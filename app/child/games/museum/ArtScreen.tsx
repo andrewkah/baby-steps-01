@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { Audio } from "expo-av";
 import { useNavigation } from "@react-navigation/native";
 import { useChild } from '@/context/ChildContext';
-import { saveActivity } from '@/lib/utils';
+import { saveNewActivity } from '@/lib/utils';
 
 // Base 3D Screen Component with Common Functionality
 const Base3DScreen = ({
@@ -212,7 +212,7 @@ export default function ArtScreen() {
     const completedArtworks = viewedArt.length;
     const accuracy = (score / (score + obstacles.length * 50)) * 100; // Calculate accuracy based on score and obstacles hit
     
-    await saveActivity({
+    await saveNewActivity({
       child_id: activeChild.id,
       activity_type: 'museum',
       activity_name: 'Explored African Art Gallery',

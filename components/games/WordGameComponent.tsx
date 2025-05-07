@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { gameLevels } from "./utils/wordgamewords"; // Import game levels
 import { Text } from "@/components/StyledText";
 import { useChild } from "@/context/ChildContext"; // Import useChild context
-import { saveActivity } from "@/lib/utils"; // Import saveActivity function
+import { saveNewActivity } from "@/lib/utils"; // Import saveActivity function
 
 // Get screen dimensions
 const { width, height } = Dimensions.get("window");
@@ -188,7 +188,7 @@ const WordGame: React.FC = () => {
 
     const duration = Date.now() - levelStartTime.current; // Duration in milliseconds
 
-    await saveActivity({
+    await saveNewActivity({
       child_id: activeChild.id,
       activity_type: "words", // Using 'words' activity type
       activity_name: `Word Game Level ${currentLevelIndex + 1}`,
@@ -204,7 +204,7 @@ const WordGame: React.FC = () => {
   const trackGameCompletion = async () => {
     if (!activeChild) return;
 
-    await saveActivity({
+    await saveNewActivity({
       child_id: activeChild.id,
       activity_type: "words",
       activity_name: "Word Game Completed",
