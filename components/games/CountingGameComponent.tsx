@@ -9,6 +9,7 @@ import * as ScreenOrientation from "expo-screen-orientation"
 import { useRouter } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useChild } from "@/context/ChildContext"
 import { saveActivity } from "@/lib/utils"
 import {
@@ -38,6 +39,18 @@ interface WindowDimensions {
   height: number
 }
 
+// Define the game state interface for persistence
+interface GameState {
+  currentStage: number
+  currentLevel: number
+  score: number
+  gameLevels: number[]
+  lastPlayed: number // timestamp
+}
+
+// Storage key for the game state
+const GAME_STATE_STORAGE_KEY = "luganda_counting_game_state"
+
 const LugandaCountingGame: React.FC = () => {
   const router = useRouter()
   const [currentStage, setCurrentStage] = useState<number>(1)
@@ -57,12 +70,77 @@ const LugandaCountingGame: React.FC = () => {
   const [targetNumber, setTargetNumber] = useState<number>(1)
   const [gameLevels, setGameLevels] = useState<number[]>([])
   const [stageCompleted, setStageCompleted] = useState<boolean>(false)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isInitialized, setIsInitialized] = useState<boolean>(false)
 
   const bounceAnim = useRef(new Animated.Value(1)).current
   const rotateAnim = useRef(new Animated.Value(0)).current
   const { activeChild } = useChild()
   const gameStartTime = useRef(Date.now())
+
+  // Save game state to AsyncStorage
+  const saveGameState = async () => {
+    try {
+      // Only save if we have valid game levels
+      if (gameLevels.length === 0) {
+        console.log("No game levels to save, skipping save")
+        return
+      }
+
+      const gameState: GameState = {
+        currentStage,
+        currentLevel,
+        score,
+        gameLevels,
+        lastPlayed: Date.now(),
+      }
+
+      console.log("Saving game state:", gameState)
+      await AsyncStorage.setItem(`${GAME_STATE_STORAGE_KEY}_${activeChild?.id || "default"}`, JSON.stringify(gameState))
+      console.log("Game state saved successfully")
+    } catch (error) {
+      console.error("Error saving game state:", error)
+    }
+  }
+
+  // Load game state from AsyncStorage
+  const loadGameState = async () => {
+    try {
+      console.log("Attempting to load game state...")
+      const savedState = await AsyncStorage.getItem(`${GAME_STATE_STORAGE_KEY}_${activeChild?.id || "default"}`)
+
+      if (savedState) {
+        const gameState: GameState = JSON.parse(savedState)
+        console.log("Found saved game state:", gameState)
+
+        // Check if the saved state is from within the last 24 hours
+        const isRecent = Date.now() - gameState.lastPlayed < 24 * 60 * 60 * 1000
+
+        if (isRecent) {
+          console.log("Loading saved game state - it's recent")
+          // Directly set state values
+          setCurrentStage(gameState.currentStage)
+          setCurrentLevel(gameState.currentLevel)
+          setScore(gameState.score)
+
+          // Important: Set gameLevels directly
+          setGameLevels(gameState.gameLevels)
+
+          return true
+        } else {
+          console.log("Saved game state is too old, starting fresh")
+          await AsyncStorage.removeItem(`${GAME_STATE_STORAGE_KEY}_${activeChild?.id || "default"}`)
+        }
+      } else {
+        console.log("No saved game state found")
+      }
+
+      return false
+    } catch (error) {
+      console.error("Error loading game state:", error)
+      return false
+    }
+  }
 
   // Add orientation locking
   useEffect(() => {
@@ -93,14 +171,67 @@ const LugandaCountingGame: React.FC = () => {
     }
   }, [])
 
-  // Initialize game with stage 1 levels
+  // Initialize game - first try to load saved state, otherwise start fresh
   useEffect(() => {
-    console.log("Initial game setup")
-    initializeStage(currentStage)
+    const initGame = async () => {
+      setIsLoading(true)
+      try {
+        const loaded = await loadGameState()
+
+        if (loaded) {
+          console.log("Successfully loaded saved game state")
+          // If we loaded a saved state, we need to set up the current level
+          if (gameLevels.length > 0) {
+            const levelIndex = currentLevel - 1
+            if (levelIndex < gameLevels.length) {
+              setupLevel(gameLevels[levelIndex], currentStage)
+            }
+          }
+        } else {
+          console.log("No saved game found, starting new game")
+          initializeStage(1)
+        }
+
+        setIsInitialized(true)
+      } catch (error) {
+        console.error("Error during game initialization:", error)
+        initializeStage(1)
+        setIsInitialized(true)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    initGame()
+
+    return () => {
+      // Ensure game state is saved when component unmounts
+      saveGameState()
+      if (sound) {
+        sound.unloadAsync()
+      }
+    }
   }, [])
+
+  // Save game state when app goes to background
+  useEffect(() => {
+    const saveOnBlur = () => {
+      saveGameState()
+    }
+
+    // Add event listeners for app state changes
+    // This is a simplified approach - in a real app, you'd use AppState
+    window.addEventListener("blur", saveOnBlur)
+
+    return () => {
+      window.removeEventListener("blur", saveOnBlur)
+    }
+  }, [currentStage, currentLevel, score, gameLevels])
 
   // When the stage changes, initialize the new stage
   useEffect(() => {
+    if (!isInitialized) return
+
     console.log(`Stage changed to ${currentStage}`)
     setIsLoading(true)
     initializeStage(currentStage)
@@ -109,10 +240,15 @@ const LugandaCountingGame: React.FC = () => {
     setSelectedCount(null)
     setNumberOptions([])
     setIsLoading(false)
-  }, [currentStage])
+
+    // Save game state when stage changes
+    saveGameState()
+  }, [currentStage, isInitialized])
 
   // When level changes, setup the level
   useEffect(() => {
+    if (!isInitialized) return
+
     console.log(`Setting up level ${currentLevel} with game levels:`, gameLevels)
     if (gameLevels.length > 0) {
       const levelIndex = currentLevel - 1
@@ -127,12 +263,15 @@ const LugandaCountingGame: React.FC = () => {
       }
     }
 
+    // Save game state when level changes
+    saveGameState()
+
     return () => {
       if (sound) {
         sound.unloadAsync()
       }
     }
-  }, [currentLevel, gameLevels])
+  }, [currentLevel, gameLevels, isInitialized])
 
   // Initialize a stage with randomized levels
   const initializeStage = (stageId: number): void => {
@@ -159,10 +298,14 @@ const LugandaCountingGame: React.FC = () => {
       // Ensure clean UI state
       setShowFeedback(false)
       setSelectedCount(null)
+
+      // Mark as initialized
+      setIsInitialized(true)
     } catch (error) {
       console.error("Error initializing stage:", error)
       // Set some default game levels to prevent the game from breaking
       setGameLevels([1, 2, 3, 4, 5])
+      setIsInitialized(true)
     }
   }
 
@@ -367,10 +510,14 @@ const LugandaCountingGame: React.FC = () => {
         if (currentLevel < currentStageData.levels) {
           await trackActivity(false)
           setCurrentLevel((prevLevel) => prevLevel + 1)
+          // Save game state after level completion
+          saveGameState()
         } else {
           // Stage completed!
           setStageCompleted(true)
           await trackActivity(true)
+          // Save game state after stage completion
+          saveGameState()
         }
       }, 1500)
     } else {
@@ -639,7 +786,12 @@ const LugandaCountingGame: React.FC = () => {
       <View className="flex-row justify-between items-center px-4 pt-3 pb-2">
         <TouchableOpacity
           className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-100"
-          onPress={() => router.back()}
+          onPress={async () => {
+            // Save game state before navigating away
+            await saveGameState()
+            console.log("Game state saved before navigation")
+            router.back()
+          }}
         >
           <Ionicons name="arrow-back" size={20} color="#818cf8" />
         </TouchableOpacity>
@@ -854,14 +1006,17 @@ const LugandaCountingGame: React.FC = () => {
             <TouchableOpacity
               className="bg-indigo-500 py-4 px-6 rounded-xl shadow-md"
               onPress={() => {
-                // Your existing next stage logic
+                // Save game state before proceeding to next stage
+                const nextStage = currentStage < COUNTING_GAME_STAGES.length ? currentStage + 1 : 1
                 setNumberOptions([])
                 setShowFeedback(false)
                 setSelectedCount(null)
                 setItemsToCount([])
-                setCurrentStage(currentStage + 1)
+                setCurrentStage(nextStage)
                 setScore(0)
                 gameStartTime.current = Date.now()
+                // Save the new game state
+                setTimeout(() => saveGameState(), 500)
               }}
             >
               <Text variant="bold" className="text-white text-lg text-center">
