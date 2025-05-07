@@ -437,7 +437,7 @@ const LugandaCountingGame: React.FC = () => {
 
   const getImageSource = () => {
     try {
-      return require("@/assets/images/african-logic.png");
+      return require("@/assets/images/banana.png");
     } catch (error) {
       console.error("Failed to load image:", error);
       // Return null if image can't be loaded, will be handled in rendering

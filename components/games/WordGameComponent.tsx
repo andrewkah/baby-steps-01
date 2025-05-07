@@ -49,8 +49,24 @@ const getImageSource = (imageName: string | undefined) => {
   switch (imageName) {
     case 'wildlife.jpg':
       return require('@/assets/images/wildlife.jpg');
+    case 'rain.jpg':
+      return require('@/assets/images/rain.jpg');
     case 'coin.jpg':
       return require('@/assets/images/coin.png');
+    case 'dog.jpg':
+      return require('@/assets/images/dog.jpg');
+    case 'goat.png':
+      return require('@/assets/images/goat.png');
+    case 'meat.jpg':
+      return require('@/assets/images/meat.jpg');
+    case 'black-kid.jpg':
+      return require('@/assets/images/black-kid.jpg');
+    case 'chicken.jpg':
+      return require('@/assets/images/chicken.jpg');
+    case 'rainforest.jpg':
+      return require('@/assets/images/rainforest.jpg');
+    case 'river-kids.jpg':
+      return require('@/assets/images/river-kids.jpg');
     // Add cases for other images
     default:
       return require('@/assets/images/coin.png');
@@ -484,7 +500,7 @@ const WordGame: React.FC = () => {
           <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-lg border-4 border-secondary-200">
             <Image
               source={getImageSource(gameLevels[currentLevelIndex].image)}
-              className="w-20 h-20 rounded-full"
+              className="w-40 h-40 rounded-full"
               resizeMode="cover"
             />
           </View>
