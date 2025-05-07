@@ -172,7 +172,7 @@ const AfricanThemeGameInterface: React.FC = () => {
           {
             id: "cards",
             title: "Cards Matching",
-            image: require("@/assets/images/ball-train.jpg"),
+            image: require("@/assets/images/cards-matching.png"),
             description: "Match the cards to learn about Buganda cultural items",
             targetPage: "child/games/cardgame",
           },
