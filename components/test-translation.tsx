@@ -42,7 +42,7 @@ export const TestTranslation = () => {
   return (
     <View className="p-4 bg-white rounded-lg border border-gray-200 mb-4">
       <Text variant="bold" className="text-lg mb-2">
-        Test Sunbird Translation API
+        Get the meaning of Any English phrase
       </Text>
 
       <TextInput
