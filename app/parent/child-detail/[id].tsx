@@ -489,14 +489,7 @@ export default function ChildDetailScreen() {
                       <FontAwesome5 name="gamepad" size={24} color="#9ca3af" />
                     </View>
                     <Text className="text-gray-500 text-center mb-3">No game progress found for this child</Text>
-                    <TouchableOpacity
-                      className="bg-[#7b5af0] py-3 px-6 rounded-lg"
-                      onPress={() => router.push("/child" as any)}
-                    >
-                      <Text variant="medium" className="text-white">
-                        Start Learning
-                      </Text>
-                    </TouchableOpacity>
+                    
                   </View>
                 )}
               </View>

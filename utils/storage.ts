@@ -122,3 +122,111 @@ export const clearChildData = async (childId: string): Promise<void> => {
     console.error("Error clearing child data:", error)
   }
 }
+
+// Add the following functions to track learning time
+
+// Function to start tracking a learning session
+export async function startLearningSession(childId: string, gameType: string) {
+  try {
+    const sessionKey = `learning_session_${gameType}_${childId}`
+    const sessionData = {
+      startTime: Date.now(),
+      gameType,
+    }
+    await AsyncStorage.setItem(sessionKey, JSON.stringify(sessionData))
+  } catch (error) {
+    console.error("Error starting learning session:", error)
+  }
+}
+
+// Function to end tracking a learning session and save the duration
+export async function endLearningSession(childId: string, gameType: string) {
+  try {
+    const sessionKey = `learning_session_${gameType}_${childId}`
+    const sessionDataString = await AsyncStorage.getItem(sessionKey)
+
+    if (sessionDataString) {
+      const sessionData = JSON.parse(sessionDataString)
+      const endTime = Date.now()
+      const duration = Math.floor((endTime - sessionData.startTime) / 60000) // Convert to minutes
+
+      // Remove the active session
+      await AsyncStorage.removeItem(sessionKey)
+
+      // Save the learning time to the weekly stats
+      await saveLearningTime(childId, duration)
+
+      return duration
+    }
+    return 0
+  } catch (error) {
+    console.error("Error ending learning session:", error)
+    return 0
+  }
+}
+
+// Function to save learning time to weekly stats
+export async function saveLearningTime(childId: string, minutes: number) {
+  try {
+    if (minutes <= 0) return
+
+    const statsKey = `learning_stats_${childId}`
+    const now = new Date()
+    const dayOfWeek = now.getDay() // 0 = Sunday, 1 = Monday, etc.
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)) // Start from Monday
+    weekStart.setHours(0, 0, 0, 0)
+
+    // Get existing stats or create new ones
+    const existingStatsString = await AsyncStorage.getItem(statsKey)
+    let stats = existingStatsString
+      ? JSON.parse(existingStatsString)
+      : {
+          weekStartTimestamp: weekStart.getTime(),
+          dailyMinutes: [0, 0, 0, 0, 0, 0, 0], // Mon to Sun
+        }
+
+    // Check if the stats are for the current week
+    if (stats.weekStartTimestamp !== weekStart.getTime()) {
+      // Reset for new week
+      stats = {
+        weekStartTimestamp: weekStart.getTime(),
+        dailyMinutes: [0, 0, 0, 0, 0, 0, 0],
+      }
+    }
+
+    // Map Sunday (0) to index 6, and Monday (1) to index 0
+    const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+
+    // Add minutes to the appropriate day
+    stats.dailyMinutes[dayIndex] += minutes
+
+    // Save updated stats
+    await AsyncStorage.setItem(statsKey, JSON.stringify(stats))
+  } catch (error) {
+    console.error("Error saving learning time:", error)
+  }
+}
+
+// Function to get weekly learning stats for a child
+export async function getWeeklyLearningStats(childId: string) {
+  try {
+    const statsKey = `learning_stats_${childId}`
+    const statsString = await AsyncStorage.getItem(statsKey)
+
+    if (!statsString) {
+      return {
+        weekStartTimestamp: Date.now(),
+        dailyMinutes: [0, 0, 0, 0, 0, 0, 0],
+      }
+    }
+
+    return JSON.parse(statsString)
+  } catch (error) {
+    console.error("Error getting weekly learning stats:", error)
+    return {
+      weekStartTimestamp: Date.now(),
+      dailyMinutes: [0, 0, 0, 0, 0, 0, 0],
+    }
+  }
+}
