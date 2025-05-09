@@ -38,7 +38,7 @@ import {
   saveGameProgress as saveProgress,
   updateUserStats,  UserStats,       
   DEFAULT_USER_STATS
-} from './utils/progressManager';
+} from './utils/progressManagerLugandaLearning'; // Adjust the import path as necessary
 
 // Game state types
 type GameState =
