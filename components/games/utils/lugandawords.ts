@@ -129,7 +129,7 @@ export const LUGANDA_STAGES: Stage[] = [
     image: require('@/assets/images/coin.png'),
     color: "#6C5CE7",
     isLocked: true,
-    requiredScore: 100,
+    requiredScore: 50,
     levels: [
       {
         id: 3,
@@ -203,7 +203,7 @@ export const LUGANDA_STAGES: Stage[] = [
     image: require('@/assets/images/coin.png'),
     color: "#00B894",
     isLocked: true,
-    requiredScore: 200,
+    requiredScore: 90,
     levels: [
       {
         id: 5,
@@ -277,7 +277,7 @@ export const LUGANDA_STAGES: Stage[] = [
     image: require('@/assets/images/coin.png'),
     color: "#FF7675",
     isLocked: true,
-    requiredScore: 300,
+    requiredScore: 130,
     levels: [
       {
         id: 7,
@@ -351,7 +351,7 @@ export const LUGANDA_STAGES: Stage[] = [
     image: require('@/assets/images/coin.png'),
     color: "#A29BFE",
     isLocked: true,
-    requiredScore: 400,
+    requiredScore: 170,
     levels: [
       {
         id: 9,
@@ -449,43 +449,54 @@ export const getLevelsForStage = (stageId: number): Level[] => {
 
 // Helper to check if all levels in a stage are completed
 export const isStageCompleted = (stageId: number, completedLevels: number[]): boolean => {
-  const stage = LUGANDA_STAGES.find(s => s.id === stageId);
+  const stage = LUGANDA_STAGES.find(s => s.id === stageId); // Use LUGANDA_STAGES as the source of truth for structure
   if (!stage) return false;
-  
   return stage.levels.every(level => completedLevels.includes(level.id));
 };
 
 // Helper to unlock the next stage
 export const unlockNextStage = (currentStageId: number, stages: Stage[]): Stage[] => {
-  const updatedStages = [...stages];
+  // Create a deep copy of the stages array to avoid direct mutation
+  const updatedStages = stages.map(stage => ({
+    ...stage,
+    levels: stage.levels.map(level => ({ ...level }))
+  }));
+
   const nextStageIndex = updatedStages.findIndex(stage => stage.id === currentStageId + 1);
-  
+
   if (nextStageIndex !== -1) {
-    updatedStages[nextStageIndex].isLocked = false;
-    // Also unlock first level of that stage
-    if (updatedStages[nextStageIndex].levels.length > 0) {
-      updatedStages[nextStageIndex].levels[0].isLocked = false;
+    const nextStageToUnlock = updatedStages[nextStageIndex];
+    nextStageToUnlock.isLocked = false;
+
+    // Also unlock first level of that stage, if it exists
+    if (nextStageToUnlock.levels.length > 0) {
+      nextStageToUnlock.levels[0].isLocked = false;
     }
   }
-  
-  return updatedStages;
+  return updatedStages; // Return the new, modified array
 };
 
 // Helper to unlock the next level within a stage
-export const unlockNextLevel = (currentStageId: number, currentLevelId: number, stages: Stage[]): Stage[] => {
-  const updatedStages = [...stages];
-  const stageIndex = updatedStages.findIndex(stage => stage.id === currentStageId);
-  
-  if (stageIndex === -1) return updatedStages;
-  
-  const currentStage = updatedStages[stageIndex];
-  const currentLevelIndex = currentStage.levels.findIndex(level => level.id === currentLevelId);
-  
-  if (currentLevelIndex !== -1 && currentLevelIndex < currentStage.levels.length - 1) {
-    // Unlock the next level within this stage
-    currentStage.levels[currentLevelIndex + 1].isLocked = false;
-    updatedStages[stageIndex] = currentStage;
+export const unlockNextLevel = (
+  currentStageId: number,
+  currentLevelId: number,
+  stages: Stage[]
+): Stage[] => {
+  // Create a deep copy of the stages array
+  const updatedStages = stages.map(stage => ({
+    ...stage,
+    levels: stage.levels.map(level => ({ ...level }))
+  }));
+
+  const stageIndex = updatedStages.findIndex(s => s.id === currentStageId);
+  if (stageIndex === -1) return updatedStages; // Or return original `stages` if preferred
+
+  const stageToUpdate = updatedStages[stageIndex];
+  const currentLevelIndex = stageToUpdate.levels.findIndex(l => l.id === currentLevelId);
+
+  if (currentLevelIndex !== -1 && currentLevelIndex < stageToUpdate.levels.length - 1) {
+    // Unlock the next level in the copied structure
+    stageToUpdate.levels[currentLevelIndex + 1].isLocked = false;
   }
-  
-  return updatedStages;
+  return updatedStages; // Return the new, modified array
 };

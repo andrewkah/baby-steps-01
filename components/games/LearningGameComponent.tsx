@@ -33,6 +33,13 @@ import {
   isStageCompleted,
 } from "./utils/lugandawords";
 
+import {
+  loadGameProgress as loadProgress,
+  saveGameProgress as saveProgress,
+  updateUserStats,  UserStats,       
+  DEFAULT_USER_STATS
+} from './utils/progressManager';
+
 // Game state types
 type GameState =
   | "menu"
@@ -98,9 +105,17 @@ const LugandaLearningGame: React.FC = () => {
   // Load game progress on mount
   useEffect(() => {
     const init = async () => {
-      await loadGameProgress();
-      await loadSounds();
-      setIsLoading(false);
+      if (activeChild) {
+        setIsLoading(true);
+        const progress = await loadProgress(activeChild.id);
+        
+        setTotalScore(progress.totalScore);
+        setCompletedLevels(progress.completedLevels);
+        setStages(progress.stages);
+        
+        await loadSounds();
+        setIsLoading(false);
+      }
     };
 
     init();
@@ -110,7 +125,7 @@ const LugandaLearningGame: React.FC = () => {
       if (correctSound) correctSound.unloadAsync();
       if (wrongSound) wrongSound.unloadAsync();
     };
-  }, []);
+  }, [activeChild]);
 
   // Setup when selecting a level
   useEffect(() => {
@@ -167,45 +182,6 @@ const LugandaLearningGame: React.FC = () => {
       });
     }
   }, [shakingOption]);
-
-  // Load game progress from AsyncStorage
-  const loadGameProgress = async () => {
-    try {
-      const scoreData = await AsyncStorage.getItem("luganda_total_score");
-      const completedLevelsData = await AsyncStorage.getItem(
-        "luganda_completed_levels"
-      );
-      const stagesData = await AsyncStorage.getItem("luganda_stages");
-
-      if (scoreData) {
-        setTotalScore(parseInt(scoreData));
-      }
-
-      if (completedLevelsData) {
-        setCompletedLevels(JSON.parse(completedLevelsData));
-      }
-
-      if (stagesData) {
-        setStages(JSON.parse(stagesData));
-      }
-    } catch (error) {
-      console.error("Error loading game progress", error);
-    }
-  };
-
-  // Save game progress to AsyncStorage
-  const saveGameProgress = async () => {
-    try {
-      await AsyncStorage.setItem("luganda_total_score", totalScore.toString());
-      await AsyncStorage.setItem(
-        "luganda_completed_levels",
-        JSON.stringify(completedLevels)
-      );
-      await AsyncStorage.setItem("luganda_stages", JSON.stringify(stages));
-    } catch (error) {
-      console.error("Error saving game progress", error);
-    }
-  };
 
   const loadSounds = async (): Promise<void> => {
     try {
@@ -402,54 +378,119 @@ const LugandaLearningGame: React.FC = () => {
     gameStartTime.current = Date.now();
   };
 
-  const completeLevelAndUpdateProgress = () => {
-    const newTotalScore = totalScore + levelScore;
-    setTotalScore(newTotalScore);
+  // REMOVE this function from your component, its logic will be integrated:
+// const saveGameProgress = async () => { ... };
 
-    // Add this level to completed levels if not already there
-    if (!completedLevels.includes(selectedLevel?.id || 0)) {
-      const newCompletedLevels = [...completedLevels, selectedLevel?.id || 0];
-      setCompletedLevels(newCompletedLevels);
+// MODIFY completeLevelAndUpdateProgress like this:
+const completeLevelAndUpdateProgress = async () => { // Make it async
+  if (!activeChild || !selectedLevel || !selectedStage) {
+      console.error("Missing activeChild, selectedLevel, or selectedStage in completeLevelAndUpdateProgress");
+      return;
+  }
 
-      // Check if all levels in stage are completed
-      if (
-        selectedStage &&
-        isStageCompleted(selectedStage.id, newCompletedLevels)
-      ) {
-        // Unlock next stage if available and total score meets requirement
-        const nextStage = stages.find((s) => s.id === selectedStage.id + 1);
-        if (nextStage && newTotalScore >= nextStage.requiredScore) {
-          const updatedStages = unlockNextStage(selectedStage.id, stages);
-          setStages(updatedStages);
+  const newTotalScore = totalScore + levelScore;
 
-          // Track stage completion
-          trackActivity(true);
-        } else {
-          // Just track level completion if stage is complete but no new stage unlocked
-          trackActivity(false);
-        }
-      } else if (selectedStage && selectedLevel) {
-        // Unlock next level in current stage
-        const updatedStages = unlockNextLevel(
-          selectedStage.id,
-          selectedLevel.id,
-          stages
-        );
-        setStages(updatedStages);
+  let newCompletedLevels = [...completedLevels];
+  if (!newCompletedLevels.includes(selectedLevel.id)) {
+      newCompletedLevels.push(selectedLevel.id);
+  }
 
-        // Track regular level completion
-        trackActivity(false);
+  // It's crucial that unlockNextLevel and unlockNextStage from './utils/lugandawords'
+  // return NEW array instances and do not mutate the 'stages' state directly.
+  // Assuming they work correctly like the versions in progressManager.ts (non-mutating).
+  let currentLocalStages = [...stages]; // Work with a local copy for modifications
+  let wasStageNewlyCompletedAndNextUnlocked = false;
+
+  // First, attempt to unlock the next level in the current stage
+  currentLocalStages = unlockNextLevel(
+      selectedStage.id,
+      selectedLevel.id,
+      currentLocalStages // Pass the working copy
+  );
+
+  // Then, check if the current stage is completed with the newly completed level
+  if (isStageCompleted(selectedStage.id, newCompletedLevels)) {
+      const nextStageDefinition = currentLocalStages.find((s) => s.id === selectedStage.id + 1);
+      if (nextStageDefinition && newTotalScore >= nextStageDefinition.requiredScore) {
+          currentLocalStages = unlockNextStage(
+              selectedStage.id,
+              currentLocalStages // Pass the potentially modified stages (level unlocked)
+          );
+          wasStageNewlyCompletedAndNextUnlocked = true; // Mark that a new stage was unlocked
       }
-    } else {
-      // Even if level was already completed, track the replay
-      trackActivity(false);
-    }
+  }
 
-    // Save progress
-    saveGameProgress();
+  // Update React state (this will schedule a re-render)
+  setTotalScore(newTotalScore);
+  setCompletedLevels(newCompletedLevels);
+  setStages(currentLocalStages);
 
-    // Show completion screen
-    setGameState("levelComplete");
+  // Track Activity
+  // The activity tracking should use the latest understanding of stage/level completion
+  await trackActivity(wasStageNewlyCompletedAndNextUnlocked);
+
+  // Prepare User Stats (integrate logic similar to progressManager.updateUserStats)
+  const progressSoFar = await loadProgress(activeChild.id); // Load existing stats
+  let existingUserStats = progressSoFar.userStats || DEFAULT_USER_STATS; // Use default if undefined
+
+  const lastPlayedDate = new Date(existingUserStats.lastPlayed || 0); // Handle case where lastPlayed might be missing
+  const today = new Date();
+  
+  const isNewDay =
+      today.getFullYear() !== lastPlayedDate.getFullYear() ||
+      today.getMonth() !== lastPlayedDate.getMonth() ||
+      today.getDate() !== lastPlayedDate.getDate();
+
+  let newStreakDays = existingUserStats.streakDays;
+  if (isNewDay) {
+      newStreakDays = existingUserStats.streakDays + 1;
+  } else if (existingUserStats.streakDays === 0) { // First play ever, or first play today after a reset
+      newStreakDays = 1;
+  }
+
+
+  const updatedUserStats: UserStats = {
+      totalWords: (existingUserStats.totalWords || 0) + currentWords.length,
+      correctAnswers: (existingUserStats.correctAnswers || 0) + (levelScore / 10), // Assuming 10 points per correct
+      wrongAnswers: (existingUserStats.wrongAnswers || 0) + (currentWords.length - (levelScore / 10)),
+      lastPlayed: today.toISOString(),
+      streakDays: newStreakDays,
+  };
+
+  // Now, save everything using the newly computed values
+  try {
+      await saveProgress( // This is saveProgress from progressManager.ts
+          newTotalScore,
+          newCompletedLevels,
+          currentLocalStages, // Save the locally updated stages
+          updatedUserStats,   // Save the correctly accumulated stats
+          activeChild.id
+      );
+      console.log("Game progress saved successfully.");
+  } catch (error) {
+      console.error("Failed to save game progress from component:", error);
+  }
+
+  // Finally, navigate to the level complete screen
+  setGameState("levelComplete");
+};
+
+  const saveGameProgress = async () => {
+    if (!activeChild) return;
+    
+    await saveProgress(
+      totalScore,
+      completedLevels,
+      stages,
+      {
+        totalWords: currentWords.length,
+        correctAnswers: levelScore / 10, // Assuming 10 points per correct answer
+        wrongAnswers: (currentWords.length - (levelScore / 10)),
+        lastPlayed: new Date().toISOString(),
+        streakDays: 1 // This would need more complex logic to properly track
+      },
+      activeChild.id
+    );
   };
 
   // STAGE SELECTION SCREEN
