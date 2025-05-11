@@ -1,235 +1,218 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  Animated,
-  PanResponder,
   TouchableOpacity,
-  ImageBackground,
+  ScrollView,
+  Image,
+  SafeAreaView,
+  BackHandler,
 } from "react-native";
-// import { Canvas, useFrame, useLoader } from "@react-three/fiber/native";
-// import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-// import { TextureLoader } from "expo-three";
-// import { Gyroscope } from "expo-sensors";
-import * as Haptics from "expo-haptics";
-import { Audio } from "expo-av";
-import { useNavigation } from "@react-navigation/native";
-// Base 3D Screen Component with Common Functionality
-const Base3DScreen = ({
-  children,
-  backgroundImage,
-  title,
-  description,
-  onClose,
-}: {
-  children: React.ReactNode;
-  backgroundImage: any; // ImageSourcePropType would be better but requires import
-  title: string;
-  description: string;
-  onClose?: () => void;
-}) => {
-  const navigation = useNavigation();
+import { Audio, AVPlaybackSource } from "expo-av";
+import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
-  return (
-    <View className="flex-1 relative">
-      <ImageBackground source={backgroundImage} className="w-full h-full">
-        <View className="absolute top-0 left-0 right-0 bg-black/50 p-4">
-          <TouchableOpacity
-            onPress={onClose || (() => navigation.goBack())}
-            className="absolute top-4 right-4 z-10"
-          >
-            <Text className="text-white text-xl font-bold">✕</Text>
-          </TouchableOpacity>
-          <Text className="text-white text-2xl font-bold mb-2">{title}</Text>
-          <Text className="text-white text-base">{description}</Text>
-        </View>
-        {children}
-      </ImageBackground>
-    </View>
-  );
-};
 export default function ArtifactsScreen() {
-  const [discoveredItems, setDiscoveredItems] = useState<any[]>([]);
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [score, setScore] = useState(0);
-  const [sound, setSound] = useState();
+  const [selectedArtifact, setSelectedArtifact] = useState<{
+    id: number;
+    name: string;
+    image: any;
+    description: string;
+    audio: AVPlaybackSource;
+  } | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const router = useRouter();
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (selectedArtifact) {
+          // Close modal if open
+          setSelectedArtifact(null);
+          if (sound) {
+            sound.stopAsync();
+          }
+          return true;
+        }
+        router.back();
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [router, selectedArtifact, sound]);
 
   const artifacts = [
     {
-      id: "bark_cloth",
-      name: "Bark Cloth",
-      points: 50,
-      description:
-        "Traditional cloth made from Mutuba tree bark, used in ceremonies.",
-      level: 1,
-    },
-    {
-      id: "royal_drums",
+      id: 1,
       name: "Royal Drums (Mujaguzo)",
-      points: 100,
-      description: "Sacred drums of the Buganda Kingdom.",
-      level: 1,
+      image: require("@/assets/images/engoma.png"),
+      description:
+        "These sacred royal drums symbolize the authority of the Kabaka (king). Each drum has a specific name and purpose in royal ceremonies.",
+      audio: require("@/assets/sounds/drums.mp3"),
     },
     {
-      id: "spears",
-      name: "Ceremonial Spears",
-      points: 75,
-      description: "Royal spears used in Buganda ceremonies.",
-      level: 2,
+      id: 2,
+      name: "Traditional Spears",
+      image: require("@/assets/images/spears.png"),
+      description:
+        "Used both for hunting and warfare, these spears represent the strength and bravery of Buganda warriors throughout history.",
+      audio: require("@/assets/sounds/spears_hit.mp3"),
     },
     {
-      id: "throne",
-      name: "Kabaka's Throne",
-      points: 150,
-      description: "The royal throne of the Buganda King (Kabaka).",
-      level: 2,
+      id: 3,
+      name: "Royal Stool (Entebe)",
+      image: require("@/assets/images/royal_stool.png"),
+      description:
+        "Special wooden stools used by the Kabaka and other royal officials during important ceremonies and meetings.",
+      audio: require("@/assets/sounds/bar-stool.mp3"),
     },
     {
-      id: "beaded_crown",
-      name: "Beaded Crown",
-      points: 200,
-      description: "Royal crown adorned with beads and shells.",
-      level: 3,
+      id: 4,
+      name: "Drinking Vessels",
+      image: require("@/assets/images/vessels.png"),
+      description:
+        "Beautifully crafted cups and containers for traditional drinks made from gourds, clay, or wood.",
+      audio: require("@/assets/sounds/vessels.mp3"),
+    },
+    {
+      id: 5,
+      name: "Royal Regalia",
+      image: require("@/assets/images/regalia.jpg"),
+      description:
+        "Special items used by the Kabaka including crowns, staffs, and emblems that represent royal authority.",
+      audio: require("@/assets/sounds/touch-1.mp3"),
     },
   ];
 
-  const [digSites, setDigSites] = useState(generateDigSites(6));
-
-  function generateDigSites(count: number) {
-    const sites = [];
-    for (let i = 0; i < count; i++) {
-      sites.push({
-        id: `site-${i}`,
-        x: Math.random() * 80 + 10,
-        y: Math.random() * 50 + 30,
-        size: Math.random() * 10 + 20,
-        artifact: artifacts.filter((a) => a.level <= currentLevel)[
-          Math.floor(
-            Math.random() *
-              artifacts.filter((a) => a.level <= currentLevel).length
-          )
-        ],
-        discovered: false,
-      });
+  async function playSound(audioFile: AVPlaybackSource) {
+    // Stop any currently playing sound
+    if (sound) {
+      await sound.unloadAsync();
     }
-    return sites;
+
+    const { sound: newSound } = await Audio.Sound.createAsync(audioFile);
+    setSound(newSound);
+    await newSound.playAsync();
   }
 
-  useEffect(() => {
-    setDigSites(generateDigSites(5 + currentLevel));
+  React.useEffect(() => {
+    return sound
+      ? () => {
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
 
-    // Load digging sound
-    async function loadSound() {
-      const { sound } = await Audio.Sound.createAsync(
-        require("@/assets/audio/complete.mp3")
-      );
-      setSound(sound as any);
-    }
-
-    loadSound();
-    return () => {
-      if (sound) {
-        (sound as Audio.Sound).unloadAsync();
-      }
-    };
-  }, [currentLevel]);
-
-  const handleDig = async (site: {
-    id: any;
-    x?: number;
-    y?: number;
-    size?: number;
-    artifact: any;
-    discovered: any;
+  const handleArtifactPress = (artifact: {
+    id: number;
+    name: string;
+    image: any;
+    description: string;
+    audio: AVPlaybackSource;
   }) => {
-    if (!site.discovered) {
-      // Play digging sound
-      if (sound) {
-        await (sound as Audio.Sound).replayAsync();
-      }
+    setSelectedArtifact(artifact);
+  };
 
-      // Haptic feedback
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      // Update the site to discovered
-      const updatedSites = digSites.map((s) =>
-        s.id === site.id ? { ...s, discovered: true } : s
-      );
-      setDigSites(updatedSites);
-
-      // Add to discovered items and update score
-      setDiscoveredItems((prevItems: any[]) => [...prevItems, site.artifact]);
-      setScore(score + site.artifact.points);
-
-      // Level up if enough artifacts discovered
-      if (discoveredItems.length + 1 >= currentLevel * 3 && currentLevel < 3) {
-        setCurrentLevel(currentLevel + 1);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
+  const closeModal = () => {
+    setSelectedArtifact(null);
+    if (sound) {
+      sound.stopAsync();
     }
   };
 
   return (
-    <Base3DScreen
-      title="Archaeological Dig"
-      description="Uncover ancient Buganda artifacts by digging at the marked spots!"
-      backgroundImage={require("@/assets/images/textile.jpg")}
-    >
-      <View className="flex-1 relative">
-        {/* Dig site view */}
-        <View className="flex-1 relative">
-          <ImageBackground
-            source={require("@/assets/images/textile.jpg")}
-            className="w-full h-full"
-            resizeMode="repeat"
-          >
-            {digSites.map((site) => (
-              <TouchableOpacity
-                key={site.id}
-                style={{
-                  position: "absolute",
-                  left: `${site.x}%`,
-                  top: `${site.y}%`,
-                  width: site.size,
-                  height: site.size,
-                  borderRadius: site.size / 2,
-                }}
-                className={`${
-                  site.discovered ? "bg-amber-800/50" : "bg-amber-600/80"
-                } items-center justify-center border-2 border-amber-900`}
-                onPress={() => handleDig(site)}
-              >
-                {site.discovered && (
-                  <Text className="text-white text-xs text-center">
-                    {site.artifact.name}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ImageBackground>
-        </View>
+    <SafeAreaView className="flex-1 bg-amber-50">
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 10,
+          zIndex: 10,
+          backgroundColor: "rgba(255, 255, 255, 0.8)",
+          padding: 8,
+          borderRadius: 20,
+        }}
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
+      </TouchableOpacity>
+      <View className="py-4 px-6 bg-amber-800">
+        <Text className="text-2xl font-bold text-white text-center">
+          Buganda Artifacts
+        </Text>
+        <Text className="text-white text-center">
+          Discover treasures from the Buganda Kingdom
+        </Text>
+      </View>
 
-        {/* Bottom panel with discovered items */}
-        <View className="absolute bottom-0 left-0 right-0 bg-black/70 p-4">
-          <Text className="text-white text-lg font-bold mb-2">
-            Level: {currentLevel} | Score: {score}
-          </Text>
-          <View className="flex-row flex-wrap">
-            {discoveredItems.map(
-              (item: { name: string; description: string }, index) => (
-                <View
-                  key={index}
-                  className="bg-amber-800/80 p-2 m-1 rounded-lg"
+      <ScrollView className="flex-1 p-4">
+        <Text className="text-lg mb-4 text-amber-900">
+          Tap on any artifact to learn more about its history and importance in
+          Buganda culture!
+        </Text>
+
+        <View className="flex-row flex-wrap justify-center">
+          {artifacts.map((artifact) => (
+            <TouchableOpacity
+              key={artifact.id}
+              className="w-40 h-40 m-2 bg-white rounded-lg shadow-md overflow-hidden"
+              onPress={() => handleArtifactPress(artifact)}
+            >
+              <Image
+                source={artifact.image}
+                className="w-full h-28"
+                resizeMode="cover"
+              />
+              <View className="p-2 bg-amber-100">
+                <Text className="font-bold text-amber-900">
+                  {artifact.name}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Detailed artifact modal */}
+      {selectedArtifact && (
+        <View className="absolute inset-0 bg-black bg-opacity-70 justify-center items-center p-4">
+          <View className="bg-white w-full max-w-md rounded-xl overflow-hidden">
+            <Image
+              source={selectedArtifact.image}
+              className="w-full h-64"
+              resizeMode="contain"
+            />
+
+            <View className="p-4">
+              <View className="flex-row justify-between items-center mb-2">
+                <Text className="text-xl font-bold text-amber-900">
+                  {selectedArtifact.name}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => playSound(selectedArtifact.audio)}
                 >
-                  <Text className="text-white font-bold">{item.name}</Text>
-                  <Text className="text-white text-xs">{item.description}</Text>
-                </View>
-              )
-            )}
+                  <MaterialIcons name="volume-up" size={28} color="#78350f" />
+                </TouchableOpacity>
+              </View>
+
+              <Text className="text-base mb-4">
+                {selectedArtifact.description}
+              </Text>
+
+              <View className="flex-row justify-center">
+                <TouchableOpacity
+                  className="bg-amber-600 py-2 px-6 rounded-full"
+                  onPress={closeModal}
+                >
+                  <Text className="text-white font-bold">Close </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </Base3DScreen>
+      )}
+    </SafeAreaView>
   );
-};
+}
