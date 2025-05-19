@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   Image,
   SafeAreaView,
   BackHandler,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { Audio, AVPlaybackSource } from "expo-av";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { Text } from "@/components/StyledText";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function ArtifactsScreen() {
   const [selectedArtifact, setSelectedArtifact] = useState<{
@@ -23,7 +27,17 @@ export default function ArtifactsScreen() {
   } | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const router = useRouter();
+  const { width } = Dimensions.get("window");
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+
   useEffect(() => {
+    // Fade in animation when screen loads
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
@@ -123,62 +137,74 @@ export default function ArtifactsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-amber-50">
-      <TouchableOpacity
-        style={{
-          position: "absolute",
-          top: 10,
-          left: 10,
-          zIndex: 10,
-          backgroundColor: "rgba(255, 255, 255, 0.8)",
-          padding: 8,
-          borderRadius: 20,
-        }}
-        onPress={() => router.back()}
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <StatusBar style="dark" />
+
+      {/* Header with back button and title */}
+      <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+        <TouchableOpacity
+          className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={20} color="#7b5af0" />
+        </TouchableOpacity>
+
+        <Text variant="bold" className="text-xl text-indigo-800">
+          Buganda Artifacts
+        </Text>
+
+        <View style={{ width: 40 }} />
+      </View>
+
+      <LinearGradient
+        colors={["#6366f1", "#7b5af0"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="py-4 px-6"
       >
-        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-      </TouchableOpacity>
-      <View className="py-4 px-6 bg-amber-800">
-        <Text className="text-2xl font-bold text-white text-center">
+        <Text variant="bold" className="text-xl text-white text-center">
           Buganda Artifacts
         </Text>
         <Text className="text-white text-center">
           Discover treasures from the Buganda Kingdom
         </Text>
-      </View>
+      </LinearGradient>
 
       <ScrollView className="flex-1 p-4">
-        <Text className="text-lg mb-4 text-amber-900">
-          Tap on any artifact to learn more about its history and importance in
-          Buganda culture!
-        </Text>
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text className="text-base mb-4 text-slate-700">
+            Tap on any artifact to learn more about its history and importance
+            in Buganda culture!
+          </Text>
 
-        <View className="flex-row flex-wrap justify-center">
-          {artifacts.map((artifact) => (
-            <TouchableOpacity
-              key={artifact.id}
-              className="w-40 h-40 m-2 bg-white rounded-lg shadow-md overflow-hidden"
-              onPress={() => handleArtifactPress(artifact)}
-            >
-              <Image
-                source={artifact.image}
-                className="w-full h-28"
-                resizeMode="cover"
-              />
-              <View className="p-2 bg-amber-100">
-                <Text className="font-bold text-amber-900">
-                  {artifact.name}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+          <View className="flex-row flex-wrap justify-center">
+            {artifacts.map((artifact) => (
+              <TouchableOpacity
+                key={artifact.id}
+                className="w-40 h-48 mx-2 bg-white rounded-xl shadow-sm  border-slate-200 overflow-hidden"
+                onPress={() => handleArtifactPress(artifact)}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={artifact.image}
+                  className="w-full h-28"
+                  resizeMode="cover"
+                />
+                <View className="p-2 bg-white flex-1 justify-center">
+                  <Text variant="bold" className="text-slate-800 text-center">
+                    {artifact.name}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Animated.View>
       </ScrollView>
 
       {/* Detailed artifact modal */}
       {selectedArtifact && (
         <View className="absolute inset-0 bg-black bg-opacity-70 justify-center items-center p-4">
-          <View className="bg-white w-full max-w-md rounded-xl overflow-hidden">
+          <View className="bg-white w-full max-w-md rounded-xl overflow-hidden shadow-lg">
             <Image
               source={selectedArtifact.image}
               className="w-full h-64"
@@ -186,27 +212,30 @@ export default function ArtifactsScreen() {
             />
 
             <View className="p-4">
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-xl font-bold text-amber-900">
+              <View className="flex-row justify-between items-center mb-3">
+                <Text variant="bold" className="text-xl text-indigo-800">
                   {selectedArtifact.name}
                 </Text>
                 <TouchableOpacity
+                  className="bg-indigo-100 p-2 rounded-full"
                   onPress={() => playSound(selectedArtifact.audio)}
                 >
-                  <MaterialIcons name="volume-up" size={28} color="#78350f" />
+                  <MaterialIcons name="volume-up" size={24} color="#6366f1" />
                 </TouchableOpacity>
               </View>
 
-              <Text className="text-base mb-4">
+              <Text className="text-base mb-5 text-slate-700">
                 {selectedArtifact.description}
               </Text>
 
               <View className="flex-row justify-center">
                 <TouchableOpacity
-                  className="bg-amber-600 py-2 px-6 rounded-full"
+                  className="bg-indigo-600 py-2.5 px-6 rounded-full"
                   onPress={closeModal}
                 >
-                  <Text className="text-white font-bold">Close </Text>
+                  <Text variant="bold" className="text-white">
+                    Close
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
