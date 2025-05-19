@@ -203,37 +203,48 @@ export default function ArtifactsScreen() {
 
       {/* Detailed artifact modal */}
       {selectedArtifact && (
-        <View className="absolute inset-0 bg-black bg-opacity-70 justify-center items-center p-4">
-          <View className="bg-white w-full max-w-md rounded-xl overflow-hidden shadow-lg">
-            <Image
-              source={selectedArtifact.image}
-              className="w-full h-64"
-              resizeMode="contain"
-            />
+        <View className="absolute inset-0 bg-black/50 justify-center items-center p-4">
+          <View className="relative bg-white w-4/5 max-w-md rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200">
+            {/* Main image display */}
+            {/* <View className="w-full pt-12 pb-4 bg-indigo-50">
+              <Image
+                source={selectedArtifact.image}
+                className="w-full h-48"
+                resizeMode="contain"
+              />
+            </View> */}
 
-            <View className="p-4">
-              <View className="flex-row justify-between items-center mb-3">
-                <Text variant="bold" className="text-xl text-indigo-800">
-                  {selectedArtifact.name}
-                </Text>
-                <TouchableOpacity
-                  className="bg-indigo-100 p-2 rounded-full"
-                  onPress={() => playSound(selectedArtifact.audio)}
-                >
-                  <MaterialIcons name="volume-up" size={24} color="#6366f1" />
-                </TouchableOpacity>
-              </View>
-
-              <Text className="text-base mb-5 text-slate-700">
-                {selectedArtifact.description}
+            <View className="p-6">
+              <Text
+                variant="bold"
+                className="text-2xl text-primary-700 mb-4 text-center"
+              >
+                {selectedArtifact.name}
               </Text>
 
-              <View className="flex-row justify-center">
+              {/* Description in a styled container */}
+              <View className="bg-primary-50 w-full rounded-xl p-4 mb-5">
+                <Text className="text-lg text-primary-700 text-center leading-relaxed">
+                  {selectedArtifact.description}
+                </Text>
+              </View>
+
+              <View className="flex-row justify-center items-center space-x-4">
+                {/* Sound button */}
                 <TouchableOpacity
-                  className="bg-indigo-600 py-2.5 px-6 rounded-full"
-                  onPress={closeModal}
+                  className="bg-yellow-100 p-3 mr-3 rounded-full shadow-md border-2 border-yellow-200"
+                  onPress={() => playSound(selectedArtifact.audio)}
                 >
-                  <Text variant="bold" className="text-white">
+                  <MaterialIcons name="volume-up" size={28} color="#7b5af0" />
+                </TouchableOpacity>
+
+                {/* Close button */}
+                <TouchableOpacity
+                  className="bg-primary-500 py-3 px-7 rounded-full shadow-md border-2 border-primary-400"
+                  onPress={closeModal}
+                  activeOpacity={0.8}
+                >
+                  <Text variant="bold" className="text-white text-lg">
                     Close
                   </Text>
                 </TouchableOpacity>
