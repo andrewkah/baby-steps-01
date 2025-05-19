@@ -162,9 +162,6 @@ export default function ArtifactsScreen() {
         end={{ x: 1, y: 1 }}
         className="py-4 px-6"
       >
-        <Text variant="bold" className="text-xl text-white text-center">
-          Buganda Artifacts
-        </Text>
         <Text className="text-white text-center">
           Discover treasures from the Buganda Kingdom
         </Text>
