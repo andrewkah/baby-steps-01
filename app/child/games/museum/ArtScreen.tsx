@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
-  StyleSheet,
-  Animated,
-  PanResponder,
+  ScrollView,
   TouchableOpacity,
-  ImageBackground,
+  Image,
+  SafeAreaView,
+  BackHandler,
+  Dimensions,
+  Modal,
+  Animated,
 } from "react-native";
+<<<<<<< HEAD
 // import { Canvas, useFrame, useLoader } from "@react-three/fiber/native";
 // import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 // import { TextureLoader } from "expo-three";
@@ -52,156 +55,132 @@ const Base3DScreen = ({
     </View>
   );
 };
+=======
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
+import { WebView } from "react-native-webview";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { Text } from "@/components/StyledText";
+import { LinearGradient } from "expo-linear-gradient";
+>>>>>>> main
 
 export default function ArtScreen() {
-  const [position, setPosition] = useState(0);
-  const [velocity, setVelocity] = useState(0);
-  const [isJumping, setIsJumping] = useState(false);
-  const [score, setScore] = useState(0);
-  const [viewedArt, setViewedArt] = useState<string[]>([]);
-  const animationRef = useRef(null);
-  const { activeChild } = useChild();
-  const gameStartTime = useRef(Date.now());
-  const [isGameComplete, setIsGameComplete] = useState(false);
+  const [selectedArtwork, setSelectedArtwork] = useState<{
+    id: number;
+    title: string;
+    artist: string;
+    image: any;
+    description: string;
+    videoUrl: string;
+  } | null>(null);
+  const [contrastLevel, setContrastLevel] = useState("normal");
+  const [videoModalVisible, setVideoModalVisible] = useState(false);
+  const router = useRouter();
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+
+  useEffect(() => {
+    // Fade in animation when screen loads
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (videoModalVisible) {
+          setVideoModalVisible(false);
+          return true;
+        }
+        if (selectedArtwork) {
+          setSelectedArtwork(null);
+          return true;
+        }
+        router.back();
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [router, selectedArtwork, videoModalVisible]);
 
   const artworks = [
     {
-      id: "bark_cloth_art",
-      name: "Bark Cloth Paintings",
+      id: 1,
+      title: "Barkcloth Paintings",
+      artist: "Traditional Buganda Artists",
+      image: require("@/assets/images/barkcloth_art.png"),
       description:
-        "Traditional Buganda paintings on bark cloth depicting daily life.",
-      position: 500,
+        "Paintings created on traditional barkcloth (lubugo) using natural pigments. These artworks often depict daily life, cultural symbols, and stories from Buganda history.",
+      videoUrl: "https://www.youtube.com/watch?v=uhznFtHhkBo",
     },
     {
-      id: "royal_portraits",
-      name: "Royal Portraits",
-      description: "Portraits of Buganda kings (Kabakas) through history.",
-      position: 1200,
-    },
-    {
-      id: "village_scenes",
-      name: "Village Life",
+      id: 2,
+      title: "Kasubi Tombs Artwork",
+      artist: "Various Buganda Artists",
+      image: require("@/assets/images/kasubi_art.png"),
       description:
-        "Paintings showing traditional village activities in Buganda.",
-      position: 2000,
+        "Decorative art found at the Kasubi Tombs, a UNESCO World Heritage site where Buganda kings are buried. These artworks include symbolic patterns and royal emblems.",
+      videoUrl: "https://www.youtube.com/watch?v=G2PDZZO6h68",
     },
     {
-      id: "contemporary",
-      name: "Contemporary Buganda Art",
+      id: 3,
+      title: "Traditional Basketry Designs",
+      artist: "Buganda Craft Artisans",
+      image: require("@/assets/images/basket_art.jpg"),
       description:
-        "Modern interpretations of traditional themes by Buganda artists.",
-      position: 2800,
+        "Intricate patterns and designs used in traditional Buganda basketry, which are considered both functional crafts and artistic expressions.",
+      videoUrl: "https://www.youtube.com/watch?v=ddqvWZhdOzM",
     },
     {
-      id: "ceremonial_art",
-      name: "Ceremonial Art",
-      description: "Art pieces depicting important Buganda ceremonies.",
-      position: 3500,
+      id: 4,
+      title: "Royal Court Scenes",
+      artist: "Contemporary Ugandan Artists",
+      image: require("@/assets/images/court_art.png"),
+      description:
+        "Modern interpretations of the Buganda royal court, showing the Kabaka and his officials. These paintings blend traditional themes with contemporary artistic styles.",
+      videoUrl: "https://www.youtube.com/embed/exampleVideo2",
+    },
+    {
+      id: 5,
+      title: "Cultural Symbol Paintings",
+      artist: "Modern Buganda Artists",
+      image: require("@/assets/images/symbol_art.jpg"),
+      description:
+        "Modern artwork featuring traditional Buganda symbols and motifs, reimagined through contemporary artistic techniques and materials.",
+      videoUrl: "https://www.youtube.com/embed/exampleVideo5",
     },
   ];
 
-  const [obstacles, setObstacles] = useState(generateObstacles());
-
-  function generateObstacles() {
-    return Array(10)
-      .fill(undefined)
-      .map((_, i) => ({
-        id: `obs-${i}`,
-        position: 800 + i * 600 + Math.random() * 300,
-        width: 50 + Math.random() * 50,
-      }));
-  }
-
-  const handleJump = () => {
-    if (!isJumping) {
-      setIsJumping(true);
-      setVelocity(20);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const toggleContrast = () => {
+    if (contrastLevel === "normal") {
+      setContrastLevel("high");
+    } else if (contrastLevel === "high") {
+      setContrastLevel("low");
+    } else {
+      setContrastLevel("normal");
     }
   };
 
-  const character = {
-    y: isJumping ? 50 + velocity : 50,
-    height: 100,
-    width: 50,
+  const getContrastStyle = () => {
+    switch (contrastLevel) {
+      case "high":
+        return "bg-white border-4 border-indigo-600";
+      case "low":
+        return "bg-slate-100 border border-indigo-200";
+      default:
+        return "bg-white border-2 border-indigo-200";
+    }
   };
 
-  useEffect(() => {
-    let jumpTimer: NodeJS.Timeout;
-
-    if (isJumping) {
-      jumpTimer = setInterval(() => {
-        setVelocity((v) => {
-          const newV = v - 2;
-          if (v <= -20) {
-            setIsJumping(false);
-            clearInterval(jumpTimer);
-            return 0;
-          }
-          return newV;
-        });
-      }, 50);
+  const handleWatchVideo = () => {
+    if (selectedArtwork) {
+      setVideoModalVisible(true);
     }
-
-    return () => {
-      if (jumpTimer) clearInterval(jumpTimer);
-    };
-  }, [isJumping]);
-
-  useEffect(() => {
-    let animationFrame: number;
-
-    const animate = () => {
-      setPosition((pos) => {
-        const newPos = pos + 5;
-
-        // Check for art pieces
-        artworks.forEach((art) => {
-          if (
-            !viewedArt.includes(art.id) &&
-            Math.abs(newPos - art.position) < 50
-          ) {
-            setViewedArt((prev) => [...prev, art.id]);
-            setScore((prev) => prev + 100);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          }
-        });
-
-        // Check for obstacles
-        obstacles.forEach((obs) => {
-          if (Math.abs(newPos - obs.position) < character.width && !isJumping) {
-            // Collision penalty
-            setScore((prev) => Math.max(0, prev - 50));
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          }
-        });
-
-        return newPos;
-      });
-
-      animationFrame = requestAnimationFrame(animate);
-    };
-
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [isJumping, viewedArt]);
-
-  // Reset when reaching the end
-  useEffect(() => {
-    if (position > 4000) {
-      setPosition(0);
-      setObstacles(generateObstacles());
-    }
-  }, [position]);
-
-  const getCurrentArtwork = () => {
-    const lastViewed =
-      viewedArt.length > 0
-        ? artworks.find((a) => a.id === viewedArt[viewedArt.length - 1])
-        : null;
-    return lastViewed;
   };
 
+<<<<<<< HEAD
   const currentArtwork = getCurrentArtwork();
 
   // Track activity completion
@@ -231,93 +210,172 @@ export default function ArtScreen() {
     }
   }, [viewedArt, isGameComplete]);
 
+=======
+>>>>>>> main
   return (
-    <Base3DScreen
-      title="Art Gallery Runner"
-      description="Run through the gallery and collect Buganda artwork! Tap to jump over obstacles."
-      backgroundImage={require("@/assets/images/culture.jpg")}
-    >
-      <TouchableOpacity
-        className="flex-1"
-        activeOpacity={0.8}
-        onPress={handleJump}
-      >
-        <View className="flex-1 relative">
-          {/* Background elements */}
-          <View className="absolute left-0 right-0 bottom-1/3 h-2 bg-black/30" />
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <StatusBar style="dark" />
 
-          {/* Character */}
-          <View
-            className="absolute bg-indigo-600 rounded-lg overflow-hidden"
-            style={{
-              left: 50,
-              bottom: character.y,
-              width: character.width,
-              height: character.height,
-            }}
+      {/* Header with back button and title */}
+      <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+        <TouchableOpacity
+          className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={20} color="#7b5af0" />
+        </TouchableOpacity>
+
+        <Text variant="bold" className="text-xl text-indigo-800">
+          Buganda Art Gallery
+        </Text>
+
+        <TouchableOpacity
+          className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+          onPress={toggleContrast}
+        >
+          <MaterialIcons name="contrast" size={20} color="#7b5af0" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView className="flex-1 p-4">
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text className="text-base mb-4 text-slate-700">
+            Explore beautiful art from the Buganda Kingdom! Tap on any artwork
+            to learn more. (scroll to the right for more)
+          </Text>
+
+          {/* Replace the vertical layout with horizontal scrolling */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingRight: 16 }}
+            className="flex-row"
           >
-            <Text className="text-white text-center">🧒</Text>
+            {artworks.map((artwork) => (
+              <TouchableOpacity
+                key={artwork.id}
+                className={`rounded-xl overflow-hidden shadow-sm mr-4 ${getContrastStyle()}`}
+                style={{ width: 250 }}
+                onPress={() => setSelectedArtwork(artwork)}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={artwork.image}
+                  className="w-full h-36"
+                  resizeMode="cover"
+                />
+                <View className="p-3">
+                  <Text variant="bold" className="text-lg text-indigo-800 mb-1">
+                    {artwork.title}
+                  </Text>
+                  <Text className="text-indigo-600">{artwork.artist}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Animated.View>
+      </ScrollView>
+
+      {/* Artwork Detail Modal */}
+      {selectedArtwork && (
+        <View className="absolute inset-0 bg-black/50 justify-center items-center p-4">
+          <View
+            className="relative bg-white w-4/5 max-w-md rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200"
+            style={{ maxHeight: "90%" }}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
+              <Image
+                source={selectedArtwork.image}
+                className="w-full h-48"
+                resizeMode="cover"
+              />
+
+              <View className="px-5 pt-4">
+                <Text
+                  variant="bold"
+                  className="text-xl text-primary-700 mb-1 text-center"
+                >
+                  {selectedArtwork.title}
+                </Text>
+                <Text className="text-primary-600 mb-3 text-center">
+                  {selectedArtwork.artist}
+                </Text>
+
+                {/* Description in a styled container */}
+                <View className="bg-primary-50 w-full rounded-xl p-4 mb-3">
+                  <Text className="text-base text-primary-700 text-center leading-relaxed">
+                    {selectedArtwork.description}
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Buttons section outside ScrollView to ensure visibility */}
+            <View className="p-3 pt-0 flex-row justify-center items-center space-x-4 bg-white border-slate-100">
+              {/* YouTube button */}
+              <TouchableOpacity
+                className="bg-red-100 p-2.5 mr-3 rounded-full shadow-sm border-2 border-red-200 flex-row items-center"
+                onPress={handleWatchVideo}
+              >
+                <Ionicons name="logo-youtube" size={20} color="#e11d48" />
+                <Text variant="medium" className="text-red-600 ml-1.5">
+                  Watch
+                </Text>
+              </TouchableOpacity>
+
+              {/* Close button */}
+              <TouchableOpacity
+                className="bg-primary-500 py-2.5 px-6 rounded-full shadow-sm border-2 border-primary-400"
+                onPress={() => setSelectedArtwork(null)}
+                activeOpacity={0.8}
+              >
+                <Text variant="bold" className="text-white">
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Video Modal - Full Screen Version */}
+      <Modal
+        visible={videoModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setVideoModalVisible(false)}
+      >
+        <SafeAreaView className="flex-1 bg-black">
+          {/* Close button positioned at top right */}
+          <View className="absolute top-4 right-4 z-10">
+            <TouchableOpacity
+              className="bg-primary-500 w-12 h-12 rounded-full justify-center items-center shadow-md border-2 border-white"
+              onPress={() => setVideoModalVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="close" size={24} color="white" />
+            </TouchableOpacity>
           </View>
 
-          {/* Art pieces */}
-          {artworks.map((art) => (
-            <View
-              key={art.id}
-              className={`absolute bg-amber-100 border-4 ${
-                viewedArt.includes(art.id)
-                  ? "border-green-500"
-                  : "border-amber-800"
-              } rounded-lg overflow-hidden`}
-              style={{
-                left: art.position - position,
-                bottom: 150,
-                width: 120,
-                height: 150,
-              }}
-            >
-              <Text className="text-center text-black font-bold m-2">
-                {art.name}
-              </Text>
-            </View>
-          ))}
+          {/* Video container taking up full screen */}
+          <View className="flex-1 bg-black">
+            {selectedArtwork && (
+              <WebView
+                source={{ uri: selectedArtwork.videoUrl }}
+                allowsFullscreenVideo={true}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                style={{ flex: 1 }}
+              />
+            )}
+          </View>
 
-          {/* Obstacles */}
-          {obstacles.map((obs) => (
-            <View
-              key={obs.id}
-              className="absolute bg-red-600 rounded-lg"
-              style={{
-                left: obs.position - position,
-                bottom: 50,
-                width: obs.width,
-                height: 70,
-              }}
-            />
-          ))}
-        </View>
-
-        {/* Info panel */}
-        <View className="absolute top-20 left-0 right-0 bg-black/60 p-4">
-          <Text className="text-white text-lg font-bold">Score: {score}</Text>
-          {currentArtwork && (
-            <View className="mt-2">
-              <Text className="text-white font-bold">
-                {currentArtwork.name}
-              </Text>
-              <Text className="text-white text-sm">
-                {currentArtwork.description}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Instruction overlay */}
-        <View className="absolute bottom-10 left-0 right-0 items-center">
-          <Text className="text-white bg-black/60 px-6 py-2 rounded-full">
-            Tap to jump over obstacles!
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </Base3DScreen>
+         
+        </SafeAreaView>
+      </Modal>
+    </SafeAreaView>
   );
-};
+}

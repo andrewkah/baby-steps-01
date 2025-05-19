@@ -11,7 +11,7 @@ export const translations: Record<string, string> = {
   "View All Activities": "Laba ebikolebwa byonna",
   "Weekly Learning Time": "Ebiseera by'okuyiga buli wiiki",
   "Total this week:": "Omugatte gwa wiiki eno:",
-  minutes: "eddakiika",
+  "minutes": "eddakiika",
   "Parent Tools": "Ebikozesebwa by'abazadde",
   Schedule: "Enteekateeka",
   Achievements: "Ebituukiddwaako",
