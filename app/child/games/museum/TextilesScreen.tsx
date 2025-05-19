@@ -1,289 +1,345 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
-  StyleSheet,
-  Animated,
-  PanResponder,
+  ScrollView,
   TouchableOpacity,
-  ImageBackground,
+  Image,
+  Dimensions,
+  BackHandler,
+  SafeAreaView,
+  Animated,
 } from "react-native";
-// import { Canvas, useFrame, useLoader } from "@react-three/fiber/native";
-// import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-// import { TextureLoader } from "expo-three";
-import { Gyroscope } from "expo-sensors";
-import * as Haptics from "expo-haptics";
-import { useNavigation } from "@react-navigation/native";
+import { Audio, AVPlaybackSource } from "expo-av";
+import { MaterialIcons, Feather, Ionicons } from "@expo/vector-icons";
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
+import {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { Text } from "@/components/StyledText";
+import { LinearGradient } from "expo-linear-gradient";
 
-// Base 3D Screen Component with Common Functionality
-const Base3DScreen = ({
-  children,
-  backgroundImage,
-  title,
-  description,
-  onClose,
-}: {
-  children: React.ReactNode;
-  backgroundImage: any; // ImageSourcePropType would be better but requires import
-  title: string;
+interface Textile {
+  id: number;
+  name: string;
+  image: any;
   description: string;
-  onClose?: () => void;
-}) => {
-  const navigation = useNavigation();
+  closeupImage: any;
+  audio: AVPlaybackSource;
+}
 
-  return (
-    <View className="flex-1 relative">
-      <ImageBackground source={backgroundImage} className="w-full h-full">
-        <View className="absolute top-0 left-0 right-0 bg-black/50 p-4">
-          <TouchableOpacity
-            onPress={onClose || (() => navigation.goBack())}
-            className="absolute top-4 right-4 z-10"
-          >
-            <Text className="text-white text-xl font-bold">✕</Text>
-          </TouchableOpacity>
-          <Text className="text-white text-2xl font-bold mb-2">{title}</Text>
-          <Text className="text-white text-base">{description}</Text>
-        </View>
-        {children}
-      </ImageBackground>
-    </View>
-  );
-};
 export default function TextilesScreen() {
-  const [rotation, setRotation] = useState(0);
-  const [patterns, setPatterns] = useState<
-    {
-      id: string;
-      name: string;
-      description: string;
-      rotations: number[];
-    }[]
-  >([]);
-  const [currentPattern, setCurrentPattern] = useState(0);
-  const [score, setScore] = useState(0);
-  const [matchFound, setMatchFound] = useState(false);
-  const [gyroEnabled, setGyroEnabled] = useState(false);
-  const [subscription, setSubscription] = useState<{
-    remove: () => void;
-  } | null>(null);
+  const [selectedTextile, setSelectedTextile] = useState<Textile | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const windowWidth = Dimensions.get("window").width;
+  const router = useRouter();
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
 
-  const textilePatterns = [
+  useEffect(() => {
+    // Fade in animation when screen loads
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (selectedTextile) {
+          setSelectedTextile(null);
+          if (sound) {
+            sound.stopAsync();
+          }
+          return true;
+        }
+        router.back();
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [router, selectedTextile, sound]);
+
+  const textiles = [
     {
-      id: "bark_cloth",
-      name: "Bark Cloth",
+      id: 1,
+      name: "Barkcloth (Lubugo)",
+      image: require("@/assets/images/barkcloth(Lubugo).png"),
       description:
-        "Traditional fabric made from the Mutuba tree bark, with natural brown color and unique texture.",
-      rotations: [0, 90, 180, 270][Math.floor(Math.random() * 4)],
+        "Made from the inner bark of the Mutuba tree (Ficus natalensis), barkcloth has been used for centuries in Buganda for ceremonial wear, burial shrouds, and as a canvas for art. The UNESCO-recognized process involves beating the bark to create a soft, textured cloth with a reddish-brown color.",
+      closeupImage: require("@/assets/images/barkcloth(Lubugo)_closeup.png"),
+      audio: require("@/assets/sounds/touch-1.mp3"),
     },
     {
-      id: "barkcloth_print",
-      name: "Barkcloth Prints",
+      id: 2,
+      name: "Royal Backcloth (Lubugo Olukoba)",
+      image: require("@/assets/images/royal_cloth.png"),
       description:
-        "Modern printed patterns on traditional bark cloth, combining tradition with contemporary designs.",
-      rotations: [0, 90, 180, 270][Math.floor(Math.random() * 4)],
+        "Special barkcloth reserved for royalty, often decorated with patterns significant to the Buganda monarchy. These cloths feature more detailed processing and sometimes incorporate dyes or decorative elements to signify their importance.",
+      closeupImage: require("@/assets/images/royal_cloth_closeup.png"),
+      audio: require("@/assets/sounds/touch-1.mp3"),
     },
     {
-      id: "royal_cloth",
-      name: "Royal Buganda Cloth",
+      id: 3,
+      name: "Buganda Baskets",
+      image: require("@/assets/images/textile_baskets.png"),
       description:
-        "Special textiles reserved for the Kabaka (king) and royal family, featuring distinctive patterns.",
-      rotations: [0, 90, 180, 270][Math.floor(Math.random() * 4)],
-    },
-    {
-      id: "ceremonial",
-      name: "Ceremonial Textiles",
-      description:
-        "Special textiles used in important Buganda ceremonies and rituals.",
-      rotations: [0, 90, 180, 270][Math.floor(Math.random() * 4)],
-    },
-    {
-      id: "basket_weave",
-      name: "Basket Weaving Patterns",
-      description:
-        "Intricate patterns inspired by traditional Buganda basket weaving techniques.",
-      rotations: [0, 90, 180, 270][Math.floor(Math.random() * 4)],
+        "Woven from plant fibers like raffia and palm leaves, these colorful baskets display intricate patterns that tell stories and represent cultural symbols. Each design carries meaning and showcases the weaver's skill and artistry.",
+      closeupImage: require("@/assets/images/textile_baskets_closeup.png"),
+      audio: require("@/assets/sounds/touch-1.mp3"),
     },
   ];
 
-  type PatternId =
-    | "bark_cloth"
-    | "barkcloth_print"
-    | "royal_cloth"
-    | "ceremonial"
-    | "basket_weave";
-  const patternImages: Record<PatternId, any> = {
-    bark_cloth: require("@/assets/images/kasubi.jpg"),
-    barkcloth_print: require("@/assets/images/kabaka-trail.jpg"),
-    royal_cloth: require("@/assets/images/clothing.jpg"),
-    ceremonial: require("@/assets/images/culture.jpg"),
-    basket_weave: require("@/assets/images/drum.jpg"),
+  async function playSound(audioFile: AVPlaybackSource) {
+    if (sound) {
+      await sound.unloadAsync();
+    }
+
+    const { sound: newSound } = await Audio.Sound.createAsync(audioFile);
+    setSound(newSound);
+    await newSound.playAsync();
+  }
+
+  const TextileCard = ({ item }: { item: Textile }) => {
+    const scale = useSharedValue(1);
+
+    const pinchGesture = Gesture.Pinch()
+      .onUpdate((event) => {
+        scale.value =
+          event.scale > 0.5 ? (event.scale < 3 ? event.scale : 3) : 0.5;
+      })
+      .onEnd(() => {
+        scale.value = withTiming(1);
+      });
+
+    const animatedStyle = useAnimatedStyle(() => {
+      return {
+        transform: [{ scale: scale.value }],
+      };
+    });
+
+    return (
+      <TouchableOpacity
+        onPress={() => setSelectedTextile(item)}
+        activeOpacity={0.7}
+        className="bg-white rounded-xl overflow-hidden shadow-sm border-2 border-indigo-100 h-full"
+        style={{
+          width: 250,
+          marginRight: 16,
+          height: 240,
+        }}
+      >
+        <GestureDetector gesture={pinchGesture}>
+          <Animated.View style={animatedStyle}>
+            <Image
+              source={item.image}
+              className="w-full h-32"
+              resizeMode="cover"
+            />
+          </Animated.View>
+        </GestureDetector>
+
+        <View className="p-4 flex-1">
+          <View className="flex-row justify-between items-center">
+            <Text
+              variant="bold"
+              className="text-lg text-indigo-800 flex-1 mr-2"
+            >
+              {item.name}
+            </Text>
+            {/* <TouchableOpacity
+              className="p-2 rounded-full bg-indigo-100 shadow-sm"
+              onPress={(e) => {
+                e.stopPropagation();
+                playSound(item.audio);
+              }}
+            >
+              <MaterialIcons name="volume-up" size={22} color="#7b5af0" />
+            </TouchableOpacity> */}
+          </View>
+
+          <Text className="text-slate-700 mt-2" numberOfLines={2}>
+            {item.description.substring(0, 70)}...
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   useEffect(() => {
-    // Generate random patterns
-    setPatterns(
-      textilePatterns
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3)
-        .map((pattern) => ({
-          ...pattern,
-          rotations: [pattern.rotations], // Wrap the single rotation in an array
-        }))
-    );
-    setCurrentPattern(0);
-  }, []);
-
-  const toggleGyro = () => {
-    if (gyroEnabled) {
-      // Turn off gyroscope
-      if (subscription) {
-        subscription.remove();
-        setSubscription(null);
-      }
-      setGyroEnabled(false);
-    } else {
-      // Turn on gyroscope
-      const sub = Gyroscope.addListener((gyroscopeData: { z: number }) => {
-        setRotation((r) => {
-          // Use the z-axis rotation for turning the pattern
-          const newRotation = r + gyroscopeData.z * 5;
-          return newRotation;
-        });
-      });
-
-      setSubscription(sub);
-      setGyroEnabled(true);
-    }
-  };
-
-  const rotatePattern = (direction: string) => {
-    setRotation((r) => {
-      const delta = direction === "left" ? -10 : 10;
-      return r + delta;
-    });
-  };
-
-  const checkMatch = () => {
-    const targetRotation = patterns[currentPattern].rotations;
-    const currentRotation = rotation % 360;
-    // Allow some tolerance for matching
-    const diff = Math.abs(currentRotation - targetRotation[0]); // Access first rotation from array
-    const isMatch = diff < 15 || diff > 345;
-
-    if (isMatch) {
-      // Success!
-      setMatchFound(true);
-      setScore(score + 100);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      // Move to next pattern after delay
-      setTimeout(() => {
-        if (currentPattern < patterns.length - 1) {
-          setCurrentPattern(currentPattern + 1);
-          setMatchFound(false);
-          setRotation(0);
-        } else {
-          // Game completed, reset
-          setPatterns(
-            textilePatterns
-              .sort(() => Math.random() - 0.5)
-              .slice(0, 3)
-              .map((pattern) => ({
-                ...pattern,
-                rotations: [pattern.rotations],
-              }))
-          );
-          setCurrentPattern(0);
-          setMatchFound(false);
-          setRotation(0);
+    return sound
+      ? () => {
+          sound.unloadAsync();
         }
-      }, 1500);
-    } else {
-      // Not a match
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setScore(Math.max(0, score - 20));
-    }
-  };
+      : undefined;
+  }, [sound]);
 
   return (
-    <Base3DScreen
-      title="Buganda Textile Patterns"
-      description="Rotate the patterns to match their traditional orientation!"
-      backgroundImage={require("@/assets/images/textile.jpg")}
-    >
-      <View className="flex-1 items-center justify-center">
-        {patterns.length > 0 && (
-          <>
-            {/* Pattern display */}
-            <View className="w-64 h-64 bg-white/20 rounded-lg p-2">
-              <View
-                className={`w-full h-full border-4 ${
-                  matchFound ? "border-green-500" : "border-amber-500"
-                }`}
-                style={{ transform: [{ rotate: `${rotation}deg` }] }}
-              >
-                <ImageBackground
-                  source={
-                    patternImages[patterns[currentPattern].id as PatternId]
-                  }
-                  className="w-full h-full"
-                />
-              </View>
-            </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar style="dark" />
 
-            {/* Pattern info */}
-            <View className="bg-black/70 p-4 mt-6 rounded-lg w-4/5">
-              <Text className="text-white text-xl font-bold">
-                {patterns[currentPattern].name}
-              </Text>
-              <Text className="text-white">
-                {patterns[currentPattern].description}
-              </Text>
-            </View>
+        {/* Header with back button and title */}
+        <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+          <TouchableOpacity
+            className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={20} color="#7b5af0" />
+          </TouchableOpacity>
 
-            {/* Controls */}
-            <View className="flex-row justify-center items-center mt-8">
-              <TouchableOpacity
-                className="bg-amber-700 w-16 h-16 rounded-full items-center justify-center mr-4"
-                onPress={() => rotatePattern("left")}
-              >
-                <Text className="text-white text-3xl">↺</Text>
-              </TouchableOpacity>
+          <Text variant="bold" className="text-xl text-indigo-800">
+            Buganda Textiles
+          </Text>
 
-              <TouchableOpacity
-                className="bg-green-700 w-20 h-20 rounded-full items-center justify-center"
-                onPress={checkMatch}
-              >
-                <Text className="text-white font-bold">CHECK</Text>
-              </TouchableOpacity>
+          <View style={{ width: 40 }} />
+        </View>
 
-              <TouchableOpacity
-                className="bg-amber-700 w-16 h-16 rounded-full items-center justify-center ml-4"
-                onPress={() => rotatePattern("right")}
-              >
-                <Text className="text-white text-3xl">↻</Text>
-              </TouchableOpacity>
-            </View>
+        <ScrollView className="flex-1 p-4">
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <Text className="text-base mb-4 text-slate-700">
+              Discover the beautiful textiles and fabric arts of the Buganda
+              Kingdom. Tap for more details
+            </Text>
 
-            {/* Gyro control */}
-            <TouchableOpacity
-              className={`mt-4 p-2 rounded-lg ${
-                gyroEnabled ? "bg-blue-600" : "bg-gray-600"
-              }`}
-              onPress={toggleGyro}
+            {/* Horizontal scrolling textiles */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 16 }}
+              className="flex-row mb-6"
             >
-              <Text className="text-white">
-                {gyroEnabled ? "Disable Gyro Control" : "Enable Gyro Control"}
-              </Text>
-            </TouchableOpacity>
+              {textiles.map((textile) => (
+                <TextileCard key={textile.id} item={textile} />
+              ))}
+            </ScrollView>
 
-            {/* Score */}
-            <View className="absolute top-20 right-4 bg-black/70 px-4 py-2 rounded-lg">
-              <Text className="text-white text-lg">Score: {score}</Text>
+            {/* Featured textiles section */}
+            <Text variant="bold" className="text-lg text-indigo-800 mt-6 mb-3">
+              Featured Textile Art
+            </Text>
+
+            <View className="mb-3">
+              {textiles.slice(0, 2).map((textile) => (
+                <TouchableOpacity
+                  key={`featured-${textile.id}`}
+                  onPress={() => setSelectedTextile(textile)}
+                  activeOpacity={0.7}
+                  className="flex-row bg-white rounded-xl overflow-hidden shadow-sm border border-indigo-100 mb-4"
+                >
+                  <Image
+                    source={textile.closeupImage}
+                    className="w-28 h-28"
+                    resizeMode="cover"
+                  />
+                  <View className="flex-1 p-3">
+                    <Text variant="bold" className="text-base text-indigo-800">
+                      {textile.name}
+                    </Text>
+                    <Text className="text-slate-700 text-sm" numberOfLines={2}>
+                      {textile.description.substring(0, 80)}...
+                    </Text>
+
+                    {/* <TouchableOpacity
+                      className="self-start mt-1 p-1 rounded-full bg-indigo-100"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        playSound(textile.audio);
+                      }}
+                    >
+                      <MaterialIcons
+                        name="volume-up"
+                        size={18}
+                        color="#7b5af0"
+                      />
+                    </TouchableOpacity> */}
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
-          </>
+          </Animated.View>
+        </ScrollView>
+
+        {/* Textile Detail Modal */}
+        {selectedTextile && (
+          <View className="absolute inset-0 bg-black/50 justify-center items-center p-4">
+            <View
+              className="relative bg-white rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200"
+              style={{ maxHeight: "90%" }}
+            >
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 16 }}
+              >
+                <Image
+                  source={selectedTextile.closeupImage}
+                  className="w-full h-48"
+                  resizeMode="cover"
+                />
+
+                <View className="px-5 pt-4">
+                  <Text
+                    variant="bold"
+                    className="text-xl text-primary-700 mb-2 text-center"
+                  >
+                    {selectedTextile.name}
+                  </Text>
+
+                  {/* Description in a styled container */}
+                  <View className="bg-primary-50 w-full rounded-xl p-4 mb-4">
+                    <Text className="text-base text-primary-700 leading-relaxed">
+                      {selectedTextile.description}
+                    </Text>
+                  </View>
+
+                  <View className="bg-yellow-50 w-full rounded-xl p-4 mb-3 border border-yellow-100">
+                    <Text variant="bold" className="text-primary-700 mb-1">
+                      About the Texture:
+                    </Text>
+                    <Text className="text-primary-700 leading-relaxed">
+                      This closeup image shows the detailed texture and
+                      craftsmanship of the {selectedTextile.name.toLowerCase()},
+                      highlighting the intricate patterns and traditional
+                      techniques used in its creation.
+                    </Text>
+                  </View>
+                </View>
+                <View className="p-3 pt-0 flex-row justify-center items-center space-x-4">
+                  {/* Sound button */}
+                  <TouchableOpacity
+                    className="bg-yellow-100 p-2.5 mr-3 rounded-full shadow-sm border-2 border-yellow-200 flex-row items-center"
+                    onPress={() => playSound(selectedTextile.audio)}
+                  >
+                    <MaterialIcons name="volume-up" size={20} color="#7b5af0" />
+                    <Text variant="medium" className="text-primary-600 ml-1.5">
+                      Play Sound
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Close button */}
+                  <TouchableOpacity
+                    className="bg-primary-500 py-2.5 px-6 rounded-full shadow-sm border-2 border-primary-400"
+                    onPress={() => setSelectedTextile(null)}
+                    activeOpacity={0.8}
+                  >
+                    <Text variant="bold" className="text-white">
+                      Close
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
         )}
-      </View>
-    </Base3DScreen>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
-};
+}

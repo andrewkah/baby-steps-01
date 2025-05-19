@@ -13,6 +13,8 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Text } from "@/components/StyledText";
+import { useChild } from "@/context/ChildContext";  // Add this import
+import { saveActivity } from "@/lib/utils";  // Add this import
 
 // Define card interface
 interface Card {
@@ -80,6 +82,7 @@ const cardGradients: string[][] = [
 
 const BugandaMatchingGame: React.FC = () => {
   const router = useRouter();
+  const { activeChild } = useChild();  // Add this line to get active child
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedCards, setFlippedCards] = useState<Card[]>([]);
   const [matchedCount, setMatchedCount] = useState(0);
@@ -99,6 +102,9 @@ const BugandaMatchingGame: React.FC = () => {
 
   // Animation references
   const bounceAnim = useRef(new Animated.Value(1)).current;
+  
+  // Add game start time reference for duration tracking
+  const gameStartTime = useRef(Date.now());
 
   // Initialize game
   useEffect(() => {
@@ -117,7 +123,20 @@ const BugandaMatchingGame: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Reset start time whenever game initializes
+    gameStartTime.current = Date.now();
   }, []);
+
+  // Shuffle function for cards
+  const shuffleCards = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
 
   const initGame = () => {
     // Create pairs of cards
@@ -140,15 +159,45 @@ const BugandaMatchingGame: React.FC = () => {
     setMoves(0);
     setGameOver(false);
     setInfoModal({ show: false, info: "", value: "", symbol: "" });
+    
+    // Reset start time when restarting game
+    gameStartTime.current = Date.now();
   };
 
-  const shuffleCards = (cards: Card[]): Card[] => {
-    const shuffled = [...cards];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
+  // Track activity when a match is found
+  const trackMatchActivity = async (matchedCard: Card) => {
+    if (!activeChild) return;
+    
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "cultural",
+      activity_name: "Matched Cultural Cards",
+      score: `${matchedCount+1}/${bugandaItems.length}`,
+      completed_at: new Date().toISOString(),
+      details: `Found a match: ${matchedCard.value} - ${matchedCard.info.substring(0, 30)}...`
+    });
+  };
+
+  // Track activity when game completes
+  const trackGameCompletion = async () => {
+    if (!activeChild) return;
+    
+    // Calculate efficiency - lower moves is better
+    const perfectMoves = bugandaItems.length; // Perfect score would be one move per match
+    const efficiency = Math.max(0, 100 - Math.floor(((moves - perfectMoves) / perfectMoves) * 50));
+    
+    // Calculate duration in seconds
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000);
+    
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "cultural",
+      activity_name: "Completed Matching Game",
+      score: `${efficiency}%`,
+      duration: duration,
+      completed_at: new Date().toISOString(),
+      details: `Completed Buganda Cultural Cards matching game in ${moves} moves and ${duration} seconds`
+    });
   };
 
   const handleCardPress = async (card: Card) => {
@@ -192,6 +241,9 @@ const BugandaMatchingGame: React.FC = () => {
           setCards(matchedCards);
           setFlippedCards([]);
           setMatchedCount((prevCount) => prevCount + 1);
+          
+          // Track match activity
+          await trackMatchActivity(firstCard);
 
           // Play match sound
           const matchSound = new Audio.Sound();
@@ -226,7 +278,9 @@ const BugandaMatchingGame: React.FC = () => {
 
           // Check if all pairs are matched
           if (matchedCount + 1 === bugandaItems.length) {
-            setTimeout(() => {
+            setTimeout(async () => {
+              // Track game completion before showing game over screen
+              await trackGameCompletion();
               setGameOver(true);
             }, 1000);
           }

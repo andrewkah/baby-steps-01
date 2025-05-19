@@ -273,7 +273,7 @@ export default function Auth() {
           </Animated.View>
 
           {/* Developer Options - Hidden for Production */}
-          <View className="mt-8 mx-6">
+          {/* <View className="mt-8 mx-6">
             <TouchableOpacity
               className="bg-muted-200 py-3 rounded-xl items-center"
               onPress={() => resetOnboardingStatus()}
@@ -283,7 +283,7 @@ export default function Auth() {
                 Reset Onboarding
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
           <View className="mt-8 mx-6">
             <TouchableOpacity
               className="bg-muted-200 py-3 rounded-xl items-center"

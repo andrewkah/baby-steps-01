@@ -15,6 +15,8 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { Ionicons } from "@expo/vector-icons";
 import { gameLevels } from "./utils/wordgamewords"; // Import game levels
 import { Text } from "@/components/StyledText";
+import { useChild } from "@/context/ChildContext"; // Import useChild context
+import { saveActivity } from "@/lib/utils"; // Import saveActivity function
 
 // Get screen dimensions
 const { width, height } = Dimensions.get("window");
@@ -39,7 +41,29 @@ type GameLevel = {
   firstLetter: string;
 };
 
+// Add this helper function near the top of your component
+const getImageSource = (imageName: string | undefined) => {
+  // For now, all images will use coin.png as requested
+  if (!imageName) return require("@/assets/images/coin.png");
+  
+  switch (imageName) {
+    case 'wildlife.jpg':
+      return require('@/assets/images/wildlife.jpg');
+    case 'coin.jpg':
+      return require('@/assets/images/coin.png');
+    // Add cases for other images
+    default:
+      return require('@/assets/images/coin.png');
+  }
+};
+
 const WordGame: React.FC = () => {
+  // Add child context
+  const { activeChild } = useChild();
+  
+  // Add state to track level start time
+  const levelStartTime = useRef<number>(Date.now());
+  
   // State variables
   const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(0);
   const [currentWord, setCurrentWord] = useState<string>("");
@@ -55,6 +79,9 @@ const WordGame: React.FC = () => {
   );
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [isGameCompleted, setIsGameCompleted] = useState<boolean>(false);
+  const [showLevelIntroModal, setShowLevelIntroModal] = useState<boolean>(false);
+  const [showHintModal, setShowHintModal] = useState<boolean>(false);
+  const [showSubHint, setShowSubHint] = useState<boolean>(false);
 
   // Animation values
   const letterScale = useState(new Animated.Value(1))[0];
@@ -104,12 +131,16 @@ const WordGame: React.FC = () => {
     return allLetters.sort(() => Math.random() - 0.5);
   };
 
-  // Load current level
+  // Modified loadLevel to track level start time
   const loadLevel = (levelIndex: number) => {
     if (levelIndex >= gameLevels.length) {
       setIsGameCompleted(true);
+      trackGameCompletion(); // Track full game completion
       return;
     }
+
+    // Reset the level start time when loading a new level
+    levelStartTime.current = Date.now();
 
     const level = gameLevels[levelIndex];
     const word = level.word;
@@ -125,11 +156,58 @@ const WordGame: React.FC = () => {
     setDisplayWord(initialDisplay);
     setCurrentQuestion(level.question);
     setLetters(generateLetterChoices(word));
-    setSelectedLetters([firstLetter]); // First letter is already selected
+    setSelectedLetters([]);
 
     // Reset refs
     letterRefs.current = {};
     wordSlotRefs.current = {};
+
+    // Show the level intro modal
+    setShowLevelIntroModal(true);
+  };
+
+  // Function to track level completion
+  const trackLevelCompletion = async () => {
+    if (!activeChild) return;
+
+    const duration = Date.now() - levelStartTime.current; // Duration in milliseconds
+
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "words", // Using 'words' activity type
+      activity_name: `Word Game Level ${currentLevelIndex + 1}`,
+      score: "100%", // They completed the word successfully
+      duration: duration,
+      completed_at: new Date().toISOString(),
+      details: `Completed word: "${currentWord}" - ${currentQuestion}`,
+      level: currentLevelIndex + 1
+    });
+  };
+
+  // Function to track game completion
+  const trackGameCompletion = async () => {
+    if (!activeChild) return;
+
+    await saveActivity({
+      child_id: activeChild.id,
+      activity_type: "words",
+      activity_name: "Word Game Completed",
+      score: `${currentLevelIndex + 1}/${gameLevels.length}`,
+      completed_at: new Date().toISOString(),
+      details: `Completed all ${gameLevels.length} words in the Word Game`
+    });
+  };
+
+  // Modified goToNextLevel to track level completion
+  const goToNextLevel = async () => {
+    // Track completion of current level
+    await trackLevelCompletion();
+    
+    const nextLevelIndex = currentLevelIndex + 1;
+    setCurrentLevelIndex(nextLevelIndex);
+    setShowSuccessModal(false);
+    setSelectedLetters([]);
+    loadLevel(nextLevelIndex);
   };
 
   // Updated useEffect to lock screen orientation and load the first level
@@ -180,6 +258,9 @@ const WordGame: React.FC = () => {
       }
     }
 
+    // Initialize level start time
+    levelStartTime.current = Date.now();
+
     setLandscapeOrientation();
     loadSounds();
     loadLevel(0);
@@ -192,15 +273,6 @@ const WordGame: React.FC = () => {
   }, []);
 
   // Move to next level
-  const goToNextLevel = () => {
-    const nextLevelIndex = currentLevelIndex + 1;
-    setCurrentLevelIndex(nextLevelIndex);
-    setShowSuccessModal(false);
-    setSelectedLetters([]);
-    loadLevel(nextLevelIndex);
-  };
-
-  // Animation logic
   const animateLetterToWord = (
     letter: string,
     letterIndex: number,
@@ -318,23 +390,41 @@ const WordGame: React.FC = () => {
       }),
     ]).start();
 
-    if (currentWord.includes(letter) && !selectedLetters.includes(letter)) {
-      if (correctSound) {
-        correctSound.replayAsync();
-      }
-
-      const newSelectedLetters = [...selectedLetters, letter];
-      setSelectedLetters(newSelectedLetters);
-
-      const positions = [];
+    if (currentWord.includes(letter)) {
+      // Count remaining occurrences of this letter that still need to be filled
+      let remainingOccurrences = 0;
       for (let i = 0; i < currentWord.length; i++) {
         if (currentWord[i] === letter && displayWord[i] === "_") {
-          positions.push(i);
+          remainingOccurrences++;
         }
       }
 
-      if (positions.length > 0) {
-        animateLetterToWord(letter, letterIndex, positions[0]);
+      if (remainingOccurrences > 0) {
+        if (correctSound) {
+          correctSound.replayAsync();
+        }
+
+        // Only add to selectedLetters if all occurrences are now filled
+        if (remainingOccurrences === 1) {
+          const newSelectedLetters = [...selectedLetters, letter];
+          setSelectedLetters(newSelectedLetters);
+        }
+
+        const positions = [];
+        for (let i = 0; i < currentWord.length; i++) {
+          if (currentWord[i] === letter && displayWord[i] === "_") {
+            positions.push(i);
+            break; // Just get the first unfilled position
+          }
+        }
+
+        if (positions.length > 0) {
+          animateLetterToWord(letter, letterIndex, positions[0]);
+        }
+      } else {
+        if (wrongSound) {
+          wrongSound.replayAsync();
+        }
       }
     } else {
       if (wrongSound) {
@@ -386,16 +476,6 @@ const WordGame: React.FC = () => {
         </View>
       </View>
 
-      {/* Coin display - moved to separate row */}
-      <View className="items-end px-4 py-2">
-        <View className="bg-white p-1 rounded-full shadow-md border-2 border-accent-100">
-          <Image
-            source={require("@/assets/images/wildlife.jpg")}
-            className="w-10 h-10 rounded-full"
-            resizeMode="cover"
-          />
-        </View>
-      </View>
 
       {/* Main content area */}
       <View className="flex-1 flex-row justify-between items-center px-5">
@@ -403,7 +483,7 @@ const WordGame: React.FC = () => {
         <View className="w-[15%] items-center justify-center">
           <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-lg border-4 border-secondary-200">
             <Image
-              source={require("@/assets/images/textile.jpg")}
+              source={getImageSource(gameLevels[currentLevelIndex].image)}
               className="w-20 h-20 rounded-full"
               resizeMode="cover"
             />
@@ -444,32 +524,50 @@ const WordGame: React.FC = () => {
 
           {/* Letter choices */}
           <View className="flex-row flex-wrap justify-center w-full pb-6">
-            {letters.map((letter, index) => (
-              <TouchableOpacity
-                key={index}
-                ref={(ref) => (letterRefs.current[index] = ref)}
-                className={`w-16 h-16 rounded-full m-2 justify-center items-center shadow-lg border-2 ${
-                  selectedLetters.includes(letter)
-                    ? "bg-gray-300 border-gray-400 opacity-70"
-                    : "bg-secondary-500 border-secondary-300"
-                }`}
-                onPress={() => handleLetterPress(letter, index)}
-                disabled={selectedLetters.includes(letter)}
-                activeOpacity={0.8}
-              >
-                <Text variant="bold" className="text-white text-2xl">
-                  {letter}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {letters.map((letter, index) => {
+              // Check if this letter still has any unfilled positions in the word
+              const hasUnfilledPositions = currentWord
+                .split("")
+                .some((char, i) => char === letter && displayWord[i] === "_");
+
+              // A letter is disabled only if it doesn't appear in the word OR has no unfilled positions left
+              const isDisabled =
+                !currentWord.includes(letter) || !hasUnfilledPositions;
+
+              // A letter is greyed out if it's disabled
+              const isGreyedOut = isDisabled && currentWord.includes(letter);
+
+              return (
+                <TouchableOpacity
+                  key={index}
+                  ref={(ref) => (letterRefs.current[index] = ref)}
+                  className={`w-16 h-16 rounded-full m-2 justify-center items-center shadow-lg border-2 ${
+                    isGreyedOut
+                      ? "bg-gray-300 border-gray-400 opacity-70"
+                      : "bg-secondary-500 border-secondary-300"
+                  }`}
+                  onPress={() => handleLetterPress(letter, index)}
+                  disabled={isDisabled}
+                  activeOpacity={0.8}
+                >
+                  <Text variant="bold" className="text-white text-2xl">
+                    {letter}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
         {/* Right hint button */}
         <View className="w-[15%] items-center justify-center">
-          <TouchableOpacity className="w-20 h-20 bg-white rounded-full justify-center items-center shadow-lg border-4 border-accent-200">
+          <TouchableOpacity 
+            className="w-20 h-20 bg-white rounded-full justify-center items-center shadow-lg border-4 border-accent-200"
+            onPress={() => setShowHintModal(true)}
+            activeOpacity={0.8}
+          >
             <Image
-              source={require("@/assets/images/river.jpg")}
+              source={require("@/assets/images/info.png")}
               className="w-16 h-16 rounded-full"
               resizeMode="cover"
             />
@@ -632,9 +730,11 @@ const WordGame: React.FC = () => {
               {/* Button with improved styling */}
               <TouchableOpacity
                 className="bg-primary-500 py-3 px-8 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
-                onPress={() => {
+                onPress={async () => {
                   setIsGameCompleted(false);
                   setCurrentLevelIndex(0);
+                  // Reset level start time
+                  levelStartTime.current = Date.now();
                   loadLevel(0);
                 }}
                 activeOpacity={0.7}
@@ -646,6 +746,167 @@ const WordGame: React.FC = () => {
             </View>
           </View>
         </ScrollView>
+      </Modal>
+
+      {/* Level Intro Modal */}
+      <Modal transparent={true} visible={showLevelIntroModal} animationType="fade">
+        <View className="flex-1 justify-center items-center bg-black/50 px-4">
+          <View className="bg-white rounded-2xl p-3 w-[80%] max-w-md items-center shadow-xl border-4 border-primary-100">
+            {/* Close button - repositioned to be more visible */}
+            <TouchableOpacity
+              className="absolute -top-3 -right-3 w-10 h-10 bg-white rounded-full items-center justify-center shadow-lg border-2 border-primary-300 z-10"
+              onPress={() => setShowLevelIntroModal(false)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={20} color="#7b5af0" />
+            </TouchableOpacity>
+            
+            {/* Decorative elements - made smaller and moved closer to edges */}
+            <View className="absolute top-2 left-2">
+              <View className="w-5 h-5 rounded-full bg-primary-200 opacity-60" />
+            </View>
+            <View className="absolute bottom-2 right-2">
+              <View className="w-3 h-3 rounded-full bg-secondary-200 opacity-50" />
+            </View>
+
+            {/* Level title - reduced margin */}
+            <Text
+              variant="bold"
+              className="text-xl text-primary-600 mb-1"
+            >
+              Level {currentLevelIndex + 1}
+            </Text>
+
+            {/* Image - slightly smaller */}
+            <View className="w-1/2 aspect-square bg-white rounded-xl items-center justify-center shadow-lg border-2 border-secondary-200 mb-2 overflow-hidden">
+              <Image
+                source={getImageSource(gameLevels[currentLevelIndex].image)}
+                className="w-full h-full"
+                resizeMode="cover"
+              />
+            </View>
+
+            {/* Word hint - more compact */}
+            <View className="bg-primary-50/80 w-full rounded-xl px-2 py-1.5 mb-2 border-2 border-primary-100">
+              <Text
+                variant="medium"
+                className="text-xs text-primary-700 text-center"
+              >
+                Find the word:
+              </Text>
+              <Text
+                variant="bold" 
+                className="text-base text-primary-800 text-center"
+              >
+                {currentQuestion}
+              </Text>
+            </View>
+
+            {/* Button to start the level - more compact */}
+            <TouchableOpacity
+              className="bg-primary-500 py-1.5 px-6 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
+              onPress={() => setShowLevelIntroModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text variant="bold" className="text-white text-sm">
+                Start Level
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Hint Modal */}
+      <Modal transparent={true} visible={showHintModal} animationType="fade">
+        <View className="flex-1 justify-center items-center bg-black/50 px-4">
+          <View className="bg-white rounded-2xl p-4 w-[80%] max-w-md items-center shadow-xl border-4 border-primary-100">
+            {/* Close button */}
+            <TouchableOpacity
+              className="absolute -top-3 -right-3 w-10 h-10 bg-white rounded-full items-center justify-center shadow-lg border-2 border-primary-300 z-10"
+              onPress={() => {
+                setShowHintModal(false);
+                setShowSubHint(false); // Reset sub-hint visibility when closing modal
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={20} color="#7b5af0" />
+            </TouchableOpacity>
+            
+            {/* Decorative elements */}
+            <View className="absolute top-2 left-2">
+              <View className="w-5 h-5 rounded-full bg-accent-200 opacity-60" />
+            </View>
+            <View className="absolute bottom-2 right-2">
+              <View className="w-3 h-3 rounded-full bg-secondary-200 opacity-50" />
+            </View>
+
+            {/* Title */}
+            <View className="flex-row items-center mb-3">
+              <Ionicons name="bulb-outline" size={22} color="#7b5af0" style={{ marginRight: 6 }} />
+              <Text
+                variant="bold"
+                className="text-xl text-primary-600"
+              >
+                Hint
+              </Text>
+            </View>
+
+            {/* Main Hint */}
+            <View className="bg-primary-50/80 w-full rounded-xl px-3 py-2.5 mb-3 border-2 border-primary-100">
+              <Text
+                variant="medium"
+                className="text-base text-primary-700 text-center"
+              >
+                {gameLevels[currentLevelIndex].hint}
+              </Text>
+            </View>
+
+            {/* Show Sub-Hint Button - only show if sub-hint is hidden */}
+            {!showSubHint && (
+              <TouchableOpacity
+                className="bg-secondary-500 py-2 px-5 rounded-full shadow-md border-2 border-secondary-400 mb-4"
+                onPress={() => setShowSubHint(true)}
+                activeOpacity={0.7}
+              >
+                <Text variant="bold" className="text-white text-sm">
+                  Need More Help?
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Sub Hint - only show if requested */}
+            {showSubHint && (
+              <View className="bg-secondary-50/80 w-full rounded-xl px-3 py-2.5 mb-4 border-2 border-secondary-100">
+                <Text
+                  variant="bold" 
+                  className="text-sm text-secondary-700 text-center mb-1"
+                >
+                  Additional Hint:
+                </Text>
+                <Text
+                  variant="medium"
+                  className="text-sm text-secondary-700 text-center"
+                >
+                  {gameLevels[currentLevelIndex].subHint}
+                </Text>
+              </View>
+            )}
+
+            {/* Got it button */}
+            <TouchableOpacity
+              className="bg-primary-500 py-2 px-7 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
+              onPress={() => {
+                setShowHintModal(false);
+                setShowSubHint(false); // Reset sub-hint visibility
+              }}
+              activeOpacity={0.7}
+            >
+              <Text variant="bold" className="text-white text-sm">
+                Got it!
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );
