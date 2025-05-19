@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+"use client"
+
+import React, { useEffect, useState } from "react"
 import {
   View,
   TouchableOpacity,
@@ -8,27 +10,27 @@ import {
   BackHandler,
   Animated,
   Dimensions,
-} from "react-native";
-import { Audio, AVPlaybackSource } from "expo-av";
-import { MaterialIcons } from "@expo/vector-icons";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { Text } from "@/components/StyledText";
-import { LinearGradient } from "expo-linear-gradient";
+} from "react-native"
+import { Audio, type AVPlaybackSource } from "expo-av"
+import { MaterialIcons } from "@expo/vector-icons"
+import { Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
+import { StatusBar } from "expo-status-bar"
+import { TranslatedText } from "@/components/translated-text"
+import { LinearGradient } from "expo-linear-gradient"
 
 export default function ArtifactsScreen() {
   const [selectedArtifact, setSelectedArtifact] = useState<{
-    id: number;
-    name: string;
-    image: any;
-    description: string;
-    audio: AVPlaybackSource;
-  } | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const router = useRouter();
-  const { width } = Dimensions.get("window");
-  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+    id: number
+    name: string
+    image: any
+    description: string
+    audio: AVPlaybackSource
+  } | null>(null)
+  const [sound, setSound] = useState<Audio.Sound | null>(null)
+  const router = useRouter()
+  const { width } = Dimensions.get("window")
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0]
 
   useEffect(() => {
     // Fade in animation when screen loads
@@ -36,26 +38,23 @@ export default function ArtifactsScreen() {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
-    }).start();
+    }).start()
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        if (selectedArtifact) {
-          // Close modal if open
-          setSelectedArtifact(null);
-          if (sound) {
-            sound.stopAsync();
-          }
-          return true;
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (selectedArtifact) {
+        // Close modal if open
+        setSelectedArtifact(null)
+        if (sound) {
+          sound.stopAsync()
         }
-        router.back();
-        return true;
+        return true
       }
-    );
+      router.back()
+      return true
+    })
 
-    return () => backHandler.remove();
-  }, [router, selectedArtifact, sound]);
+    return () => backHandler.remove()
+  }, [router, selectedArtifact, sound])
 
   const artifacts = [
     {
@@ -86,8 +85,7 @@ export default function ArtifactsScreen() {
       id: 4,
       name: "Drinking Vessels",
       image: require("@/assets/images/vessels.png"),
-      description:
-        "Beautifully crafted cups and containers for traditional drinks made from gourds, clay, or wood.",
+      description: "Beautifully crafted cups and containers for traditional drinks made from gourds, clay, or wood.",
       audio: require("@/assets/sounds/vessels.mp3"),
     },
     {
@@ -98,43 +96,43 @@ export default function ArtifactsScreen() {
         "Special items used by the Kabaka including crowns, staffs, and emblems that represent royal authority.",
       audio: require("@/assets/sounds/regalia.mp3"),
     },
-  ];
+  ]
 
   async function playSound(audioFile: AVPlaybackSource) {
     // Stop any currently playing sound
     if (sound) {
-      await sound.unloadAsync();
+      await sound.unloadAsync()
     }
 
-    const { sound: newSound } = await Audio.Sound.createAsync(audioFile);
-    setSound(newSound);
-    await newSound.playAsync();
+    const { sound: newSound } = await Audio.Sound.createAsync(audioFile)
+    setSound(newSound)
+    await newSound.playAsync()
   }
 
   React.useEffect(() => {
     return sound
       ? () => {
-          sound.unloadAsync();
+          sound.unloadAsync()
         }
-      : undefined;
-  }, [sound]);
+      : undefined
+  }, [sound])
 
   const handleArtifactPress = (artifact: {
-    id: number;
-    name: string;
-    image: any;
-    description: string;
-    audio: AVPlaybackSource;
+    id: number
+    name: string
+    image: any
+    description: string
+    audio: AVPlaybackSource
   }) => {
-    setSelectedArtifact(artifact);
-  };
+    setSelectedArtifact(artifact)
+  }
 
   const closeModal = () => {
-    setSelectedArtifact(null);
+    setSelectedArtifact(null)
     if (sound) {
-      sound.stopAsync();
+      sound.stopAsync()
     }
-  };
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
@@ -149,48 +147,36 @@ export default function ArtifactsScreen() {
           <Ionicons name="arrow-back" size={20} color="#7b5af0" />
         </TouchableOpacity>
 
-        <Text variant="bold" className="text-xl text-indigo-800">
+        <TranslatedText variant="bold" className="text-xl text-indigo-800">
           Buganda Artifacts
-        </Text>
+        </TranslatedText>
 
         <View style={{ width: 40 }} />
       </View>
 
-      <LinearGradient
-        colors={["#6366f1", "#7b5af0"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        className="py-4 px-6"
-      >
-        <Text className="text-white text-center">
-          Discover treasures from the Buganda Kingdom
-        </Text>
+      <LinearGradient colors={["#6366f1", "#7b5af0"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="py-4 px-6">
+        <TranslatedText className="text-white text-center">Discover treasures from the Buganda Kingdom</TranslatedText>
       </LinearGradient>
 
       <ScrollView className="flex-1 p-4">
         <Animated.View style={{ opacity: fadeAnim }}>
-          <Text className="text-base mb-4 text-slate-700">
-            Tap on any artifact to learn more about its history and importance
-            in Buganda culture!
-          </Text>
+          <TranslatedText className="text-base mb-4 text-slate-700">
+            Tap on any artifact to learn more about its history and importance in Buganda culture!
+          </TranslatedText>
 
           <View className="flex-row flex-wrap justify-center">
             {artifacts.map((artifact) => (
               <TouchableOpacity
                 key={artifact.id}
-                className="w-40 h-48 mx-2 bg-white rounded-xl shadow-sm  border-slate-200 overflow-hidden"
+                className="w-40 h-48 mx-2 bg-white rounded-xl shadow-sm border-slate-200 overflow-hidden"
                 onPress={() => handleArtifactPress(artifact)}
                 activeOpacity={0.7}
               >
-                <Image
-                  source={artifact.image}
-                  className="w-full h-28"
-                  resizeMode="cover"
-                />
+                <Image source={artifact.image} className="w-full h-28" resizeMode="cover" />
                 <View className="p-2 bg-white flex-1 justify-center">
-                  <Text variant="bold" className="text-slate-800 text-center">
+                  <TranslatedText variant="bold" className="text-slate-800 text-center">
                     {artifact.name}
-                  </Text>
+                  </TranslatedText>
                 </View>
               </TouchableOpacity>
             ))}
@@ -204,26 +190,19 @@ export default function ArtifactsScreen() {
           <ScrollView className="relative bg-white w-4/5 max-w-md rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200">
             {/* Main image display */}
             <View className="w-full pt-12 pb-4 bg-indigo-50">
-              <Image
-                source={selectedArtifact.image}
-                className="w-full h-48"
-                resizeMode="contain"
-              />
+              <Image source={selectedArtifact.image} className="w-full h-48" resizeMode="contain" />
             </View>
 
             <View className="p-6">
-              <Text
-                variant="bold"
-                className="text-2xl text-primary-700 mb-4 text-center"
-              >
+              <TranslatedText variant="bold" className="text-2xl text-primary-700 mb-4 text-center">
                 {selectedArtifact.name}
-              </Text>
+              </TranslatedText>
 
               {/* Description in a styled container */}
               <View className="bg-primary-50 w-full rounded-xl p-4 mb-5">
-                <Text className="text-lg text-primary-700 text-center leading-relaxed">
+                <TranslatedText className="text-lg text-primary-700 text-center leading-relaxed">
                   {selectedArtifact.description}
-                </Text>
+                </TranslatedText>
               </View>
 
               <View className="flex-row justify-center items-center space-x-4">
@@ -241,9 +220,9 @@ export default function ArtifactsScreen() {
                   onPress={closeModal}
                   activeOpacity={0.8}
                 >
-                  <Text variant="bold" className="text-white text-lg">
+                  <TranslatedText variant="bold" className="text-white text-lg">
                     Close
-                  </Text>
+                  </TranslatedText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -251,5 +230,5 @@ export default function ArtifactsScreen() {
         </View>
       )}
     </SafeAreaView>
-  );
+  )
 }

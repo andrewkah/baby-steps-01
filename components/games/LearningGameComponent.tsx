@@ -116,12 +116,6 @@ const LugandaLearningGame: React.FC = () => {
   // Load game progress on mount
   useEffect(() => {
     const init = async () => {
-<<<<<<< HEAD
-      await loadGameProgress()
-      await loadSounds()
-      setIsLoading(false)
-    }
-=======
       if (activeChild) {
         setIsLoading(true);
         const progress = await loadProgress(activeChild.id);
@@ -134,24 +128,15 @@ const LugandaLearningGame: React.FC = () => {
         setIsLoading(false);
       }
     };
->>>>>>> main
 
     init()
 
     return () => {
-<<<<<<< HEAD
-      if (sound) sound.unloadAsync()
-      if (correctSound) correctSound.unloadAsync()
-      if (wrongSound) wrongSound.unloadAsync()
-    }
-  }, [])
-=======
       if (sound) sound.unloadAsync();
       if (correctSound) correctSound.unloadAsync();
       if (wrongSound) wrongSound.unloadAsync();
     };
   }, [activeChild]);
->>>>>>> main
 
   // Setup when selecting a level
   useEffect(() => {
@@ -209,50 +194,6 @@ const LugandaLearningGame: React.FC = () => {
     }
   }, [shakingOption])
 
-<<<<<<< HEAD
-  // Load game progress from AsyncStorage
-  const loadGameProgress = async () => {
-    try {
-      if (!activeChild) return
-
-      const savedState = await AsyncStorage.getItem(`${LEARNING_GAME_STORAGE_KEY}_${activeChild.id}`)
-
-      if (savedState) {
-        const gameState: LearningGameState = JSON.parse(savedState)
-
-        setTotalScore(gameState.score)
-        setCompletedLevels(gameState.completedLevels)
-        setStages(gameState.stages)
-        setWordsLearned(gameState.wordsLearned)
-        setLevel(gameState.level)
-      }
-    } catch (error) {
-      console.error("Error loading game progress", error)
-    }
-  }
-
-  // Save game progress to AsyncStorage
-  const saveGameProgress = async () => {
-    try {
-      if (!activeChild) return
-
-      const gameState: LearningGameState = {
-        level,
-        wordsLearned,
-        score: totalScore,
-        lastPlayed: Date.now(),
-        completedLevels,
-        stages,
-      }
-
-      await AsyncStorage.setItem(`${LEARNING_GAME_STORAGE_KEY}_${activeChild.id}`, JSON.stringify(gameState))
-    } catch (error) {
-      console.error("Error saving game progress:", error)
-    }
-  }
-
-=======
->>>>>>> main
   const loadSounds = async (): Promise<void> => {
     try {
       const correctSoundObject = new Audio.Sound()
@@ -442,59 +383,6 @@ const LugandaLearningGame: React.FC = () => {
     gameStartTime.current = Date.now()
   }
 
-<<<<<<< HEAD
-  const completeLevelAndUpdateProgress = () => {
-    const newTotalScore = totalScore + levelScore
-    setTotalScore(newTotalScore)
-
-    // Update words learned count
-    const newWordsLearned = wordsLearned + currentWords.length
-    setWordsLearned(newWordsLearned)
-
-    // Update level if needed (every 10 words)
-    if (newWordsLearned >= level * 10) {
-      setLevel((prevLevel) => prevLevel + 1)
-    }
-
-    // Add this level to completed levels if not already there
-    if (!completedLevels.includes(selectedLevel?.id || 0)) {
-      const newCompletedLevels = [...completedLevels, selectedLevel?.id || 0]
-      setCompletedLevels(newCompletedLevels)
-
-      // Check if all levels in stage are completed
-      if (selectedStage && isStageCompleted(selectedStage.id, newCompletedLevels)) {
-        // Unlock next stage if available and total score meets requirement
-        const nextStage = stages.find((s) => s.id === selectedStage.id + 1)
-        if (nextStage && newTotalScore >= nextStage.requiredScore) {
-          const updatedStages = unlockNextStage(selectedStage.id, stages)
-          setStages(updatedStages)
-
-          // Track stage completion
-          trackActivity(true)
-        } else {
-          // Just track level completion if stage is complete but no new stage unlocked
-          trackActivity(false)
-        }
-      } else if (selectedStage && selectedLevel) {
-        // Unlock next level in current stage
-        const updatedStages = unlockNextLevel(selectedStage.id, selectedLevel.id, stages)
-        setStages(updatedStages)
-
-        // Track regular level completion
-        trackActivity(false)
-      }
-    } else {
-      // Even if level was already completed, track the replay
-      trackActivity(false)
-    }
-
-    // Save progress
-    saveGameProgress()
-
-    // Show completion screen
-    setGameState("levelComplete")
-  }
-=======
   // REMOVE this function from your component, its logic will be integrated:
 // const saveGameProgress = async () => { ... };
 
@@ -609,7 +497,6 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
       activeChild.id
     );
   };
->>>>>>> main
 
   // STAGE SELECTION SCREEN
   const renderStageSelectScreen = () => {
