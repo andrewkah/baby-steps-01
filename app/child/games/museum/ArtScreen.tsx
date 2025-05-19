@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
-  Image,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
-  Modal,
+  Image,
   SafeAreaView,
   BackHandler,
+  Dimensions,
+  Modal,
+  Animated,
 } from "react-native";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { WebView } from "react-native-webview";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { Text } from "@/components/StyledText";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function ArtScreen() {
   const [selectedArtwork, setSelectedArtwork] = useState<{
@@ -25,14 +28,25 @@ export default function ArtScreen() {
   } | null>(null);
   const [contrastLevel, setContrastLevel] = useState("normal");
   const [videoModalVisible, setVideoModalVisible] = useState(false);
-  const windowWidth = Dimensions.get("window").width;
   const router = useRouter();
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+
   useEffect(() => {
+    // Fade in animation when screen loads
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
+        if (videoModalVisible) {
+          setVideoModalVisible(false);
+          return true;
+        }
         if (selectedArtwork) {
-          // Close modal if open
           setSelectedArtwork(null);
           return true;
         }
@@ -42,7 +56,7 @@ export default function ArtScreen() {
     );
 
     return () => backHandler.remove();
-  }, [router, selectedArtwork]);
+  }, [router, selectedArtwork, videoModalVisible]);
 
   const artworks = [
     {
@@ -105,11 +119,11 @@ export default function ArtScreen() {
   const getContrastStyle = () => {
     switch (contrastLevel) {
       case "high":
-        return "bg-gray-100 border-4 border-amber-800";
+        return "bg-white border-4 border-indigo-600";
       case "low":
-        return "bg-amber-50 border border-amber-200";
+        return "bg-slate-100 border border-indigo-200";
       default:
-        return "bg-white border-2 border-amber-300";
+        return "bg-white border-2 border-indigo-200";
     }
   };
 
@@ -120,147 +134,168 @@ export default function ArtScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-amber-50">
-      <TouchableOpacity
-        style={{
-          position: "absolute",
-          top: 10,
-          left: 10,
-          zIndex: 10,
-          backgroundColor: "rgba(255, 255, 255, 0.8)",
-          padding: 8,
-          borderRadius: 20,
-        }}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={24} color="#7b5af0" />
-      </TouchableOpacity>
-      <View className="py-4 px-6 bg-amber-800">
-        <Text className="text-2xl font-bold text-white text-center">
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <StatusBar style="dark" />
+
+      {/* Header with back button and title */}
+      <View className="flex-row justify-between items-center px-4 pt-6 pb-2">
+        <TouchableOpacity
+          className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={20} color="#7b5af0" />
+        </TouchableOpacity>
+
+        <Text variant="bold" className="text-xl text-indigo-800">
           Buganda Art Gallery
         </Text>
-        <Text className="text-white text-center">
-          Traditional & Contemporary Buganda Artistic Expressions
-        </Text>
-      </View>
 
-      <View className="flex-row justify-end px-4 py-2">
         <TouchableOpacity
-          className="flex-row items-center bg-amber-700 px-3 py-1 rounded-full"
+          className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
           onPress={toggleContrast}
         >
-          <MaterialIcons name="contrast" size={20} color="white" />
-          <Text className="text-white ml-1 font-medium">
-            {contrastLevel === "normal"
-              ? "Normal"
-              : contrastLevel === "high"
-              ? "High Contrast"
-              : "Low Contrast"}
-          </Text>
+          <MaterialIcons name="contrast" size={20} color="#7b5af0" />
         </TouchableOpacity>
       </View>
 
       <ScrollView className="flex-1 p-4">
-        <Text className="text-lg mb-4 text-amber-900">
-          Explore beautiful art from the Buganda Kingdom! Tap on any artwork to
-          learn more.
-        </Text>
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text className="text-base mb-4 text-slate-700">
+            Explore beautiful art from the Buganda Kingdom! Tap on any artwork
+            to learn more. (scroll to the right for more)
+          </Text>
 
-        <View className="flex-col justify-center">
-          {artworks.map((artwork) => (
-            <TouchableOpacity
-              key={artwork.id}
-              className={`mb-6 rounded-xl overflow-hidden shadow-lg ${getContrastStyle()}`}
-              onPress={() => setSelectedArtwork(artwork)}
-            >
-              <Image
-                source={artwork.image}
-                className="w-full h-48"
-                resizeMode="cover"
-              />
-              <View className="p-3">
-                <Text className="font-bold text-lg text-amber-900">
-                  {artwork.title}
-                </Text>
-                <Text className="text-amber-700">{artwork.artist}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+          {/* Replace the vertical layout with horizontal scrolling */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingRight: 16 }}
+            className="flex-row"
+          >
+            {artworks.map((artwork) => (
+              <TouchableOpacity
+                key={artwork.id}
+                className={`rounded-xl overflow-hidden shadow-sm mr-4 ${getContrastStyle()}`}
+                style={{ width: 250 }}
+                onPress={() => setSelectedArtwork(artwork)}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={artwork.image}
+                  className="w-full h-36"
+                  resizeMode="cover"
+                />
+                <View className="p-3">
+                  <Text variant="bold" className="text-lg text-indigo-800 mb-1">
+                    {artwork.title}
+                  </Text>
+                  <Text className="text-indigo-600">{artwork.artist}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Animated.View>
       </ScrollView>
 
       {/* Artwork Detail Modal */}
       {selectedArtwork && (
-        <View className="absolute inset-0 bg-black bg-opacity-80 justify-center items-center p-4">
-          <View className="bg-white w-full max-w-md rounded-xl overflow-hidden">
-            <ScrollView>
+        <View className="absolute inset-0 bg-black/50 justify-center items-center p-4">
+          <View
+            className="relative bg-white w-4/5 max-w-md rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200"
+            style={{ maxHeight: "90%" }}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
               <Image
                 source={selectedArtwork.image}
-                className="w-full h-56"
+                className="w-full h-48"
                 resizeMode="cover"
               />
 
-              <View className="p-4">
-                <Text className="text-xl font-bold text-amber-900">
+              <View className="px-5 pt-4">
+                <Text
+                  variant="bold"
+                  className="text-xl text-primary-700 mb-1 text-center"
+                >
                   {selectedArtwork.title}
                 </Text>
-                <Text className="text-amber-700 mb-2">
+                <Text className="text-primary-600 mb-3 text-center">
                   {selectedArtwork.artist}
                 </Text>
-                <Text className="text-base mb-4">
-                  {selectedArtwork.description}
-                </Text>
 
-                <TouchableOpacity
-                  className="bg-red-600 py-2 px-4 rounded-lg flex-row items-center justify-center mb-4"
-                  onPress={handleWatchVideo}
-                >
-                  <Ionicons name="logo-youtube" size={24} color="white" />
-                  <Text className="text-white font-bold ml-2">Watch Video</Text>
-                </TouchableOpacity>
-
-                <View className="flex-row justify-center">
-                  <TouchableOpacity
-                    className="bg-amber-600 py-2 px-6 rounded-full"
-                    onPress={() => setSelectedArtwork(null)}
-                  >
-                    <Text className="text-white font-bold">Close </Text>
-                  </TouchableOpacity>
+                {/* Description in a styled container */}
+                <View className="bg-primary-50 w-full rounded-xl p-4 mb-3">
+                  <Text className="text-base text-primary-700 text-center leading-relaxed">
+                    {selectedArtwork.description}
+                  </Text>
                 </View>
               </View>
             </ScrollView>
+
+            {/* Buttons section outside ScrollView to ensure visibility */}
+            <View className="p-3 pt-0 flex-row justify-center items-center space-x-4 bg-white border-slate-100">
+              {/* YouTube button */}
+              <TouchableOpacity
+                className="bg-red-100 p-2.5 mr-3 rounded-full shadow-sm border-2 border-red-200 flex-row items-center"
+                onPress={handleWatchVideo}
+              >
+                <Ionicons name="logo-youtube" size={20} color="#e11d48" />
+                <Text variant="medium" className="text-red-600 ml-1.5">
+                  Watch
+                </Text>
+              </TouchableOpacity>
+
+              {/* Close button */}
+              <TouchableOpacity
+                className="bg-primary-500 py-2.5 px-6 rounded-full shadow-sm border-2 border-primary-400"
+                onPress={() => setSelectedArtwork(null)}
+                activeOpacity={0.8}
+              >
+                <Text variant="bold" className="text-white">
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
 
-      {/* Video Modal */}
+      {/* Video Modal - Full Screen Version */}
       <Modal
         visible={videoModalVisible}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setVideoModalVisible(false)}
       >
-        <View className="flex-1 bg-black bg-opacity-90 justify-center items-center p-4">
-          <View
-            className="bg-black w-full rounded-xl overflow-hidden"
-            style={{ height: 300 }}
-          >
+        <SafeAreaView className="flex-1 bg-black">
+          {/* Close button positioned at top right */}
+          <View className="absolute top-4 right-4 z-10">
+            <TouchableOpacity
+              className="bg-primary-500 w-12 h-12 rounded-full justify-center items-center shadow-md border-2 border-white"
+              onPress={() => setVideoModalVisible(false)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="close" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Video container taking up full screen */}
+          <View className="flex-1 bg-black">
             {selectedArtwork && (
               <WebView
                 source={{ uri: selectedArtwork.videoUrl }}
                 allowsFullscreenVideo={true}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
+                style={{ flex: 1 }}
               />
             )}
-            <TouchableOpacity
-              className="absolute top-4 right-4 bg-black bg-opacity-50 rounded-full p-2"
-              onPress={() => setVideoModalVisible(false)}
-            >
-              <Ionicons name="close" size={24} color="white" />
-            </TouchableOpacity>
           </View>
-        </View>
+
+         
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );
