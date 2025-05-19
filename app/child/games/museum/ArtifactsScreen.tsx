@@ -96,7 +96,7 @@ export default function ArtifactsScreen() {
       image: require("@/assets/images/regalia.jpg"),
       description:
         "Special items used by the Kabaka including crowns, staffs, and emblems that represent royal authority.",
-      audio: require("@/assets/sounds/touch-1.mp3"),
+      audio: require("@/assets/sounds/regalia.mp3"),
     },
   ];
 
@@ -201,15 +201,15 @@ export default function ArtifactsScreen() {
       {/* Detailed artifact modal */}
       {selectedArtifact && (
         <View className="absolute inset-0 bg-black/50 justify-center items-center p-4">
-          <View className="relative bg-white w-4/5 max-w-md rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200">
+          <ScrollView className="relative bg-white w-4/5 max-w-md rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200">
             {/* Main image display */}
-            {/* <View className="w-full pt-12 pb-4 bg-indigo-50">
+            <View className="w-full pt-12 pb-4 bg-indigo-50">
               <Image
                 source={selectedArtifact.image}
                 className="w-full h-48"
                 resizeMode="contain"
               />
-            </View> */}
+            </View>
 
             <View className="p-6">
               <Text
@@ -247,7 +247,7 @@ export default function ArtifactsScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
       )}
     </SafeAreaView>

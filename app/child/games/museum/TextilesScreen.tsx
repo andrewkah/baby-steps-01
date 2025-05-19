@@ -88,7 +88,7 @@ export default function TextilesScreen() {
       audio: require("@/assets/sounds/touch-1.mp3"),
     },
     {
-      id: 5,
+      id: 3,
       name: "Buganda Baskets",
       image: require("@/assets/images/textile_baskets.png"),
       description:
@@ -155,7 +155,7 @@ export default function TextilesScreen() {
             >
               {item.name}
             </Text>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               className="p-2 rounded-full bg-indigo-100 shadow-sm"
               onPress={(e) => {
                 e.stopPropagation();
@@ -163,7 +163,7 @@ export default function TextilesScreen() {
               }}
             >
               <MaterialIcons name="volume-up" size={22} color="#7b5af0" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
 
           <Text className="text-slate-700 mt-2" numberOfLines={2}>
@@ -248,7 +248,7 @@ export default function TextilesScreen() {
                       {textile.description.substring(0, 80)}...
                     </Text>
 
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                       className="self-start mt-1 p-1 rounded-full bg-indigo-100"
                       onPress={(e) => {
                         e.stopPropagation();
@@ -260,7 +260,7 @@ export default function TextilesScreen() {
                         size={18}
                         color="#7b5af0"
                       />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </View>
                 </TouchableOpacity>
               ))}

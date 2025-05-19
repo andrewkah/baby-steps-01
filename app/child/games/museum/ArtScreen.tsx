@@ -70,15 +70,6 @@ export default function ArtScreen() {
     },
     {
       id: 2,
-      title: "Royal Court Scenes",
-      artist: "Contemporary Ugandan Artists",
-      image: require("@/assets/images/court_art.png"),
-      description:
-        "Modern interpretations of the Buganda royal court, showing the Kabaka and his officials. These paintings blend traditional themes with contemporary artistic styles.",
-      videoUrl: "https://www.youtube.com/embed/exampleVideo2",
-    },
-    {
-      id: 3,
       title: "Kasubi Tombs Artwork",
       artist: "Various Buganda Artists",
       image: require("@/assets/images/kasubi_art.png"),
@@ -87,13 +78,22 @@ export default function ArtScreen() {
       videoUrl: "https://www.youtube.com/watch?v=G2PDZZO6h68",
     },
     {
-      id: 4,
+      id: 3,
       title: "Traditional Basketry Designs",
       artist: "Buganda Craft Artisans",
       image: require("@/assets/images/basket_art.jpg"),
       description:
         "Intricate patterns and designs used in traditional Buganda basketry, which are considered both functional crafts and artistic expressions.",
       videoUrl: "https://www.youtube.com/watch?v=ddqvWZhdOzM",
+    },
+    {
+      id: 4,
+      title: "Royal Court Scenes",
+      artist: "Contemporary Ugandan Artists",
+      image: require("@/assets/images/court_art.png"),
+      description:
+        "Modern interpretations of the Buganda royal court, showing the Kabaka and his officials. These paintings blend traditional themes with contemporary artistic styles.",
+      videoUrl: "https://www.youtube.com/embed/exampleVideo2",
     },
     {
       id: 5,
