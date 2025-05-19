@@ -6,6 +6,7 @@ import {
   Dimensions,
   StyleSheet,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Audio } from "expo-av";
@@ -14,7 +15,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Text } from "@/components/StyledText";
 import { useChild } from "@/context/ChildContext";  
-import { saveActivity } from "@/lib/utils";  
+import { saveActivity } from "@/lib/utils";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { 
+  loadGameState, 
+  saveGameState, 
+  clearGameState, 
+  CardGameState, 
+  DEFAULT_GAME_STATE 
+} from './utils/progressManagerCardGame';
 
 // Define card interface
 interface Card {
@@ -283,12 +292,14 @@ const cardGradients: string[][] = [
 
 const BugandaMatchingGame: React.FC = () => {
   const router = useRouter();
-  const { activeChild } = useChild();  // Add this line to get active child
+  const { activeChild } = useChild();
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedCards, setFlippedCards] = useState<Card[]>([]);
   const [matchedCount, setMatchedCount] = useState(0);
   const [moves, setMoves] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [gameState, setGameState] = useState<CardGameState | null>(null);
   const [infoModal, setInfoModal] = useState<{
     show: boolean;
     info: string;
@@ -309,7 +320,34 @@ const BugandaMatchingGame: React.FC = () => {
 
   // Initialize game
   useEffect(() => {
-    initGame();
+    // Load saved game state if available
+    const loadSavedState = async () => {
+      if (activeChild) {
+        try {
+          const savedState = await loadGameState(activeChild.id);
+          
+          if (savedState && savedState.matchedValues.length > 0) {
+            console.log("Loading saved game state:", savedState);
+            setGameState(savedState);
+            // Initialize game with saved state
+            initGameWithSavedState(savedState);
+          } else {
+            // No valid saved state, initialize a new game
+            initGame();
+          }
+        } catch (error) {
+          console.error("Error loading game state:", error);
+          initGame(); // Fallback to new game
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        initGame();
+        setIsLoading(false);
+      }
+    };
+
+    loadSavedState();
 
     // Initial bounce animation
     Animated.sequence([
@@ -324,10 +362,68 @@ const BugandaMatchingGame: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
+  }, [activeChild]);
 
-    // Reset start time whenever game initializes
-    gameStartTime.current = Date.now();
-  }, []);
+  // Function to initialize game with saved state
+  const initGameWithSavedState = (savedState: CardGameState) => {
+    // Determine how many new pairs to select
+    const matchedValues = savedState.matchedValues || [];
+    const matchedCount = matchedValues.length;
+    
+    // If all pairs are matched, just start a new game
+    if (matchedCount >= PAIRS_PER_GAME) {
+      initGame();
+      return;
+    }
+    
+    // Otherwise, include matched values and add new random ones
+    const matchedItems = bugandaItemsCollection.filter(
+      item => matchedValues.includes(item.value)
+    );
+    
+    // We need more random items to fill up to PAIRS_PER_GAME
+    const unmatchedPool = bugandaItemsCollection.filter(
+      item => !matchedValues.includes(item.value)
+    );
+    
+    const shuffledUnmatched = shuffleCards([...unmatchedPool]);
+    const additionalItems = shuffledUnmatched.slice(0, PAIRS_PER_GAME - matchedCount);
+    
+    // Combine to get our final selection of items
+    const selectedItems = [...matchedItems, ...additionalItems];
+    
+    // Create pairs of cards with matched items already marked as matched
+    const cardPairs: Card[] = [];
+    selectedItems.forEach(item => {
+      // For each item, create two cards (a pair)
+      const isMatched = matchedValues.includes(item.value);
+      
+      for (let i = 0; i < 2; i++) {
+        cardPairs.push({
+          id: cardPairs.length,
+          value: item.value,
+          flipped: isMatched,
+          matched: isMatched,
+          info: item.info,
+          imageSymbol: item.imageSymbol,
+        });
+      }
+    });
+    
+    // Shuffle the cards
+    const shuffledCards = shuffleCards(cardPairs);
+    
+    // Update state
+    setCards(shuffledCards);
+    setFlippedCards([]);
+    setMatchedCount(matchedCount);
+    setMoves(savedState.moves || 0);
+    setGameOver(false);
+    setInfoModal({ show: false, info: "", value: "", symbol: "" });
+    
+    // Reset game start time from saved state
+    gameStartTime.current = savedState.gameStartTime || Date.now();
+  };
 
   // Shuffle function for cards
   const shuffleCards = <T,>(array: T[]): T[] => {
@@ -339,7 +435,13 @@ const BugandaMatchingGame: React.FC = () => {
     return shuffled;
   };
 
+  // Start a new game, clearing any saved state
   const initGame = () => {
+    // Clear saved state if there's an active child
+    if (activeChild) {
+      clearGameState(activeChild.id);
+    }
+
     // Select random items from the collection for this game
     const randomItems = shuffleCards([...bugandaItemsCollection])
       .slice(0, PAIRS_PER_GAME);
@@ -365,7 +467,50 @@ const BugandaMatchingGame: React.FC = () => {
     setGameOver(false);
     setInfoModal({ show: false, info: "", value: "", symbol: "" });
     
+    // Reset game state
+    const newGameState: CardGameState = {
+      matchedValues: [],
+      moves: 0,
+      gameStartTime: Date.now(),
+      childId: activeChild?.id || 'default'
+    };
+    setGameState(newGameState);
+    
     // Reset start time when restarting game
+    gameStartTime.current = Date.now();
+  };
+
+  // Reset current game (keep same cards but reset state)
+  const resetGame = () => {
+    // Reset all cards to unflipped and unmatched state
+    const resetCards = cards.map(card => ({
+      ...card,
+      flipped: false,
+      matched: false
+    }));
+    
+    setCards(resetCards);
+    setFlippedCards([]);
+    setMatchedCount(0);
+    setMoves(0);
+    setGameOver(false);
+    setInfoModal({ show: false, info: "", value: "", symbol: "" });
+    
+    // Clear saved state if there's an active child
+    if (activeChild) {
+      clearGameState(activeChild.id);
+    }
+    
+    // Reset game state
+    const newGameState: CardGameState = {
+      matchedValues: [],
+      moves: 0,
+      gameStartTime: Date.now(),
+      childId: activeChild?.id || 'default'
+    };
+    setGameState(newGameState);
+    
+    // Reset start time when resetting game
     gameStartTime.current = Date.now();
   };
 
@@ -377,7 +522,7 @@ const BugandaMatchingGame: React.FC = () => {
       child_id: activeChild.id,
       activity_type: "cultural",
       activity_name: "Matched Cultural Cards",
-      score: `${matchedCount+1}/${bugandaItemsCollection.length}`,
+      score: `${matchedCount+1}/${PAIRS_PER_GAME}`,
       completed_at: new Date().toISOString(),
       details: `Found a match: ${matchedCard.value} - ${matchedCard.info.substring(0, 30)}...`
     });
@@ -403,6 +548,11 @@ const BugandaMatchingGame: React.FC = () => {
       completed_at: new Date().toISOString(),
       details: `Completed Buganda Cultural Cards matching game in ${moves} moves and ${duration} seconds`
     });
+    
+    // Clear saved game state when game is completed
+    if (activeChild) {
+      await clearGameState(activeChild.id);
+    }
   };
 
   const handleCardPress = async (card: Card) => {
@@ -449,6 +599,23 @@ const BugandaMatchingGame: React.FC = () => {
           
           // Track match activity
           await trackMatchActivity(firstCard);
+          
+          // Save game state with new match
+          if (activeChild) {
+            const updatedMatchedValues = gameState ? 
+              [...gameState.matchedValues, firstCard.value] : 
+              [firstCard.value];
+              
+            const updatedState: CardGameState = {
+              matchedValues: updatedMatchedValues,
+              moves: moves + 1, // Include the move that just happened
+              gameStartTime: gameStartTime.current,
+              childId: activeChild.id
+            };
+            
+            setGameState(updatedState);
+            await saveGameState(updatedState, activeChild.id);
+          }
 
           // Play match sound
           const matchSound = new Audio.Sound();
@@ -500,6 +667,17 @@ const BugandaMatchingGame: React.FC = () => {
           );
           setCards(resetCards);
           setFlippedCards([]);
+          
+          // Save moves in game state
+          if (activeChild && gameState) {
+            const updatedState: CardGameState = {
+              ...gameState,
+              moves: moves + 1,
+            };
+            
+            setGameState(updatedState);
+            saveGameState(updatedState, activeChild.id);
+          }
         }, 1000);
       }
     }
@@ -508,6 +686,17 @@ const BugandaMatchingGame: React.FC = () => {
   const closeInfoModal = () => {
     setInfoModal({ ...infoModal, show: false });
   };
+
+  // Show loading screen while fetching saved state
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-primary-50 justify-center items-center">
+        <StatusBar style="dark" />
+        <ActivityIndicator size="large" color="#7b5af0" />
+        <Text className="text-primary-700 mt-4" variant="medium">Loading your progress...</Text>
+      </View>
+    );
+  }
 
   // Calculate optimal number of columns and card size
   const screenWidth = Dimensions.get("window").width;
@@ -568,13 +757,13 @@ const BugandaMatchingGame: React.FC = () => {
           </Text>
         </View>
 
-        {/* Right side container for stats and new game button */}
+        {/* Right side container for stats, reset and new game buttons */}
         <View className="flex-row items-center space-x-2">
           {/* Moves counter */}
           <View className="bg-white px-2 py-1 rounded-xl shadow-md border-2 border-primary-200">
             <View className="flex-row items-center">
               <Text className="text-xs text-primary-500 mr-1">Moves:</Text>
-              <Text className="text-sm  text-primary-700">{moves}</Text>
+              <Text className="text-sm text-primary-700">{moves}</Text>
             </View>
           </View>
 
@@ -582,11 +771,20 @@ const BugandaMatchingGame: React.FC = () => {
           <View className="bg-white px-2 py-1 rounded-xl shadow-md border-2 border-primary-200">
             <View className="flex-row items-center">
               <Text className="text-xs text-primary-500 mr-1">Matches:</Text>
-              <Text className="text-sm  text-primary-700">
+              <Text className="text-sm text-primary-700">
                 {matchedCount}/{PAIRS_PER_GAME}
               </Text>
             </View>
           </View>
+
+          {/* Reset button */}
+          <TouchableOpacity
+            className="bg-primary-300 py-1.5 px-3 rounded-full shadow-md border-2 border-primary-200"
+            onPress={resetGame}
+            activeOpacity={0.7}
+          >
+            <Text className="text-primary-700 text-xs">Reset</Text>
+          </TouchableOpacity>
 
           {/* New Game button */}
           <TouchableOpacity
@@ -594,7 +792,7 @@ const BugandaMatchingGame: React.FC = () => {
             onPress={initGame}
             activeOpacity={0.7}
           >
-            <Text className="text-primary-700 text-xs ">New</Text>
+            <Text className="text-primary-700 text-xs">New</Text>
           </TouchableOpacity>
         </View>
       </View>

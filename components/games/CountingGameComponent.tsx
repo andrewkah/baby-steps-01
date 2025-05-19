@@ -786,7 +786,7 @@ const LugandaCountingGame: React.FC = () => {
                 <TouchableOpacity
                   key={stage.id}
                   style={{ 
-                    width: width * 0.48, 
+                    width: width * 0.46, 
                     marginRight: 8, 
                     height: height * 0.52, 
                     maxHeight: 360,
