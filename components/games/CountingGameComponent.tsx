@@ -9,14 +9,14 @@ import {
   SafeAreaView,
   ActivityIndicator,
   ImageBackground,
-  FlatList,
-  ScrollView
+  FlatList, // Ensure FlatList is imported
+  // ScrollView - Will be removed if FlatList replaces its primary use here
 } from "react-native";
 import { Audio } from "expo-av";
 import { StatusBar } from "expo-status-bar";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons"; // Already imported
 import { LinearGradient } from "expo-linear-gradient";
 import { useChild } from "@/context/ChildContext";
 import { saveActivity } from "@/lib/utils";
@@ -734,7 +734,7 @@ const LugandaCountingGame: React.FC = () => {
             Luganda Counting Game
           </Text>
 
-          <View className="flex-row items-center bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+          <View className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-sm border border-amber-200">
             <Image
               source={require("@/assets/images/coin.png")}
               className="w-5 h-5 mr-1"
@@ -744,121 +744,147 @@ const LugandaCountingGame: React.FC = () => {
           </View>
         </View>
 
-        <Animated.View className="flex-1" style={{ opacity: fadeAnim }}>
-          <ScrollView 
+        <Animated.View className="flex-1 pt-2" style={{ opacity: fadeAnim }}>
+          {/* Stage Navigation Header */}
+          <View className="flex-row justify-between items-center px-4 mb-2">
+            <Text variant="bold" className="text-lg text-indigo-800">
+              Select a Stage
+            </Text>
+            <View className="flex-row items-center">
+              <Text className="text-xs text-slate-500 mr-2">
+                Swipe to explore
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color="#6366f1" />
+            </View>
+          </View>
+          
+          {/* Stage Cards with Snap Scrolling */}
+          <FlatList
+            data={COUNTING_GAME_STAGES}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ 
-              paddingHorizontal: 15,
-              paddingVertical: 20,
-              alignItems: 'center'
+            snapToInterval={width * 0.48 + 8} // From LugandaLearningGame example
+            snapToAlignment="start"
+            decelerationRate="fast"
+            contentContainerStyle={{ // From LugandaLearningGame example
+              paddingVertical: 12,
+              paddingLeft: 6, 
+              paddingRight: width * 0.52, 
             }}
-          >
-            {COUNTING_GAME_STAGES.map((stage) => {
+            renderItem={({ item: stage }) => {
               const isUnlocked = isStageUnlocked(progress, stage.id);
               const isCompleted = progress.completedStages.includes(stage.id);
               
+              let stageIconName: keyof typeof Ionicons.glyphMap = "list-outline"; // Default icon
+              if (stage.usesCurrency) {
+                stageIconName = "cash-outline";
+              } else if (stage.useBunches) {
+                stageIconName = "apps-outline";
+              }
+
               return (
                 <TouchableOpacity
                   key={stage.id}
+                  style={{ 
+                    width: width * 0.48, 
+                    marginRight: 8, 
+                    height: height * 0.52, 
+                    maxHeight: 360,
+                  }}
+                  className={`rounded-2xl overflow-hidden shadow-md mx-2 ${
+                    !isUnlocked ? "opacity-70" : ""
+                  }`}
                   onPress={() => selectStage(stage.id)}
                   disabled={!isUnlocked}
-                  className={`mx-3 rounded-2xl overflow-hidden shadow-md ${!isUnlocked ? 'opacity-60' : ''}`}
-                  style={{ width: width * 0.35, height: height * 0.65 }}
+                  activeOpacity={0.9}
                 >
                   <LinearGradient
-                    colors={isCompleted ? ['#10b981', '#059669'] : ['#6366f1', '#4f46e5']}
+                    colors={isCompleted ? ['#10b981', '#059669'] : ['#6366f1', '#4f46e5']} // Existing color logic
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    className="p-6 flex-1 justify-between"
+                    className="p-4 flex-1" // p-4 as in example
                   >
-                    {/* Stage Header */}
+                    {/* Top section: ID badge, Icon, Title, Description */}
                     <View>
-                      <View className="flex-row justify-between items-center mb-4">
-                        <View className="bg-white/20 px-3 py-1 rounded-full">
-                          <Text variant="bold" className="text-white">Stage {stage.id}</Text>
+                      {/* Stage Header: ID Badge and Icon */}
+                      <View className="flex-row justify-between items-center mb-2">
+                        <View className="w-8 h-8 rounded-full bg-white/30 justify-center items-center">
+                          <Text variant="bold" className="text-white text-sm">{stage.id}</Text>
                         </View>
-                        
-                        {!isUnlocked ? (
-                          <View className="bg-black/30 p-2 rounded-full">
-                            <Ionicons name="lock-closed" size={18} color="white" />
-                          </View>
-                        ) : isCompleted ? (
-                          <View className="bg-white p-2 rounded-full">
-                            <Ionicons name="checkmark-circle" size={22} color="#10b981" />
-                          </View>
-                        ) : (
-                          <View className="bg-white p-2 rounded-full">
-                            <Ionicons name="play" size={18} color="#6366f1" />
-                          </View>
-                        )}
+                        <View className="bg-white/25 p-2 rounded-full shadow-sm">
+                           <Ionicons name={stageIconName} size={18} color="white" />
+                        </View>
                       </View>
 
-                      <Text variant="bold" className="text-white text-xl mb-2">
+                      {/* Stage title */}
+                      <Text variant="bold" className="text-lg text-white mb-1 tracking-wide">
                         {stage.title}
                       </Text>
-                      
-                      <Text className="text-white/90 mb-4">
+
+                      {/* Description */}
+                      <Text className="text-white/90 text-sm mb-3" numberOfLines={3}>
                         {stage.description}
                       </Text>
-                      
-                      {/* Range info */}
-                      <View className="flex-row items-center bg-white/20 px-3 py-2 rounded-lg mb-3">
-                        <Ionicons name="calculator-outline" size={16} color="white" />
-                        <Text className="text-white ml-2">
-                          {stage.numbersRange.min} - {stage.numbersRange.max}
-                        </Text>
+                    </View>
+
+                    {/* Info badges and action button row */}
+                    <View className="flex-row items-end justify-between mt-3">
+                      {/* Left side - Info badges */}
+                      <View className="space-y-1.5">
+                        <View className="flex-row items-center bg-white/20 px-2.5 py-1 rounded-full">
+                          <Ionicons name="layers-outline" size={14} color="white" />
+                          <Text variant="medium" className="text-xs text-white ml-1.5">
+                            {stage.levels} Levels
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center bg-white/20 px-2.5 py-1 rounded-full">
+                          <Ionicons name="calculator-outline" size={14} color="white" />
+                          <Text variant="medium" className="text-xs text-white ml-1.5">
+                            {stage.numbersRange.min} - {stage.numbersRange.max}
+                          </Text>
+                        </View>
                       </View>
-                      
-                      {/* Levels info */}
-                      <View className="flex-row items-center bg-white/20 px-3 py-2 rounded-lg">
-                        <Ionicons name="layers-outline" size={16} color="white" />
-                        <Text className="text-white ml-2">
-                          {stage.levels} levels
-                        </Text>
+
+                      {/* Right side - Action button */}
+                      <View className="ml-2">
+                        {!isUnlocked ? (
+                          <View className="flex-row items-center justify-center bg-black/30 px-3 py-1.5 rounded-full">
+                            <Ionicons name="lock-closed" size={14} color="white" />
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            className="bg-white px-3 py-1.5 rounded-full items-center shadow-sm"
+                            onPress={() => selectStage(stage.id)}
+                          >
+                            <Text variant="bold" className={`text-sm ${isCompleted ? "text-emerald-600" : "text-indigo-600"}`}>
+                              {isCompleted ? "Replay" : "Start"}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                     
-                    {/* Bottom action area */}
-                    <View className="mt-6">
-                      {isUnlocked ? (
-                        <TouchableOpacity
-                          className="bg-white py-3 rounded-xl items-center"
-                          onPress={() => selectStage(stage.id)}
-                        >
-                          <Text variant="bold" className={isCompleted ? "text-emerald-600" : "text-indigo-600"}>
-                            {isCompleted ? "Play Again" : "Start"}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <View className="bg-black/20 py-3 rounded-xl items-center">
-                          <Text className="text-white/80">Complete Previous Stage</Text>
-                        </View>
-                      )}
-                      
-                      {progress.lastPlayedLevel[stage.id] && isUnlocked && !isCompleted && (
-                        <Text className="text-white/80 text-center mt-2 text-xs">
-                          Continue from Level {progress.lastPlayedLevel[stage.id]}
+                    {/* "Continue from" text at the very bottom of the card */}
+                    {progress.lastPlayedLevel[stage.id] && isUnlocked && !isCompleted && (
+                      <View className="mt-auto pt-2">
+                        <Text className="text-white/80 text-center text-xs">
+                          Continue: Lvl {progress.lastPlayedLevel[stage.id]}
                         </Text>
-                      )}
-                    </View>
+                      </View>
+                    )}
                   </LinearGradient>
                 </TouchableOpacity>
               );
-            })}
-          </ScrollView>
-          
-          {/* Bottom section with instructions */}
-          <View className="mx-4 p-4 bg-indigo-50 rounded-xl mb-4">
-            <Text variant="bold" className="text-indigo-800 mb-2">How to Play</Text>
-            <Text className="text-slate-700 mb-1">• Count the items and select the correct number</Text>
-            <Text className="text-slate-700 mb-1">• Learn Luganda numbers as you play</Text>
-            <Text className="text-slate-700">• Complete all levels in a stage to unlock the next one</Text>
-          </View>
+            }}
+            ListFooterComponent={() => ( // From LugandaLearningGame example
+              <View style={{ width: width * 0.1 }} /> // Adjusted spacer at the end
+            )}
+          />
         </Animated.View>
       </SafeAreaView>
     );
   };
+
 
   // Show loading state if game is loading
   if (isLoading) {
@@ -943,7 +969,7 @@ const LugandaCountingGame: React.FC = () => {
                 className="w-16 h-16 rounded-full items-center justify-center shadow-md"
                 style={{
                   backgroundColor:
-                    (COUNTING_GAME_STAGES[currentStage - 1] as any)?.color ||
+                    (COUNTING_GAME_STAGES.find(s => s.id === currentStage) as CountingGameStage & {color?: string})?.color || // Added type assertion for potential color
                     "#818cf8",
                 }}
               >
@@ -959,7 +985,7 @@ const LugandaCountingGame: React.FC = () => {
                 style={{
                   width: `${
                     (currentLevel /
-                      (COUNTING_GAME_STAGES[currentStage - 1]?.levels || 5)) *
+                      (COUNTING_GAME_STAGES.find(s => s.id === currentStage)?.levels || 5)) *
                     100
                   }%`,
                 }}
@@ -968,7 +994,7 @@ const LugandaCountingGame: React.FC = () => {
 
             <Text className="text-center text-xs text-indigo-500">
               Level {currentLevel}/
-              {COUNTING_GAME_STAGES[currentStage - 1]?.levels || 5}
+              {COUNTING_GAME_STAGES.find(s => s.id === currentStage)?.levels || 5}
             </Text>
           </View>
 
@@ -983,7 +1009,7 @@ const LugandaCountingGame: React.FC = () => {
               {getQuestionText()}
             </Text>
             <Text className="text-sm text-indigo-600 text-center mt-1">
-              {COUNTING_GAME_STAGES[currentStage - 1]?.description ||
+              {COUNTING_GAME_STAGES.find(s => s.id === currentStage)?.description ||
                 "Learn to count in Luganda"}
             </Text>
           </View>
@@ -997,7 +1023,7 @@ const LugandaCountingGame: React.FC = () => {
                   key={`grid-h-${i}`}
                   className="absolute border-t border-indigo-50"
                   style={{
-                    top: (i * 224) / 10,
+                    top: (i * 224) / 10, // Assuming h-56 is 224px
                     left: 0,
                     right: 0,
                   }}
@@ -1122,8 +1148,8 @@ const LugandaCountingGame: React.FC = () => {
 
             <Text className="text-slate-600 text-center mb-5 text-base">
               You've mastered counting from{" "}
-              {COUNTING_GAME_STAGES[currentStage - 1]?.numbersRange.min} to{" "}
-              {COUNTING_GAME_STAGES[currentStage - 1]?.numbersRange.max}!
+              {COUNTING_GAME_STAGES.find(s => s.id === currentStage)?.numbersRange.min} to{" "}
+              {COUNTING_GAME_STAGES.find(s => s.id === currentStage)?.numbersRange.max}!
             </Text>
 
             <View className="bg-blue-50 w-full rounded-xl p-4 mb-5">
@@ -1147,7 +1173,7 @@ const LugandaCountingGame: React.FC = () => {
                   </Text>
                 </View>
                 <Text variant="bold" className="text-emerald-600 text-lg">
-                  {COUNTING_GAME_STAGES[currentStage - 1]?.levels || 5}
+                  {COUNTING_GAME_STAGES.find(s => s.id === currentStage)?.levels || 5}
                 </Text>
               </View>
             </View>
