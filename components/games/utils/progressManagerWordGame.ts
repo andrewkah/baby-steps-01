@@ -46,20 +46,45 @@ export const loadGameProgress = async (childId: string): Promise<WordGameProgres
 
   try {
     const key = getStorageKey(childId);
+    console.log(`Loading progress with key: ${key} for child: ${childId}`);
     const savedProgress = await AsyncStorage.getItem(key);
     
     if (savedProgress) {
+      console.log(`Found saved progress for child ${childId}:`, savedProgress);
       const parsedProgress = JSON.parse(savedProgress) as WordGameProgress;
       
       // Validate the progress belongs to this child
       if (parsedProgress.childId !== childId) {
-        console.warn('Progress childId mismatch, resetting to default');
+        console.warn(`Progress childId mismatch: expected ${childId}, got ${parsedProgress.childId}`);
         return createDefaultProgress(childId);
       }
+      
+      // Ensure all completed levels are also in the unlockedLevels array
+      parsedProgress.completedLevels.forEach(level => {
+        if (!parsedProgress.unlockedLevels.includes(level)) {
+          parsedProgress.unlockedLevels.push(level);
+        }
+        
+        // Also unlock the next level after each completed level
+        const nextLevel = level + 1;
+        if (nextLevel < gameLevels.length && !parsedProgress.unlockedLevels.includes(nextLevel)) {
+          parsedProgress.unlockedLevels.push(nextLevel);
+        }
+      });
+      
+      // Sort unlockedLevels for clarity
+      parsedProgress.unlockedLevels.sort((a, b) => a - b);
+      
+      console.log(`Returning parsed progress for ${childId}:`, {
+        completedLevels: parsedProgress.completedLevels,
+        unlockedLevels: parsedProgress.unlockedLevels,
+        currentLevel: parsedProgress.currentLevel
+      });
       
       return parsedProgress;
     }
     
+    console.log(`No saved progress found for child ${childId}, creating default`);
     // If no saved progress found, return default progress for this child
     return createDefaultProgress(childId);
   } catch (error) {
@@ -89,7 +114,14 @@ export const saveGameProgress = async (
     
     const key = getStorageKey(childId);
     await AsyncStorage.setItem(key, JSON.stringify(updatedProgress));
-    console.log(`Saved word game progress for child: ${childId}`);
+    
+    // Add this line to ensure data is flushed to persistent storage
+    await AsyncStorage.flushGetRequests();
+    
+    console.log(`Saved word game progress for child: ${childId}`, {
+      completedLevels: updatedProgress.completedLevels,
+      currentLevel: updatedProgress.currentLevel
+    });
   } catch (error) {
     console.error('Failed to save word game progress:', error);
   }
@@ -139,7 +171,16 @@ export const updateProgressForLevelCompletion = (
  * Check if a level is unlocked
  */
 export const isLevelUnlocked = (progress: WordGameProgress, levelIndex: number): boolean => {
-  return progress.unlockedLevels.includes(levelIndex);
+  // First level (index 0) is always unlocked
+  if (levelIndex === 0) return true;
+  
+  // A level is unlocked if:
+  // 1. It's in the unlockedLevels array, OR
+  // 2. It's in the completedLevels array (if you completed it, you should be able to play it again), OR
+  // 3. It's less than or equal to the current level (all previous levels should be accessible)
+  return progress.unlockedLevels.includes(levelIndex) || 
+         progress.completedLevels.includes(levelIndex) || 
+         levelIndex <= progress.currentLevel;
 };
 
 /**

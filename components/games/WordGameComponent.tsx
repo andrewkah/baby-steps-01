@@ -193,6 +193,16 @@ const WordGame: React.FC = () => {
   // Function to handle level selection from the level select modal
   const selectLevel = (levelIndex: number) => {
     if (isLevelUnlocked(progress, levelIndex)) {
+      // Update the current level in progress
+      if (activeChild) {
+        const updatedProgress = {
+          ...progress,
+          currentLevel: levelIndex
+        };
+        setProgress(updatedProgress);
+        saveGameProgress(updatedProgress, activeChild.id);
+      }
+      
       setCurrentLevelIndex(levelIndex);
       setShowLevelSelect(false);
       loadLevel(levelIndex);
@@ -231,19 +241,35 @@ const WordGame: React.FC = () => {
     });
   };
 
-  // Modified goToNextLevel to track level completion
+  // Modified goToNextLevel to track level completion and unlock the next level
   const goToNextLevel = async () => {
     // Track completion of current level
     await trackLevelCompletion();
     
     // Update progress to mark this level as completed
     if (activeChild) {
+      // Create a copy of the current progress
       const updatedProgress = updateProgressForLevelCompletion(
         progress,
         currentLevelIndex,
         currentWord,
         activeChild.id
       );
+      
+      // Ensure the level is added to completedLevels
+      if (!updatedProgress.completedLevels.includes(currentLevelIndex)) {
+        updatedProgress.completedLevels.push(currentLevelIndex);
+      }
+      
+      // Ensure the next level is added to unlockedLevels
+      const nextLevelIndex = currentLevelIndex + 1;
+      if (nextLevelIndex < gameLevels.length && !updatedProgress.unlockedLevels.includes(nextLevelIndex)) {
+        updatedProgress.unlockedLevels.push(nextLevelIndex);
+      }
+      
+      console.log('Saving progress with completed levels:', updatedProgress.completedLevels);
+      
+      // Update state and save to AsyncStorage
       setProgress(updatedProgress);
       await saveGameProgress(updatedProgress, activeChild.id);
     }
@@ -320,6 +346,15 @@ const WordGame: React.FC = () => {
   // This useEffect will load the saved progress when the component mounts
   useEffect(() => {
     const loadSavedProgress = async () => {
+      // Reset all game-related state when child changes
+      setIsLoading(true);
+      setShowSuccessModal(false);
+      setIsGameCompleted(false);
+      setShowLevelIntroModal(false);
+      setShowHintModal(false);
+      setShowSubHint(false);
+      setSelectedLetters([]);
+      
       if (activeChild) {
         // Declare the variable outside the try block so it's accessible in finally
         let savedProgress: WordGameProgress | undefined;
@@ -327,17 +362,23 @@ const WordGame: React.FC = () => {
         try {
           console.log(`Loading word game progress for child: ${activeChild.id}`);
           savedProgress = await loadGameProgress(activeChild.id);
+          console.log('Loaded progress:', JSON.stringify(savedProgress));
+          
+          // Completely reset the previous progress before setting new progress
           setProgress(savedProgress);
           
           // If we have a current level saved, set it
           if (savedProgress.currentLevel >= 0) {
             setCurrentLevelIndex(savedProgress.currentLevel);
+          } else {
+            setCurrentLevelIndex(0); // Explicitly reset to level 0 if no saved level
           }
         } catch (error) {
           console.error("Error loading progress:", error);
           // Set default progress specific to this child
           const defaultProgress = {...DEFAULT_PROGRESS, childId: activeChild.id};
           setProgress(defaultProgress);
+          setCurrentLevelIndex(0);
           // Update savedProgress so we can use it safely in finally
           savedProgress = defaultProgress;
         } finally {
@@ -365,6 +406,7 @@ const WordGame: React.FC = () => {
         setIsLoading(false);
         // Set a temporary default progress 
         setProgress(DEFAULT_PROGRESS);
+        setCurrentLevelIndex(0);
         loadLevel(0);
       }
     };
@@ -1071,6 +1113,7 @@ const WordGame: React.FC = () => {
             <ScrollView className="w-full max-h-[250px]">
               <View className="flex-row flex-wrap justify-center">
                 {gameLevels.map((level, index) => {
+                  // Use isLevelUnlocked which now considers current level too
                   const isUnlocked = isLevelUnlocked(progress, index);
                   const isCompleted = progress.completedLevels.includes(index);
                   const isCurrent = index === currentLevelIndex;
