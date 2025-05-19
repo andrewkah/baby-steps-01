@@ -332,7 +332,7 @@ const WordGame: React.FC = () => {
               flyingLetterOpacity.setValue(0);
               setAnimatingLetter(null);
 
-              updateDisplayWord(letter);
+              updateDisplayWord(letter, destinationIndex);
             });
           },
           () => console.error("Failed to measure word slot")
@@ -342,10 +342,10 @@ const WordGame: React.FC = () => {
     );
   };
 
-  const updateDisplayWord = (letter: string) => {
+  const updateDisplayWord = (letter: string, letterPosition: number) => {
     let newDisplay = "";
     for (let i = 0; i < currentWord.length; i++) {
-      if (currentWord[i] === letter || displayWord[i] !== "_") {
+      if (i === letterPosition || displayWord[i] !== "_") {
         newDisplay += currentWord[i];
       } else {
         newDisplay += "_";
