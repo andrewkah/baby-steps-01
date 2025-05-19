@@ -13,8 +13,8 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Text } from "@/components/StyledText";
-import { useChild } from "@/context/ChildContext";  // Add this import
-import { saveActivity } from "@/lib/utils";  // Add this import
+import { useChild } from "@/context/ChildContext";  
+import { saveActivity } from "@/lib/utils";  
 
 // Define card interface
 interface Card {
@@ -26,8 +26,9 @@ interface Card {
   imageSymbol: string;
 }
 
-// Define Buganda cultural items data
-const bugandaItems = [
+// Define expanded Buganda cultural items data
+const bugandaItemsCollection = [
+  // Original 8 items
   {
     value: "Kabaka",
     info: "The King of Buganda, one of the most powerful traditional monarchs in Uganda.",
@@ -68,7 +69,207 @@ const bugandaItems = [
     info: "Traditional fables and stories that teach moral lessons in Buganda culture.",
     imageSymbol: "📚",
   },
+  
+  // Additional items to expand the collection to ~40
+  {
+    value: "Bakisimba",
+    info: "A traditional Baganda dance performed at cultural celebrations.",
+    imageSymbol: "💃",
+  },
+  {
+    value: "Mweso",
+    info: "A traditional board game played throughout Uganda, especially in Buganda.",
+    imageSymbol: "🎮",
+  },
+  {
+    value: "Endere",
+    info: "A traditional flute used in Kiganda music.",
+    imageSymbol: "🎵",
+  },
+  {
+    value: "Amadinda",
+    info: "A xylophone-like instrument with wooden keys used in traditional music.",
+    imageSymbol: "🎹",
+  },
+  {
+    value: "Ensi",
+    info: "The traditional territories or counties of Buganda Kingdom.",
+    imageSymbol: "🗺️",
+  },
+  {
+    value: "Namasole",
+    info: "The title given to the mother of the Kabaka (King) of Buganda.",
+    imageSymbol: "👸",
+  },
+  {
+    value: "Katikkiro",
+    info: "The prime minister or chief minister of the Buganda Kingdom.",
+    imageSymbol: "👔",
+  },
+  {
+    value: "Ssabasajja",
+    info: "An honorific title for the Kabaka, meaning 'Chief of Men'.",
+    imageSymbol: "🤴",
+  },
+  {
+    value: "Kasubi",
+    info: "The royal burial grounds where Buganda kings are laid to rest.",
+    imageSymbol: "⚱️",
+  },
+  {
+    value: "Bulungi Bwansi",
+    info: "Traditional community service practice in Buganda culture.",
+    imageSymbol: "🌱",
+  },
+  {
+    value: "Empagi",
+    info: "The traditional pillars that support the Buganda social structure.",
+    imageSymbol: "🏗️",
+  },
+  {
+    value: "Akendo",
+    info: "Traditional walking stick symbolizing authority in Buganda culture.",
+    imageSymbol: "🦯",
+  },
+  {
+    value: "Omuziro",
+    info: "Clan totems that are sacred and respected in Buganda tradition.",
+    imageSymbol: "🐘",
+  },
+  {
+    value: "Ddamula",
+    info: "The royal scepter, a symbol of the Kabaka's authority.",
+    imageSymbol: "🔱",
+  },
+  {
+    value: "Luwombo",
+    info: "A traditional Buganda dish of meat stewed in banana leaves.",
+    imageSymbol: "🍲",
+  },
+  {
+    value: "Entebbe",
+    info: "A historic location in Buganda that means 'seat' or 'chair' in Luganda.",
+    imageSymbol: "🪑",
+  },
+  {
+    value: "Embaga",
+    info: "Traditional festivities or celebrations in Buganda culture.",
+    imageSymbol: "🎉",
+  },
+  {
+    value: "Enkula",
+    info: "Special beads worn by members of the royal family.",
+    imageSymbol: "📿",
+  },
+  {
+    value: "Enseenene",
+    info: "Grasshoppers, a traditional delicacy in Buganda cuisine.",
+    imageSymbol: "🦗",
+  },
+  {
+    value: "Muganda",
+    info: "A person belonging to the Baganda ethnic group.",
+    imageSymbol: "👨",
+  },
+  {
+    value: "Ssaabasajja",
+    info: "Royal title for the Kabaka meaning 'Chief of Chiefs'.",
+    imageSymbol: "👑",
+  },
+  {
+    value: "Namulondo",
+    info: "The royal throne of the Buganda Kingdom.",
+    imageSymbol: "👑",
+  },
+  {
+    value: "Kyabazinga",
+    info: "A royal title in some kingdoms neighboring Buganda.",
+    imageSymbol: "👑",
+  },
+  {
+    value: "Oluganda",
+    info: "The Luganda language, spoken by the Baganda people.",
+    imageSymbol: "🗣️",
+  },
+  {
+    value: "Barkcloth",
+    info: "Traditional fabric made from the Mutuba tree, used for ceremonies.",
+    imageSymbol: "🧵",
+  },
+  {
+    value: "Okukyala",
+    info: "Traditional visiting practices in Buganda culture.",
+    imageSymbol: "🚶",
+  },
+  {
+    value: "Nankere",
+    info: "A small drum in the ensemble of Kiganda music.",
+    imageSymbol: "🪘",
+  },
+  {
+    value: "Masiro",
+    info: "Royal tombs or burial places for Buganda royalty.",
+    imageSymbol: "🏛️",
+  },
+  {
+    value: "Ekyoto",
+    info: "The traditional fireplace where families gather for stories.",
+    imageSymbol: "🔥",
+  },
+  {
+    value: "Entamu",
+    info: "Traditional ceremonial spears used in Buganda rituals.",
+    imageSymbol: "🗡️",
+  },
+  {
+    value: "Okuggya Omwana",
+    info: "Baby naming ceremony in Buganda culture.",
+    imageSymbol: "👶",
+  },
+  {
+    value: "Okwanjula",
+    info: "Traditional introduction ceremony before marriage in Buganda.",
+    imageSymbol: "💍",
+  },
+  {
+    value: "Kaggwa",
+    info: "A legendary figure in Buganda history and culture.",
+    imageSymbol: "🦸",
+  },
+  {
+    value: "Musambwa",
+    info: "Ancestral spirits venerated in traditional Buganda beliefs.",
+    imageSymbol: "👻",
+  },
+  {
+    value: "Kawulugumo",
+    info: "A mythical creature in Buganda folklore.",
+    imageSymbol: "🐲",
+  },
+  {
+    value: "Ekitiibwa",
+    info: "Honor and respect, a core value in Buganda culture.",
+    imageSymbol: "🙏",
+  },
+  {
+    value: "Akasiimo",
+    info: "Traditional gift-giving practice in Buganda.",
+    imageSymbol: "🎁",
+  },
+  {
+    value: "Obusinga",
+    info: "Royal clan lineages in Buganda Kingdom.",
+    imageSymbol: "👪",
+  },
+  {
+    value: "Ensimbi",
+    info: "Traditional cowrie shells once used as currency.",
+    imageSymbol: "🐚",
+  },
 ];
+
+// Number of card pairs to use in each game (adjust as needed)
+const PAIRS_PER_GAME = 8;
 
 // Card gradient colors for backside based on position
 const cardGradients: string[][] = [
@@ -139,8 +340,12 @@ const BugandaMatchingGame: React.FC = () => {
   };
 
   const initGame = () => {
+    // Select random items from the collection for this game
+    const randomItems = shuffleCards([...bugandaItemsCollection])
+      .slice(0, PAIRS_PER_GAME);
+    
     // Create pairs of cards
-    const cardPairs: Card[] = [...bugandaItems, ...bugandaItems].map(
+    const cardPairs: Card[] = [...randomItems, ...randomItems].map(
       (item, index) => ({
         id: index,
         value: item.value,
@@ -172,7 +377,7 @@ const BugandaMatchingGame: React.FC = () => {
       child_id: activeChild.id,
       activity_type: "cultural",
       activity_name: "Matched Cultural Cards",
-      score: `${matchedCount+1}/${bugandaItems.length}`,
+      score: `${matchedCount+1}/${bugandaItemsCollection.length}`,
       completed_at: new Date().toISOString(),
       details: `Found a match: ${matchedCard.value} - ${matchedCard.info.substring(0, 30)}...`
     });
@@ -183,7 +388,7 @@ const BugandaMatchingGame: React.FC = () => {
     if (!activeChild) return;
     
     // Calculate efficiency - lower moves is better
-    const perfectMoves = bugandaItems.length; // Perfect score would be one move per match
+    const perfectMoves = PAIRS_PER_GAME; // Perfect score would be one move per match
     const efficiency = Math.max(0, 100 - Math.floor(((moves - perfectMoves) / perfectMoves) * 50));
     
     // Calculate duration in seconds
@@ -277,7 +482,7 @@ const BugandaMatchingGame: React.FC = () => {
           ]).start();
 
           // Check if all pairs are matched
-          if (matchedCount + 1 === bugandaItems.length) {
+          if (matchedCount + 1 === PAIRS_PER_GAME) {
             setTimeout(async () => {
               // Track game completion before showing game over screen
               await trackGameCompletion();
@@ -378,7 +583,7 @@ const BugandaMatchingGame: React.FC = () => {
             <View className="flex-row items-center">
               <Text className="text-xs text-primary-500 mr-1">Matches:</Text>
               <Text className="text-sm  text-primary-700">
-                {matchedCount}/{bugandaItems.length}
+                {matchedCount}/{PAIRS_PER_GAME}
               </Text>
             </View>
           </View>
