@@ -7,13 +7,6 @@
 - Add some form of personalization {}
 
 
-INSERT INTO public.achievements (name, description, icon_name, activity_type, points) VALUES
-('Number Novice', 'Complete your first counting stage', 'star-outline', 'counting', 10),
-('Counting Champion', 'Complete all stages in the counting game', 'trophy-outline', 'counting', 50),
-('Perfect Stage', 'Complete an entire stage without any wrong answers', 'checkmark-circle', 'counting', 25),
-('Currency Master', 'Complete all currency-related levels', 'cash-outline', 'counting', 30),
-('Quick Counter', 'Answer correctly within 3 seconds 5 times in a row', 'timer-outline', 'counting', 20);
-
 CREATE TABLE public.achievements (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   name text NOT NULL,
