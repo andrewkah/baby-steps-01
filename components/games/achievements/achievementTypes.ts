@@ -7,8 +7,8 @@ export interface AchievementDefinition {
   icon_name: string;
   activity_type: string;
   points: number;
-  trigger_value?: number | string | null; // Make null explicit if DB allows it
-  game_key?: string | null;             // <<< ADD THIS LINE (make it optional and nullable if appropriate)
+  trigger_value?: number | string | null; 
+  game_key?: string | null;             
   created_at?: string;
 }
 

@@ -82,7 +82,11 @@ interface CheckAchievementsArgs {
       | 'stage_completed'
       | 'score_updated'
       | 'stats_updated' // For things like total words, streak
-      | 'level_perfect_clear';
+      | 'level_perfect_clear'
+      // Card Matching Game Specific Event Types
+      | 'match_made'
+      | 'game_completed' // For card matching
+      | 'match_streak_achieved';
     gameKey: string; // e.g., 'luganda_learning_game', 'counting_game'
     // Game-specific data carried by the event
     levelId?: number;
@@ -91,8 +95,14 @@ interface CheckAchievementsArgs {
     currentLevelScore?: number; // for perfect clear
     currentLevelMaxScore?: number; // for perfect clear
     currentUserStats?: LugandaLearningUserStats; // For Luganda Learning game
-    // Add other game-specific data as needed
-    // For counting game, it was simpler as progress was directly passed
+    // Card Matching Game specific event data
+    moves?: number;                       // For game_completed, matching_game_low_moves
+    durationSeconds?: number;             // For game_completed, matching_game_quick_time
+    matchedCardValue?: string;            // For match_made, matching_game_specific_match
+    streakCount?: number;                 // For matching_game_match_streak
+    totalPairsMatchedAcrossGames?: number; // For matching_game_total_pairs (if tracked)
+    // isFirstMatchEver?: boolean; // For matching_game_first_match (alternative to just awarding once)
+    // isFirstGameEverCompleted?: boolean; // For matching_game_first_play
   };
 }
 
@@ -108,7 +118,7 @@ export const checkAndGrantNewAchievements = async ({
   event,
 }: CheckAchievementsArgs): Promise<AchievementDefinition[]> => {
   const newlyEarned: AchievementDefinition[] = [];
-  let shouldAward = false;
+  
   // Filter definedAchievements to only those matching the event's gameKey
   const gameSpecificDefinedAchievements = definedAchievements.filter(
     achDef => achDef.game_key === event.gameKey || !achDef.game_key // Also include generic achievements if any
@@ -186,6 +196,65 @@ export const checkAndGrantNewAchievements = async ({
             break;
           // ... other counting game cases
         }
+    }
+
+    else if (event.gameKey === 'card_matching_game') {
+      switch (achDef.activity_type) {
+        case 'matching_game_first_match':
+          if (event.type === 'match_made') {
+            shouldAward = true;
+          }
+          break;
+        case 'matching_game_first_play':
+            if (event.type === 'game_completed') {
+                shouldAward = true;
+            }
+            break;
+        case 'matching_game_complete':
+          if (event.type === 'game_completed') {
+            shouldAward = true;
+          }
+          break;
+        case 'matching_game_low_moves':
+          if (event.type === 'game_completed' && event.moves !== undefined && 
+              achDef.trigger_value !== null && achDef.trigger_value !== undefined && // Check for null and undefined
+              event.moves <= Number(achDef.trigger_value)) { // Convert to Number for comparison
+            shouldAward = true;
+          }
+          break;
+        case 'matching_game_quick_time':
+          if (event.type === 'game_completed' && event.durationSeconds !== undefined && 
+              achDef.trigger_value !== null && achDef.trigger_value !== undefined && 
+              event.durationSeconds <= Number(achDef.trigger_value)) { // Convert to Number for comparison
+            shouldAward = true;
+          }
+          break;
+        case 'matching_game_match_streak':
+          if (event.type === 'match_streak_achieved' && event.streakCount !== undefined && 
+              achDef.trigger_value !== null && achDef.trigger_value !== undefined && 
+              event.streakCount >= Number(achDef.trigger_value)) { // Convert to Number for comparison
+            shouldAward = true;
+          }
+          break;
+        case 'matching_game_specific_match_kabaka': // Specific activity type
+          if (event.type === 'match_made' && event.matchedCardValue === 'Kabaka') {
+            shouldAward = true;
+          }
+          break;
+        // Add more specific match cases if needed:
+        // case 'matching_game_specific_match_lubiri':
+        //   if (event.type === 'match_made' && event.matchedCardValue === 'Lubiri') {
+        //     shouldAward = true;
+        //   }
+        //   break;
+        case 'matching_game_total_pairs':
+          if (event.type === 'stats_updated' && event.totalPairsMatchedAcrossGames !== undefined && 
+              achDef.trigger_value !== null && achDef.trigger_value !== undefined && 
+              event.totalPairsMatchedAcrossGames >= Number(achDef.trigger_value)) { // Convert to Number for comparison
+            shouldAward = true;
+          }
+          break;
+      }
     }
 
     if (shouldAward) {
