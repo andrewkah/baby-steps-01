@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+"use client"
+
+import React, { useEffect, useState } from "react"
 import {
   View,
   ScrollView,
@@ -9,27 +11,28 @@ import {
   Dimensions,
   Modal,
   Animated,
-} from "react-native";
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import { WebView } from "react-native-webview";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { Text } from "@/components/StyledText";
-import { LinearGradient } from "expo-linear-gradient";
+} from "react-native"
+import { MaterialIcons, Ionicons } from "@expo/vector-icons"
+import { WebView } from "react-native-webview"
+import { useRouter } from "expo-router"
+import { StatusBar } from "expo-status-bar"
+import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
+import { LinearGradient } from "expo-linear-gradient"
 
 export default function ArtScreen() {
   const [selectedArtwork, setSelectedArtwork] = useState<{
-    id: number;
-    title: string;
-    artist: string;
-    image: any;
-    description: string;
-    videoUrl: string;
-  } | null>(null);
-  const [contrastLevel, setContrastLevel] = useState("normal");
-  const [videoModalVisible, setVideoModalVisible] = useState(false);
-  const router = useRouter();
-  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+    id: number
+    title: string
+    artist: string
+    image: any
+    description: string
+    videoUrl: string
+  } | null>(null)
+  const [contrastLevel, setContrastLevel] = useState("normal")
+  const [videoModalVisible, setVideoModalVisible] = useState(false)
+  const router = useRouter()
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0]
 
   useEffect(() => {
     // Fade in animation when screen loads
@@ -37,26 +40,23 @@ export default function ArtScreen() {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
-    }).start();
+    }).start()
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        if (videoModalVisible) {
-          setVideoModalVisible(false);
-          return true;
-        }
-        if (selectedArtwork) {
-          setSelectedArtwork(null);
-          return true;
-        }
-        router.back();
-        return true;
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (videoModalVisible) {
+        setVideoModalVisible(false)
+        return true
       }
-    );
+      if (selectedArtwork) {
+        setSelectedArtwork(null)
+        return true
+      }
+      router.back()
+      return true
+    })
 
-    return () => backHandler.remove();
-  }, [router, selectedArtwork, videoModalVisible]);
+    return () => backHandler.remove()
+  }, [router, selectedArtwork, videoModalVisible])
 
   const artworks = [
     {
@@ -104,34 +104,34 @@ export default function ArtScreen() {
         "Modern artwork featuring traditional Buganda symbols and motifs, reimagined through contemporary artistic techniques and materials.",
       videoUrl: "https://www.youtube.com/embed/exampleVideo5",
     },
-  ];
+  ]
 
   const toggleContrast = () => {
     if (contrastLevel === "normal") {
-      setContrastLevel("high");
+      setContrastLevel("high")
     } else if (contrastLevel === "high") {
-      setContrastLevel("low");
+      setContrastLevel("low")
     } else {
-      setContrastLevel("normal");
+      setContrastLevel("normal")
     }
-  };
+  }
 
   const getContrastStyle = () => {
     switch (contrastLevel) {
       case "high":
-        return "bg-white border-4 border-indigo-600";
+        return "bg-white border-4 border-indigo-600"
       case "low":
-        return "bg-slate-100 border border-indigo-200";
+        return "bg-slate-100 border border-indigo-200"
       default:
-        return "bg-white border-2 border-indigo-200";
+        return "bg-white border-2 border-indigo-200"
     }
-  };
+  }
 
   const handleWatchVideo = () => {
     if (selectedArtwork) {
-      setVideoModalVisible(true);
+      setVideoModalVisible(true)
     }
-  };
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
@@ -146,9 +146,9 @@ export default function ArtScreen() {
           <Ionicons name="arrow-back" size={20} color="#7b5af0" />
         </TouchableOpacity>
 
-        <Text variant="bold" className="text-xl text-indigo-800">
+        <TranslatedText variant="bold" className="text-xl text-indigo-800">
           Buganda Art Gallery
-        </Text>
+        </TranslatedText>
 
         <TouchableOpacity
           className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-200"
@@ -160,10 +160,9 @@ export default function ArtScreen() {
 
       <ScrollView className="flex-1 p-4">
         <Animated.View style={{ opacity: fadeAnim }}>
-          <Text className="text-base mb-4 text-slate-700">
-            Explore beautiful art from the Buganda Kingdom! Tap on any artwork
-            to learn more. (scroll to the right for more)
-          </Text>
+          <TranslatedText className="text-base mb-4 text-slate-700">
+            Explore beautiful art from the Buganda Kingdom! Tap on any artwork to learn more. (scroll to the right for more)
+          </TranslatedText>
 
           {/* Replace the vertical layout with horizontal scrolling */}
           <ScrollView
@@ -180,16 +179,12 @@ export default function ArtScreen() {
                 onPress={() => setSelectedArtwork(artwork)}
                 activeOpacity={0.7}
               >
-                <Image
-                  source={artwork.image}
-                  className="w-full h-36"
-                  resizeMode="cover"
-                />
+                <Image source={artwork.image} className="w-full h-36" resizeMode="cover" />
                 <View className="p-3">
-                  <Text variant="bold" className="text-lg text-indigo-800 mb-1">
+                  <TranslatedText variant="bold" className="text-lg text-indigo-800 mb-1">
                     {artwork.title}
-                  </Text>
-                  <Text className="text-indigo-600">{artwork.artist}</Text>
+                  </TranslatedText>
+                  <TranslatedText className="text-indigo-600">{artwork.artist}</TranslatedText>
                 </View>
               </TouchableOpacity>
             ))}
@@ -204,32 +199,22 @@ export default function ArtScreen() {
             className="relative bg-white w-4/5 max-w-md rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200"
             style={{ maxHeight: "90%" }}
           >
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 16 }}
-            >
-              <Image
-                source={selectedArtwork.image}
-                className="w-full h-48"
-                resizeMode="cover"
-              />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+              <Image source={selectedArtwork.image} className="w-full h-48" resizeMode="cover" />
 
               <View className="px-5 pt-4">
-                <Text
-                  variant="bold"
-                  className="text-xl text-primary-700 mb-1 text-center"
-                >
+                <TranslatedText variant="bold" className="text-xl text-primary-700 mb-1 text-center">
                   {selectedArtwork.title}
-                </Text>
-                <Text className="text-primary-600 mb-3 text-center">
+                </TranslatedText>
+                <TranslatedText className="text-primary-600 mb-3 text-center">
                   {selectedArtwork.artist}
-                </Text>
+                </TranslatedText>
 
                 {/* Description in a styled container */}
                 <View className="bg-primary-50 w-full rounded-xl p-4 mb-3">
-                  <Text className="text-base text-primary-700 text-center leading-relaxed">
+                  <TranslatedText className="text-base text-primary-700 text-center leading-relaxed">
                     {selectedArtwork.description}
-                  </Text>
+                  </TranslatedText>
                 </View>
               </View>
             </ScrollView>
@@ -242,9 +227,9 @@ export default function ArtScreen() {
                 onPress={handleWatchVideo}
               >
                 <Ionicons name="logo-youtube" size={20} color="#e11d48" />
-                <Text variant="medium" className="text-red-600 ml-1.5">
+                <TranslatedText variant="medium" className="text-red-600 ml-1.5">
                   Watch
-                </Text>
+                </TranslatedText>
               </TouchableOpacity>
 
               {/* Close button */}
@@ -253,9 +238,9 @@ export default function ArtScreen() {
                 onPress={() => setSelectedArtwork(null)}
                 activeOpacity={0.8}
               >
-                <Text variant="bold" className="text-white">
+                <TranslatedText variant="bold" className="text-white">
                   Close
-                </Text>
+                </TranslatedText>
               </TouchableOpacity>
             </View>
           </View>
@@ -293,10 +278,8 @@ export default function ArtScreen() {
               />
             )}
           </View>
-
-         
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
-  );
+  )
 }

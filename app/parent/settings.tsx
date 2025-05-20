@@ -141,11 +141,11 @@ export default function SettingsScreen() {
           <View className="bg-gray-100 p-3 rounded-lg my-3">
             <RNText>Current Language: {isLuganda ? "Luganda" : "English"}</RNText>
             <TouchableOpacity onPress={toggleLanguage} className="bg-purple-500 p-2 rounded mt-2">
-              <RNText className="text-white text-center">Toggle Language (Debug)</RNText>
+              <RNText className="text-white text-center">Change Language (Luganda/English)</RNText>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowTestTool(!showTestTool)} className="bg-blue-500 p-2 rounded mt-2">
               <RNText className="text-white text-center">
-                {showTestTool ? "Hide API Test Tool" : "Show API Test Tool"}
+                {showTestTool ? "Done" : "Translate Anything to Luganda"}
               </RNText>
             </TouchableOpacity>
           </View>

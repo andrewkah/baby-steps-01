@@ -1,34 +1,29 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Animated,
-  SafeAreaView,
-  BackHandler,
-} from "react-native";
-import { Audio, AVPlaybackSource } from "expo-av";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { Text } from "@/components/StyledText";
-import { LinearGradient } from "expo-linear-gradient";
+"use client"
+
+import React, { useState, useEffect } from "react"
+import { View, ScrollView, TouchableOpacity, Image, Animated, SafeAreaView, BackHandler } from "react-native"
+import { Audio, type AVPlaybackSource } from "expo-av"
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons"
+import { useRouter } from "expo-router"
+import { StatusBar } from "expo-status-bar"
+import { Text } from "@/components/StyledText"
+import { TranslatedText } from "@/components/translated-text"
+import { LinearGradient } from "expo-linear-gradient"
 
 export default function InstrumentsScreen() {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null)
   const [selectedInstrument, setSelectedInstrument] = useState<{
-    id: number;
-    name: string;
-    image: any;
-    description: string;
-    sound: any;
-    howToPlay: string;
-  } | null>(null);
-  const [playingId, setPlayingId] = useState<number | null>(null);
-  const pulseAnim = new Animated.Value(1);
-  const router = useRouter();
-  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+    id: number
+    name: string
+    image: any
+    description: string
+    sound: any
+    howToPlay: string
+  } | null>(null)
+  const [playingId, setPlayingId] = useState<number | null>(null)
+  const pulseAnim = new Animated.Value(1)
+  const router = useRouter()
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0]
 
   useEffect(() => {
     // Fade in animation when screen loads
@@ -36,26 +31,23 @@ export default function InstrumentsScreen() {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
-    }).start();
+    }).start()
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        if (selectedInstrument) {
-          // Close modal if open
-          setSelectedInstrument(null);
-          if (sound) {
-            sound.stopAsync();
-          }
-          return true;
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (selectedInstrument) {
+        // Close modal if open
+        setSelectedInstrument(null)
+        if (sound) {
+          sound.stopAsync()
         }
-        router.back();
-        return true;
+        return true
       }
-    );
+      router.back()
+      return true
+    })
 
-    return () => backHandler.remove();
-  }, [router, selectedInstrument, sound]);
+    return () => backHandler.remove()
+  }, [router, selectedInstrument, sound])
 
   const instruments = [
     {
@@ -108,7 +100,7 @@ export default function InstrumentsScreen() {
       howToPlay:
         "Multiple drummers play simultaneously, each responsible for specific drums in the set, creating complex polyrhythms.",
     },
-  ];
+  ]
 
   // Start pulsing animation when an instrument is playing
   useEffect(() => {
@@ -126,42 +118,39 @@ export default function InstrumentsScreen() {
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      ).start()
     } else {
-      pulseAnim.setValue(1);
+      pulseAnim.setValue(1)
     }
-  }, [playingId]);
+  }, [playingId])
 
-  async function playSound(
-    audioFile: AVPlaybackSource,
-    instrumentId: number | null
-  ) {
+  async function playSound(audioFile: AVPlaybackSource, instrumentId: number | null) {
     // Stop previous sound if playing
     if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
+      await sound.stopAsync()
+      await sound.unloadAsync()
     }
 
-    const { sound: newSound } = await Audio.Sound.createAsync(audioFile);
-    setSound(newSound);
-    setPlayingId(instrumentId);
+    const { sound: newSound } = await Audio.Sound.createAsync(audioFile)
+    setSound(newSound)
+    setPlayingId(instrumentId)
 
     newSound.setOnPlaybackStatusUpdate((status) => {
       if (status.isLoaded && status.didJustFinish) {
-        setPlayingId(null);
+        setPlayingId(null)
       }
-    });
+    })
 
-    await newSound.playAsync();
+    await newSound.playAsync()
   }
 
   React.useEffect(() => {
     return sound
       ? () => {
-          sound.unloadAsync();
+          sound.unloadAsync()
         }
-      : undefined;
-  }, [sound]);
+      : undefined
+  }, [sound])
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
@@ -176,19 +165,18 @@ export default function InstrumentsScreen() {
           <Ionicons name="arrow-back" size={20} color="#7b5af0" />
         </TouchableOpacity>
 
-        <Text variant="bold" className="text-xl text-indigo-800">
+        <TranslatedText variant="bold" className="text-xl text-indigo-800">
           Buganda Instruments
-        </Text>
+        </TranslatedText>
 
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView className="flex-1 p-4">
         <Animated.View style={{ opacity: fadeAnim }}>
-          <Text className="text-base mb-4 text-slate-700">
-            Tap on an instrument to learn more, and press the play button to
-            hear how it sounds! (scroll to the right to see more)
-          </Text>
+          <TranslatedText className="text-base mb-4 text-slate-700">
+            Tap on an instrument to learn more, and press the play button to hear how it sounds! (scroll to the right to see more)
+          </TranslatedText>
 
           {/* Horizontal instruments list */}
           <ScrollView
@@ -208,7 +196,7 @@ export default function InstrumentsScreen() {
                   ],
                   marginRight: 16,
                   width: 260,
-                  height:240
+                  height: 240,
                 }}
               >
                 <TouchableOpacity
@@ -216,37 +204,28 @@ export default function InstrumentsScreen() {
                   activeOpacity={0.7}
                   className="bg-white rounded-xl overflow-hidden shadow-sm border-2 border-indigo-100 h-full"
                 >
-                  <Image
-                    source={instrument.image}
-                    className="w-full h-28"
-                    resizeMode="cover"
-                  />
+                  <Image source={instrument.image} className="w-full h-28" resizeMode="cover" />
 
                   <View className="p-4 flex-1">
                     <View className="flex-row justify-between items-center">
-                      <Text
-                        variant="bold"
-                        className="text-lg text-indigo-800 flex-1 mr-2"
-                      >
+                      <TranslatedText variant="bold" className="text-lg text-indigo-800 flex-1 mr-2">
                         {instrument.name}
-                      </Text>
+                      </TranslatedText>
                       <TouchableOpacity
                         className={`p-2 rounded-full ${
-                          playingId === instrument.id
-                            ? "bg-indigo-400"
-                            : "bg-indigo-600"
+                          playingId === instrument.id ? "bg-indigo-400" : "bg-indigo-600"
                         } shadow-sm`}
                         onPress={(e) => {
-                          e.stopPropagation(); // Prevent triggering parent's onPress
+                          e.stopPropagation() // Prevent triggering parent's onPress
                           if (playingId === instrument.id) {
                             // Stop playing
                             if (sound) {
-                              sound.stopAsync();
-                              setPlayingId(null);
+                              sound.stopAsync()
+                              setPlayingId(null)
                             }
                           } else {
                             // Start playing
-                            playSound(instrument.sound, instrument.id);
+                            playSound(instrument.sound, instrument.id)
                           }
                         }}
                       >
@@ -258,9 +237,9 @@ export default function InstrumentsScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <Text className="text-slate-700 mt-2" numberOfLines={3}>
+                    <TranslatedText className="text-slate-700 mt-2" numberOfLines={3}>
                       {instrument.description.substring(0, 70)}...
-                    </Text>
+                    </TranslatedText>
                   </View>
                 </TouchableOpacity>
               </Animated.View>
@@ -276,74 +255,57 @@ export default function InstrumentsScreen() {
             className="relative bg-white  rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200"
             style={{ maxHeight: "90%" }}
           >
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 16 }}
-            >
-              <Image
-                source={selectedInstrument.image}
-                className="w-full h-48"
-                resizeMode="cover"
-              />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+              <Image source={selectedInstrument.image} className="w-full h-48" resizeMode="cover" />
 
               <View className="px-5 pt-4">
-                <Text
-                  variant="bold"
-                  className="text-xl text-primary-700 mb-2 text-center"
-                >
+                <TranslatedText variant="bold" className="text-xl text-primary-700 mb-2 text-center">
                   {selectedInstrument.name}
-                </Text>
+                </TranslatedText>
 
                 {/* Description in a styled container */}
                 <View className="bg-primary-50 w-full rounded-xl p-4 mb-4">
-                  <Text className="text-base text-primary-700 leading-relaxed">
+                  <TranslatedText className="text-base text-primary-700 leading-relaxed">
                     {selectedInstrument.description}
-                  </Text>
+                  </TranslatedText>
                 </View>
 
                 <View className="bg-yellow-50 w-full rounded-xl p-4 mb-3 border border-yellow-100">
-                  <Text variant="bold" className="text-primary-700 mb-1">
+                  <TranslatedText variant="bold" className="text-primary-700 mb-1">
                     How to Play:
-                  </Text>
-                  <Text className="text-primary-700 leading-relaxed">
+                  </TranslatedText>
+                  <TranslatedText className="text-primary-700 leading-relaxed">
                     {selectedInstrument.howToPlay}
-                  </Text>
+                  </TranslatedText>
                 </View>
               </View>
-            <View className="p-3 pt-0 flex-row justify-center items-center space-x-4">
-              {/* Sound button */}
-              <TouchableOpacity
-                className="bg-yellow-100 p-2.5 mr-3 rounded-full shadow-sm border-2 border-yellow-200 flex-row items-center"
-                onPress={() =>
-                  playSound(selectedInstrument.sound, selectedInstrument.id)
-                }
-              >
-                <MaterialCommunityIcons
-                  name="volume-high"
-                  size={20}
-                  color="#7b5af0"
-                />
-                <Text variant="medium" className="text-primary-600 ml-1.5">
-                  Play Sound
-                </Text>
-              </TouchableOpacity>
+              <View className="p-3 pt-0 flex-row justify-center items-center space-x-4">
+                {/* Sound button */}
+                <TouchableOpacity
+                  className="bg-yellow-100 p-2.5 mr-3 rounded-full shadow-sm border-2 border-yellow-200 flex-row items-center"
+                  onPress={() => playSound(selectedInstrument.sound, selectedInstrument.id)}
+                >
+                  <MaterialCommunityIcons name="volume-high" size={20} color="#7b5af0" />
+                  <TranslatedText variant="medium" className="text-primary-600 ml-1.5">
+                    Play Sound
+                  </TranslatedText>
+                </TouchableOpacity>
 
-              {/* Close button */}
-              <TouchableOpacity
-                className="bg-primary-500 py-2.5 px-6 rounded-full shadow-sm border-2 border-primary-400"
-                onPress={() => setSelectedInstrument(null)}
-                activeOpacity={0.8}
-              >
-                <Text variant="bold" className="text-white">
-                  Close
-                </Text>
-              </TouchableOpacity>
-            </View>
+                {/* Close button */}
+                <TouchableOpacity
+                  className="bg-primary-500 py-2.5 px-6 rounded-full shadow-sm border-2 border-primary-400"
+                  onPress={() => setSelectedInstrument(null)}
+                  activeOpacity={0.8}
+                >
+                  <TranslatedText variant="bold" className="text-white">
+                    Close
+                  </TranslatedText>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
-
           </View>
         </View>
       )}
     </SafeAreaView>
-  );
+  )
 }
