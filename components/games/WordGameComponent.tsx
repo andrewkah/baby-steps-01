@@ -7,6 +7,7 @@ import {
   Animated,
   Modal,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { Audio } from "expo-av";
 import { StatusBar } from "expo-status-bar";
@@ -17,6 +18,15 @@ import { gameLevels } from "./utils/wordgamewords"; // Import game levels
 import { Text } from "@/components/StyledText";
 import { useChild } from "@/context/ChildContext"; // Import useChild context
 import { saveActivity } from "@/lib/utils"; // Import saveActivity function
+import {
+  WordGameProgress,
+  DEFAULT_PROGRESS,
+  loadGameProgress,
+  saveGameProgress,
+  updateProgressForLevelCompletion,
+  isLevelUnlocked
+} from './utils/progressManagerWordGame';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Get screen dimensions
 const { width, height } = Dimensions.get("window");
@@ -82,6 +92,10 @@ const WordGame: React.FC = () => {
   const [showLevelIntroModal, setShowLevelIntroModal] = useState<boolean>(false);
   const [showHintModal, setShowHintModal] = useState<boolean>(false);
   const [showSubHint, setShowSubHint] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [progress, setProgress] = useState<WordGameProgress>(DEFAULT_PROGRESS);
+  const [showLevelSelect, setShowLevelSelect] = useState<boolean>(false);
+  const [fadeAnim] = useState(new Animated.Value(1));
 
   // Animation values
   const letterScale = useState(new Animated.Value(1))[0];
@@ -164,6 +178,35 @@ const WordGame: React.FC = () => {
 
     // Show the level intro modal
     setShowLevelIntroModal(true);
+    
+    // Update current level in progress if it's different
+    if (activeChild && progress.currentLevel !== levelIndex) {
+      const updatedProgress = {
+        ...progress,
+        currentLevel: levelIndex
+      };
+      setProgress(updatedProgress);
+      saveGameProgress(updatedProgress, activeChild.id);
+    }
+  };
+
+  // Function to handle level selection from the level select modal
+  const selectLevel = (levelIndex: number) => {
+    if (isLevelUnlocked(progress, levelIndex)) {
+      // Update the current level in progress
+      if (activeChild) {
+        const updatedProgress = {
+          ...progress,
+          currentLevel: levelIndex
+        };
+        setProgress(updatedProgress);
+        saveGameProgress(updatedProgress, activeChild.id);
+      }
+      
+      setCurrentLevelIndex(levelIndex);
+      setShowLevelSelect(false);
+      loadLevel(levelIndex);
+    }
   };
 
   // Function to track level completion
@@ -198,10 +241,38 @@ const WordGame: React.FC = () => {
     });
   };
 
-  // Modified goToNextLevel to track level completion
+  // Modified goToNextLevel to track level completion and unlock the next level
   const goToNextLevel = async () => {
     // Track completion of current level
     await trackLevelCompletion();
+    
+    // Update progress to mark this level as completed
+    if (activeChild) {
+      // Create a copy of the current progress
+      const updatedProgress = updateProgressForLevelCompletion(
+        progress,
+        currentLevelIndex,
+        currentWord,
+        activeChild.id
+      );
+      
+      // Ensure the level is added to completedLevels
+      if (!updatedProgress.completedLevels.includes(currentLevelIndex)) {
+        updatedProgress.completedLevels.push(currentLevelIndex);
+      }
+      
+      // Ensure the next level is added to unlockedLevels
+      const nextLevelIndex = currentLevelIndex + 1;
+      if (nextLevelIndex < gameLevels.length && !updatedProgress.unlockedLevels.includes(nextLevelIndex)) {
+        updatedProgress.unlockedLevels.push(nextLevelIndex);
+      }
+      
+      console.log('Saving progress with completed levels:', updatedProgress.completedLevels);
+      
+      // Update state and save to AsyncStorage
+      setProgress(updatedProgress);
+      await saveGameProgress(updatedProgress, activeChild.id);
+    }
     
     const nextLevelIndex = currentLevelIndex + 1;
     setCurrentLevelIndex(nextLevelIndex);
@@ -272,6 +343,77 @@ const WordGame: React.FC = () => {
     };
   }, []);
 
+  // This useEffect will load the saved progress when the component mounts
+  useEffect(() => {
+    const loadSavedProgress = async () => {
+      // Reset all game-related state when child changes
+      setIsLoading(true);
+      setShowSuccessModal(false);
+      setIsGameCompleted(false);
+      setShowLevelIntroModal(false);
+      setShowHintModal(false);
+      setShowSubHint(false);
+      setSelectedLetters([]);
+      
+      if (activeChild) {
+        // Declare the variable outside the try block so it's accessible in finally
+        let savedProgress: WordGameProgress | undefined;
+        
+        try {
+          console.log(`Loading word game progress for child: ${activeChild.id}`);
+          savedProgress = await loadGameProgress(activeChild.id);
+          console.log('Loaded progress:', JSON.stringify(savedProgress));
+          
+          // Completely reset the previous progress before setting new progress
+          setProgress(savedProgress);
+          
+          // If we have a current level saved, set it
+          if (savedProgress.currentLevel >= 0) {
+            setCurrentLevelIndex(savedProgress.currentLevel);
+          } else {
+            setCurrentLevelIndex(0); // Explicitly reset to level 0 if no saved level
+          }
+        } catch (error) {
+          console.error("Error loading progress:", error);
+          // Set default progress specific to this child
+          const defaultProgress = {...DEFAULT_PROGRESS, childId: activeChild.id};
+          setProgress(defaultProgress);
+          setCurrentLevelIndex(0);
+          // Update savedProgress so we can use it safely in finally
+          savedProgress = defaultProgress;
+        } finally {
+          setIsLoading(false);
+          
+          // Fade in animation
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }).start();
+          
+          // Now load the correct level - savedProgress is now accessible
+          try {
+            const levelToLoad = savedProgress?.currentLevel ?? 0;
+            console.log(`Loading level: ${levelToLoad}`);
+            loadLevel(levelToLoad);
+          } catch (err) {
+            console.error("Error loading level:", err);
+            // Fallback to level 0 if anything goes wrong
+            loadLevel(0);
+          }
+        }
+      } else {
+        setIsLoading(false);
+        // Set a temporary default progress 
+        setProgress(DEFAULT_PROGRESS);
+        setCurrentLevelIndex(0);
+        loadLevel(0);
+      }
+    };
+
+    loadSavedProgress();
+  }, [activeChild]);
+
   // Move to next level
   const animateLetterToWord = (
     letter: string,
@@ -332,7 +474,7 @@ const WordGame: React.FC = () => {
               flyingLetterOpacity.setValue(0);
               setAnimatingLetter(null);
 
-              updateDisplayWord(letter);
+              updateDisplayWord(letter, destinationIndex);
             });
           },
           () => console.error("Failed to measure word slot")
@@ -342,10 +484,10 @@ const WordGame: React.FC = () => {
     );
   };
 
-  const updateDisplayWord = (letter: string) => {
+  const updateDisplayWord = (letter: string, letterPosition: number) => {
     let newDisplay = "";
     for (let i = 0; i < currentWord.length; i++) {
-      if (currentWord[i] === letter || displayWord[i] !== "_") {
+      if (i === letterPosition || displayWord[i] !== "_") {
         newDisplay += currentWord[i];
       } else {
         newDisplay += "_";
@@ -434,6 +576,16 @@ const WordGame: React.FC = () => {
   };
 
   // Modified layout for landscape orientation with NativeWind styling
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-primary-50 justify-center items-center">
+        <StatusBar style="dark" translucent backgroundColor="transparent" />
+        <ActivityIndicator size="large" color="#7b5af0" />
+        <Text variant="medium" className="text-primary-700 mt-4">Loading your progress...</Text>
+      </View>
+    );
+  }
+
   return (
     <View ref={containerRef} className="flex-1 bg-primary-50">
       <StatusBar style="dark" translucent backgroundColor="transparent" />
@@ -468,11 +620,23 @@ const WordGame: React.FC = () => {
           </Text>
         </View>
 
-        {/* Level indicator */}
-        <View className="flex-row items-center bg-white px-4 py-2 rounded-full shadow-md border-2 border-primary-200">
-          <Text variant="bold" className="text-primary-700">
-            {currentLevelIndex + 1}/{gameLevels.length}
-          </Text>
+        {/* Level navigation controls */}
+        <View className="flex-row items-center">
+          {/* Level selector button */}
+          <TouchableOpacity
+            className="w-12 h-12 rounded-full bg-white items-center justify-center shadow-md border-2 border-accent-200 mr-2"
+            onPress={() => setShowLevelSelect(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="list" size={22} color="#7b5af0" />
+          </TouchableOpacity>
+          
+          {/* Level indicator */}
+          <View className="flex-row items-center bg-white px-4 py-2 rounded-full shadow-md border-2 border-primary-200">
+            <Text variant="bold" className="text-primary-700">
+              {currentLevelIndex + 1}/{gameLevels.length}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -648,16 +812,36 @@ const WordGame: React.FC = () => {
               </View>
             </View>
 
-            {/* Button with improved styling */}
-            <TouchableOpacity
-              className="bg-primary-500 py-4 px-8 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
-              onPress={goToNextLevel}
-              activeOpacity={0.7}
-            >
-              <Text variant="bold" className="text-white text-xl">
-                {isGameCompleted ? "Play Again" : "Next Level"}
-              </Text>
-            </TouchableOpacity>
+            {/* Add navigation controls */}
+            <View className="flex-row justify-between w-full mt-4 mb-2">
+              {/* Previous level button - only show if there's a previous level and it's unlocked */}
+              {currentLevelIndex > 0 ? (
+                <TouchableOpacity
+                  className="bg-secondary-500 py-3 px-5 rounded-full shadow-lg border-2 border-secondary-400"
+                  onPress={() => {
+                    setShowSuccessModal(false);
+                    setCurrentLevelIndex(currentLevelIndex - 1);
+                    loadLevel(currentLevelIndex - 1);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text variant="bold" className="text-white text-sm">Previous</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: 100 }} /> /* Empty spacer */
+              )}
+              
+              {/* Next level or play again button */}
+              <TouchableOpacity
+                className="bg-primary-500 py-3 px-5 rounded-full shadow-lg border-2 border-primary-400 active:scale-95"
+                onPress={goToNextLevel}
+                activeOpacity={0.7}
+              >
+                <Text variant="bold" className="text-white text-sm">
+                  {isGameCompleted ? "Play Again" : "Next Level"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -904,6 +1088,71 @@ const WordGame: React.FC = () => {
               <Text variant="bold" className="text-white text-sm">
                 Got it!
               </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Level Select Modal */}
+      <Modal transparent={true} visible={showLevelSelect} animationType="fade">
+        <View className="flex-1 justify-center items-center bg-black/50 px-4">
+          <View className="bg-white rounded-2xl p-3 max-h-[80%] w-[80%] items-center shadow-xl border-4 border-primary-100">
+            {/* Close button */}
+            <TouchableOpacity
+              className="absolute -top-3 -right-3 w-10 h-10 bg-white rounded-full items-center justify-center shadow-lg border-2 border-primary-300 z-10"
+              onPress={() => setShowLevelSelect(false)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={20} color="#7b5af0" />
+            </TouchableOpacity>
+            
+            <Text variant="bold" className="text-xl text-primary-600 mb-2">
+              Select Level
+            </Text>
+            
+            <ScrollView className="w-full max-h-[250px]">
+              <View className="flex-row flex-wrap justify-center">
+                {gameLevels.map((level, index) => {
+                  // Use isLevelUnlocked which now considers current level too
+                  const isUnlocked = isLevelUnlocked(progress, index);
+                  const isCompleted = progress.completedLevels.includes(index);
+                  const isCurrent = index === currentLevelIndex;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      className={`w-16 h-16 m-1 rounded-lg justify-center items-center shadow-md border 
+                        ${isCurrent ? 'bg-primary-600 border-primary-300' : 
+                          isCompleted ? 'bg-green-500 border-green-300' : 
+                            isUnlocked ? 'bg-secondary-500 border-secondary-300' : 
+                              'bg-gray-300 border-gray-400 opacity-60'}`}
+                      onPress={() => selectLevel(index)}
+                      disabled={!isUnlocked}
+                      activeOpacity={0.8}
+                    >
+                      <Text variant="bold" className="text-white text-lg">{index + 1}</Text>
+                      {!isUnlocked && (
+                        <View className="absolute inset-0 items-center justify-center">
+                          <Ionicons name="lock-closed" size={20} color="rgba(255,255,255,0.7)" />
+                        </View>
+                      )}
+                      {isCompleted && (
+                        <View className="absolute -top-1 -right-1">
+                          <Ionicons name="checkmark-circle" size={14} color="#ffffff" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+            
+            <TouchableOpacity
+              className="bg-primary-500 py-2 px-6 rounded-full shadow-lg border-2 border-primary-400 mt-3"
+              onPress={() => setShowLevelSelect(false)}
+              activeOpacity={0.7}
+            >
+              <Text variant="bold" className="text-white text-sm">Close</Text>
             </TouchableOpacity>
           </View>
         </View>

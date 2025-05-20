@@ -1,0 +1,7 @@
+- Puzzle progress tracking []
+- More test cases []
+- Add achievements (CRUCIAL)
+- Track learning time []
+- Background music pause []
+- Sync progress with supabase (CRUCIAL)
+- Add some form of personalization {}
