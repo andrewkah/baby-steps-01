@@ -16,6 +16,66 @@ export const DEFAULT_GAME_STATE: CardGameState = {
   childId: 'default'
 };
 
+export interface CardGameOverallStats {
+  totalPairsMatched: number;
+  gamesPlayed: number;
+  // Potentially: bestTime, bestMoves etc.
+}
+
+export const DEFAULT_OVERALL_STATS: CardGameOverallStats = {
+  totalPairsMatched: 0,
+  gamesPlayed: 0,
+};
+
+const getOverallStatsKey = (childId: string): string => {
+  return `@BabySteps:CardGameOverallStats:${childId}`;
+};
+
+export const loadOverallStats = async (childId: string): Promise<CardGameOverallStats> => {
+  if (!childId) return { ...DEFAULT_OVERALL_STATS };
+  try {
+    const key = getOverallStatsKey(childId);
+    const savedStats = await AsyncStorage.getItem(key);
+    if (savedStats) {
+      return JSON.parse(savedStats) as CardGameOverallStats;
+    }
+    return { ...DEFAULT_OVERALL_STATS }; // Return a copy
+  } catch (error) {
+    console.error('Failed to load card game overall stats:', error);
+    return { ...DEFAULT_OVERALL_STATS }; // Return a copy
+  }
+};
+
+export const saveOverallStats = async (stats: CardGameOverallStats, childId: string): Promise<void> => {
+  if (!childId) return;
+  try {
+    const key = getOverallStatsKey(childId);
+    await AsyncStorage.setItem(key, JSON.stringify(stats));
+  } catch (error) {
+    console.error('Failed to save card game overall stats:', error);
+  }
+};
+
+export const updateTotalPairsMatched = async (pairsJustMatched: number, childId: string): Promise<CardGameOverallStats> => {
+    const currentStats = await loadOverallStats(childId);
+    const newStats: CardGameOverallStats = {
+        ...currentStats,
+        totalPairsMatched: (currentStats.totalPairsMatched || 0) + pairsJustMatched,
+    };
+    await saveOverallStats(newStats, childId);
+    return newStats;
+};
+
+export const incrementGamesPlayed = async (childId: string): Promise<CardGameOverallStats> => {
+    const currentStats = await loadOverallStats(childId);
+    const newStats: CardGameOverallStats = {
+        ...currentStats,
+        gamesPlayed: (currentStats.gamesPlayed || 0) + 1,
+    };
+    await saveOverallStats(newStats, childId);
+    return newStats;
+};
+
 /**
  * Get the storage key for a specific child
  */

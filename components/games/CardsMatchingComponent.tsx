@@ -24,6 +24,16 @@ import {
   CardGameState, 
   DEFAULT_GAME_STATE 
 } from './utils/progressManagerCardGame';
+import { useAchievements } from "./achievements/useAchievements";
+import { AchievementDefinition } from "./achievements/achievementTypes";
+import { 
+  loadOverallStats, 
+  updateTotalPairsMatched, 
+  incrementGamesPlayed,
+  CardGameOverallStats, // Import the type too
+  DEFAULT_OVERALL_STATS // Import the default stats constant
+  // ... other existing imports from progressManagerCardGame
+} from './utils/progressManagerCardGame';
 
 // Define card interface
 interface Card {
@@ -293,6 +303,16 @@ const cardGradients: string[][] = [
 const BugandaMatchingGame: React.FC = () => {
   const router = useRouter();
   const { activeChild } = useChild();
+  const { 
+    // definedAchievements, 
+    // earnedChildAchievements, 
+    isLoadingAchievements, 
+    checkAndGrantNewAchievements 
+  } = useAchievements(activeChild?.id, 'card_matching_game'); // Game key
+
+  const [newlyEarnedAchievementCM, setNewlyEarnedAchievementCM] = useState<AchievementDefinition | null>(null);
+  const [matchStreak, setMatchStreak] = useState(0); // For match streak achievement
+  const [overallStats, setOverallStats] = useState<CardGameOverallStats | null>(null); // For overall game stats
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedCards, setFlippedCards] = useState<Card[]>([]);
   const [matchedCount, setMatchedCount] = useState(0);
@@ -362,6 +382,16 @@ const BugandaMatchingGame: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
+  }, [activeChild]);
+
+  useEffect(() => {
+    const fetchOverallStats = async () => {
+      if (activeChild) {
+        const stats = await loadOverallStats(activeChild.id);
+        setOverallStats(stats);
+      }
+    };
+    fetchOverallStats();
   }, [activeChild]);
 
   // Function to initialize game with saved state
@@ -532,13 +562,48 @@ const BugandaMatchingGame: React.FC = () => {
   const trackGameCompletion = async () => {
     if (!activeChild) return;
     
+
     // Calculate efficiency - lower moves is better
     const perfectMoves = PAIRS_PER_GAME; // Perfect score would be one move per match
     const efficiency = Math.max(0, 100 - Math.floor(((moves - perfectMoves) / perfectMoves) * 50));
     
     // Calculate duration in seconds
     const duration = Math.round((Date.now() - gameStartTime.current) / 1000);
-    
+
+     const newOverallStatsAfterGame = await incrementGamesPlayed(activeChild.id);
+      if (overallStats) { // if overallStats was loaded
+          setOverallStats(prev => ({...(prev || DEFAULT_OVERALL_STATS), gamesPlayed: newOverallStatsAfterGame.gamesPlayed}));
+      }
+
+
+      // --- ACHIEVEMENT CHECKING (ON GAME COMPLETE) ---
+      const eventsForAchievements: Parameters<typeof checkAndGrantNewAchievements>[0][] = [];
+      
+      eventsForAchievements.push({
+          type: 'game_completed',
+          gameKey: 'card_matching_game',
+          moves: moves,
+          durationSeconds: duration,
+      });
+
+      // If it's the first game ever played (for "Game On!" achievement)
+      if (newOverallStatsAfterGame.gamesPlayed === 1) {
+          // The 'matching_game_first_play' achievement type implicitly handles "first"
+          // by only being awardable once.
+      }
+
+      let achievementPointsEarnedThisGame = 0;
+      for (const event of eventsForAchievements) {
+          const newlyEarnedFromEvent = await checkAndGrantNewAchievements(event);
+          if (newlyEarnedFromEvent.length > 0) {
+              newlyEarnedFromEvent.forEach(ach => {
+                  achievementPointsEarnedThisGame += ach.points;
+                  console.log(`CARD MATCH - GAME COMPLETE - NEW ACHIEVEMENT: ${ach.name}`);
+                  setNewlyEarnedAchievementCM(ach); // Show modal
+              });
+          }
+      }
+
     await saveActivity({
       child_id: activeChild.id,
       activity_type: "cultural",
@@ -602,6 +667,52 @@ const BugandaMatchingGame: React.FC = () => {
           
           // Save game state with new match
           if (activeChild) {
+            setMatchStreak(prev => prev + 1); // Increment streak
+            const currentTotalPairsMatched = (overallStats?.totalPairsMatched || 0) + 1;
+            const newOverallStats = await updateTotalPairsMatched(1, activeChild.id);
+            setOverallStats(newOverallStats); // Update local state for overall stats
+
+            const eventsForAchievements: Parameters<typeof checkAndGrantNewAchievements>[0][] = [];
+
+            eventsForAchievements.push({
+                type: 'match_made',
+                gameKey: 'card_matching_game',
+                matchedCardValue: firstCard.value,
+            });
+
+            // If it's the very first match overall for this child (for "First Match!" achievement)
+            if (newOverallStats.totalPairsMatched === 1) {
+                // The 'matching_game_first_match' achievement type implicitly handles "first"
+                // by only being awardable once. So, just sending 'match_made' is enough.
+            }
+
+            if (matchStreak + 1 >= 3) { // Check against current streak + 1 (for streak of 3)
+                eventsForAchievements.push({
+                    type: 'match_streak_achieved',
+                    gameKey: 'card_matching_game',
+                    streakCount: matchStreak + 1,
+                });
+            }
+            
+            // Event for total pairs matched update
+            eventsForAchievements.push({
+                type: 'stats_updated', // Generic event type
+                gameKey: 'card_matching_game',
+                totalPairsMatchedAcrossGames: newOverallStats.totalPairsMatched,
+            });
+
+
+            let achievementPointsEarnedThisTurn = 0;
+            for (const event of eventsForAchievements) {
+                const newlyEarnedFromEvent = await checkAndGrantNewAchievements(event);
+                if (newlyEarnedFromEvent.length > 0) {
+                    newlyEarnedFromEvent.forEach(ach => {
+                        achievementPointsEarnedThisTurn += ach.points; // Accumulate points if any for this turn
+                        console.log(`CARD MATCH - NEW ACHIEVEMENT: ${ach.name}`);
+                        setNewlyEarnedAchievementCM(ach);
+                    });
+                }
+            }
             const updatedMatchedValues = gameState ? 
               [...gameState.matchedValues, firstCard.value] : 
               [firstCard.value];
@@ -667,6 +778,7 @@ const BugandaMatchingGame: React.FC = () => {
           );
           setCards(resetCards);
           setFlippedCards([]);
+          setMatchStreak(0);
           
           // Save moves in game state
           if (activeChild && gameState) {
@@ -685,6 +797,40 @@ const BugandaMatchingGame: React.FC = () => {
 
   const closeInfoModal = () => {
     setInfoModal({ ...infoModal, show: false });
+  };
+
+  const renderAchievementUnlockedModalCM = () => {
+  if (!newlyEarnedAchievementCM) return null;
+  // Use the same modal structure as renderAchievementUnlockedModalLL, just different state variable
+    return (
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+        <View style={{ backgroundColor: 'white', borderRadius: 20, padding: 24, width: '85%', maxWidth: 380, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 }}>
+          <View style={{ position: 'absolute', top: -40, backgroundColor: '#f59e0b', width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'white' }}>
+            <Ionicons name={(newlyEarnedAchievementCM.icon_name as any) || "star"} size={36} color="white" />
+          </View>
+          <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#b45309', marginTop: 48, marginBottom: 8, textAlign: 'center' }}>
+            Achievement Unlocked!
+          </Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 24, color: '#374151', marginBottom: 8, textAlign: 'center' }}>
+            {newlyEarnedAchievementCM.name}
+          </Text>
+          <Text style={{ fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 16 }}>
+            {newlyEarnedAchievementCM.description}
+          </Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#f59e0b', marginBottom: 24 }}>
+            +{newlyEarnedAchievementCM.points} Points!
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#f59e0b', paddingVertical: 12, paddingHorizontal: 40, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41, elevation: 2 }}
+            onPress={() => setNewlyEarnedAchievementCM(null)}
+          >
+            <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 16, textAlign: 'center' }}>
+              Awesome!
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   };
 
   // Show loading screen while fetching saved state
@@ -723,6 +869,7 @@ const BugandaMatchingGame: React.FC = () => {
   return (
     <View className="flex-1 flex-col bg-primary-50">
       <StatusBar style="dark" />
+      {renderAchievementUnlockedModalCM()} {/* Show achievement modal if any */}
 
       {/* Decorative Background Elements */}
       <View className="absolute top-5 left-5">
