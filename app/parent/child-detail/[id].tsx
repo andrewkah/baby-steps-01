@@ -48,6 +48,9 @@ export default function ChildDetailScreen() {
 
   const [childsEarnedFullAchievements, setChildsEarnedFullAchievements] = useState<DisplayableAchievement[]>([]);
 
+  // Add state to track whether to show all achievements or just recent ones
+  const [showAllAchievements, setShowAllAchievements] = useState(false);
+  
   useEffect(() => {
     if (childId) {
       fetchChildData();
@@ -127,6 +130,11 @@ export default function ChildDetailScreen() {
     }
   };
 
+  // Function to toggle showing all achievements
+  const toggleShowAllAchievements = () => {
+    setShowAllAchievements(prev => !prev);
+  };
+  
   return (
     <>
       <StatusBar style="dark" />
@@ -188,12 +196,13 @@ export default function ChildDetailScreen() {
                   </View>
                 ) : childsEarnedFullAchievements.length > 0 ? (
                   <View>
-                    {childsEarnedFullAchievements.map((achievement, index) => ( // achievement is DisplayableAchievement
+                    {/* Show either 5 or all achievements based on state */}
+                    {(showAllAchievements ? childsEarnedFullAchievements : childsEarnedFullAchievements.slice(0, 5)).map((achievement, index, displayedArray) => (
                       <View
-                          key={achievement.earned_instance_id} // <<< USE THE UNIQUE INSTANCE ID HERE
+                          key={achievement.earned_instance_id}
                           className={`
                             bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex-row items-start
-                            ${index < childsEarnedFullAchievements.length - 1 ? "mb-3" : ""} 
+                            ${index < displayedArray.length - 1 ? "mb-3" : ""} 
                           `}
                         >
                         <View className="mr-4 mt-1 bg-amber-100 p-3 rounded-full shadow-sm">
@@ -218,6 +227,25 @@ export default function ChildDetailScreen() {
                         </View>
                       </View>
                     ))}
+                    
+                    {/* Show More/Less button - only show if there are more than 5 achievements */}
+                    {childsEarnedFullAchievements.length > 5 && (
+                      <TouchableOpacity 
+                        onPress={toggleShowAllAchievements}
+                        className="mt-3 py-3 bg-white rounded-xl border border-gray-200 items-center"
+                      >
+                        <View className="flex-row items-center">
+                          <TranslatedText className="text-sm text-purple-700 font-medium mr-1">
+                            {showAllAchievements ? "Show Less" : `Show All (${childsEarnedFullAchievements.length})`}
+                          </TranslatedText>
+                          <Ionicons 
+                            name={showAllAchievements ? "chevron-up" : "chevron-down"} 
+                            size={16} 
+                            color="#7b5af0" 
+                          />
+                        </View>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 ) : (
                   <View className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 items-center">
