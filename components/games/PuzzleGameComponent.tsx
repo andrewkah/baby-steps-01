@@ -20,6 +20,14 @@ import { useRouter } from "expo-router";
 import { Text } from "@/components/StyledText";
 import { saveActivity } from "@/lib/utils"; // Import saveActivity
 import { useChild } from "@/context/ChildContext"; // Import useChild context
+import { useAchievements } from "./achievements/useAchievements"; 
+import { AchievementDefinition } from "./achievements/achievementTypes"; 
+import { 
+    PuzzleGameProgress, 
+    DEFAULT_PUZZLE_PROGRESS, 
+    loadPuzzleProgress, 
+    savePuzzleProgress 
+} from "./utils/progressManagerPuzzleGame"; // Import new progress manager
 
 // Get dimensions for landscape mode
 const { width, height } = Dimensions.get("window");
@@ -131,6 +139,13 @@ const isPuzzleSolvable = (puzzle: (number | null)[][]): boolean => {
 const BugandaPuzzleGame: React.FC = () => {
   const router = useRouter();
   const { activeChild } = useChild(); // Get active child from context
+  const { 
+    isLoadingAchievements, 
+    checkAndGrantNewAchievements 
+  } = useAchievements(activeChild?.id, 'puzzle_game'); // Game key
+
+  const [newlyEarnedAchievementPZ, setNewlyEarnedAchievementPZ] = useState<AchievementDefinition | null>(null);
+  const [puzzleProgress, setPuzzleProgress] = useState<PuzzleGameProgress>(DEFAULT_PUZZLE_PROGRESS);
   const gameStartTime = useRef(Date.now()); // Track when game started
 
   const puzzleImages: PuzzleImage[] = [
@@ -155,7 +170,10 @@ const BugandaPuzzleGame: React.FC = () => {
     },
   ];
 
-  const [currentPuzzle, setCurrentPuzzle] = useState<number>(0);
+  // Initialize with a random puzzle when the component first loads
+  const [currentPuzzle, setCurrentPuzzle] = useState<number>(
+    Math.floor(Math.random() * puzzleImages.length)
+  );
   const [grid, setGrid] = useState<(number | null)[][]>([]);
   const [emptySlotPosition, setEmptySlotPosition] = useState<Position>({ row: GRID_SIZE -1, col: GRID_SIZE -1 });
   const [tileStaticData, _setTileStaticData] = useState<Record<number, TileStaticData>>(generateTileStaticData());
@@ -174,6 +192,23 @@ const BugandaPuzzleGame: React.FC = () => {
 
   const previewAnim = useRef(new Animated.Value(1)).current;
   const successAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const initPuzzleProgress = async () => {
+      if (activeChild) {
+        const loadedProg = await loadPuzzleProgress(activeChild.id);
+        setPuzzleProgress(loadedProg);
+
+        // Check for "First Play" achievement if this is the very first time
+        // This check needs to be careful not to run on every component mount.
+        // One way is if totalGamesPlayed was 0 and now it's being incremented.
+        // Or, if we move totalGamesPlayed increment to initializePuzzle and check there.
+      } else {
+        setPuzzleProgress({ ...DEFAULT_PUZZLE_PROGRESS, childId: 'default' });
+      }
+    };
+    initPuzzleProgress();
+  }, [activeChild]);
 
   useEffect(() => {
     const loadSounds = async () => {
@@ -214,7 +249,7 @@ const BugandaPuzzleGame: React.FC = () => {
     gameStartTime.current = Date.now();
   }, [currentPuzzle, showPreview]);
 
-  const initializePuzzle = (): void => {
+  const initializePuzzle = async (): Promise<void> => {
     // 1. Create solved grid
     const solvedGrid: (number | null)[][] = [];
     let tileCounter = 1;
@@ -333,6 +368,36 @@ const BugandaPuzzleGame: React.FC = () => {
     setMoves(0);
     setIsComplete(false);
     successAnim.setValue(0); // Reset success animation
+
+     // Increment games played and save progress
+    if (activeChild) {
+        const currentGamesPlayed = puzzleProgress.totalGamesPlayed || 0;
+        const newProgress: PuzzleGameProgress = {
+            ...puzzleProgress,
+            totalGamesPlayed: currentGamesPlayed + 1,
+            childId: activeChild.id, // Ensure childId is set
+        };
+        setPuzzleProgress(newProgress); // Update local state
+        await savePuzzleProgress(newProgress, activeChild.id);
+
+        // Check for "First Play" achievement
+        if (newProgress.totalGamesPlayed === 1) {
+            const eventFirstPlay: Parameters<typeof checkAndGrantNewAchievements>[0] = {
+                type: 'puzzle_game_started',
+                gameKey: 'puzzle_game',
+                puzzleGameProgress: newProgress,
+            };
+            const newlyEarned = await checkAndGrantNewAchievements(eventFirstPlay);
+            if (newlyEarned.length > 0) {
+                newlyEarned.forEach(ach => {
+                    console.log(`PUZZLE GAME - FIRST PLAY - NEW ACHIEVEMENT: ${ach.name}`);
+                    setNewlyEarnedAchievementPZ(ach);
+                    // Handle points if necessary
+                });
+            }
+        }
+    }
+    gameStartTime.current = Date.now();
   };
   
   const moveTile = (tileId: number): void => {
@@ -411,7 +476,7 @@ const BugandaPuzzleGame: React.FC = () => {
     });
   };
 
-  const checkPuzzleCompletion = (currentGridToCheck: (number | null)[][]): void => {
+  const checkPuzzleCompletion = async (currentGridToCheck: (number | null)[][]): Promise<void> => {
     let completed = true;
     for (let r = 0; r < GRID_SIZE; r++) {
       for (let c = 0; c < GRID_SIZE; c++) {
@@ -438,6 +503,48 @@ const BugandaPuzzleGame: React.FC = () => {
       
       // Track the completed activity
       trackActivity(true);
+
+      let finalPuzzleProgress = puzzleProgress;
+
+      if (activeChild) {
+          // Update PuzzleGameProgress: add current puzzleId to completedPuzzleIds
+          const currentPuzzleId = puzzleImages[currentPuzzle].id;
+          let updatedCompletedIds = [...puzzleProgress.completedPuzzleIds];
+          if (!updatedCompletedIds.includes(currentPuzzleId)) {
+              updatedCompletedIds.push(currentPuzzleId);
+          }
+          const newProgress: PuzzleGameProgress = {
+              ...puzzleProgress,
+              completedPuzzleIds: updatedCompletedIds,
+              childId: activeChild.id, // Ensure childId
+          };
+          setPuzzleProgress(newProgress); // Update local state
+          await savePuzzleProgress(newProgress, activeChild.id);
+          finalPuzzleProgress = newProgress; // Use this for achievement check
+
+          // --- ACHIEVEMENT CHECKING (ON PUZZLE COMPLETE) ---
+          const durationSeconds = Math.round((Date.now() - gameStartTime.current) / 1000);
+          const eventComplete: Parameters<typeof checkAndGrantNewAchievements>[0] = {
+              type: 'puzzle_game_completed_successfully',
+              gameKey: 'puzzle_game',
+              puzzleId: currentPuzzleId,
+              movesTaken: moves + 1, // +1 because setMoves is async
+              durationInSeconds: durationSeconds,
+              puzzleGameProgress: finalPuzzleProgress, // Pass the latest progress
+              totalUniquePuzzlesAvailable: puzzleImages.length,
+          };
+
+          const newlyEarned = await checkAndGrantNewAchievements(eventComplete);
+          if (newlyEarned.length > 0) {
+              // No game-specific score to update with achievement points for this puzzle game.
+              // Points contribute to global child score if such a system exists.
+              newlyEarned.forEach(ach => {
+                  console.log(`PUZZLE GAME - COMPLETE - NEW ACHIEVEMENT: ${ach.name}`);
+                  setNewlyEarnedAchievementPZ(ach);
+              });
+          }
+          // --- END ACHIEVEMENT CHECKING ---
+      }
       
       Animated.spring(successAnim, {
         toValue: 1,
@@ -456,7 +563,14 @@ const BugandaPuzzleGame: React.FC = () => {
               onPress: () => {
                 // Reset gameStartTime for the next puzzle
                 gameStartTime.current = Date.now();
-                setCurrentPuzzle((prev) => (prev + 1) % puzzleImages.length);
+                
+                // Select a random puzzle that's different from the current one
+                let randomPuzzleIndex;
+                do {
+                  randomPuzzleIndex = Math.floor(Math.random() * puzzleImages.length);
+                } while (randomPuzzleIndex === currentPuzzle && puzzleImages.length > 1);
+                
+                setCurrentPuzzle(randomPuzzleIndex);
                 setShowPreview(true);
                 previewAnim.setValue(1);
               },
@@ -465,6 +579,40 @@ const BugandaPuzzleGame: React.FC = () => {
         );
       }, 1000);
     }
+  };
+
+  const renderAchievementUnlockedModalPZ = () => {
+    if (!newlyEarnedAchievementPZ) return null;
+    // Use same modal structure as other games
+    return (
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <View style={{ backgroundColor: 'white', borderRadius: 20, padding: 24, width: '85%', maxWidth: 380, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 }}>
+          <View style={{ position: 'absolute', top: -40, backgroundColor: '#f59e0b', width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'white' }}>
+            <Ionicons name={(newlyEarnedAchievementPZ.icon_name as any) || "star"} size={36} color="white" />
+          </View>
+          <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#b45309', marginTop: 48, marginBottom: 8, textAlign: 'center' }}>
+            Achievement Unlocked!
+          </Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 24, color: '#374151', marginBottom: 8, textAlign: 'center' }}>
+            {newlyEarnedAchievementPZ.name}
+          </Text>
+          <Text style={{ fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 16 }}>
+            {newlyEarnedAchievementPZ.description}
+          </Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#f59e0b', marginBottom: 24 }}>
+            +{newlyEarnedAchievementPZ.points} Points!
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#f59e0b', paddingVertical: 12, paddingHorizontal: 40, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41, elevation: 2 }}
+            onPress={() => setNewlyEarnedAchievementPZ(null)}
+          >
+            <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 16, textAlign: 'center' }}>
+              Awesome!
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   };
 
   const handleReset = () => {
@@ -609,6 +757,7 @@ const BugandaPuzzleGame: React.FC = () => {
   return (
     <View className="flex-1 bg-indigo-50">
       <StatusBar style="dark" />
+      {renderAchievementUnlockedModalPZ()}
 
       <TouchableOpacity
         className="w-12 h-12 rounded-full bg-white items-center justify-center shadow-md border-2 border-primary-200 mx-6 mt-6"

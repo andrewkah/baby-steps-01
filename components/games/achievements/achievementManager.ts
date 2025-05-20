@@ -3,6 +3,7 @@ import { AchievementDefinition, ChildAchievement } from './achievementTypes';
 import { UserStats as LugandaLearningUserStats } from '../utils/progressManagerLugandaLearning'; 
 import { CountingGameProgress, saveGameProgress } from '../utils/progressManagerCountingGame'; 
 import { WordGameProgress } from '../utils/progressManagerWordGame'; 
+import { PuzzleGameProgress } from '../utils/progressManagerPuzzleGame';
 
 // --- Supabase Functions ---
 
@@ -91,6 +92,9 @@ interface CheckAchievementsArgs {
       // Word Game Specific Event Types
       | 'word_game_level_just_completed' // Different from generic level_completed if needed
       | 'word_game_stats_updated' // For score, completed levels count
+      | 'puzzle_game_started' // For first play
+      | 'puzzle_game_completed_successfully' // For any completion, specific completion, low moves, quick time
+      | 'puzzle_game_stats_updated'
       ;
       
     gameKey: string; // e.g., 'luganda_learning_game', 'counting_game'
@@ -113,6 +117,12 @@ interface CheckAchievementsArgs {
     allLevelsInGameCount?: number; // Total number of levels available in the word game
     hintUsedThisLevel?: boolean; // For 'word_game_level_no_hint'
     consecutiveLevelsCompleted?: number; // For 'word_game_consecutive_levels'
+    // Puzzle Game specific event data
+    puzzleId?: number; // ID of the puzzle (e.g., 1 for Kasubi Tombs)
+    movesTaken?: number;
+    durationInSeconds?: number;
+    puzzleGameProgress?: PuzzleGameProgress; // Current state of completed unique puzzles, games played
+    totalUniquePuzzlesAvailable?: number;
   };
 }
 
@@ -307,6 +317,56 @@ export const checkAndGrantNewAchievements = async ({
                 shouldAward = true;
             }
             break;
+      }
+    }
+
+    else if (event.gameKey === 'puzzle_game') {
+      switch (achDef.activity_type) {
+        case 'puzzle_game_first_play':
+          if (event.type === 'puzzle_game_started' && event.puzzleGameProgress?.totalGamesPlayed === 1) {
+            shouldAward = true;
+          }
+          break;
+        case 'puzzle_game_first_completion':
+          // Award if a puzzle was completed AND total completed unique puzzles is now 1
+          if (event.type === 'puzzle_game_completed_successfully' && event.puzzleGameProgress?.completedPuzzleIds.length === 1) {
+             // Ensure the current puzzleId is indeed in completedPuzzleIds
+            if (event.puzzleId !== undefined && event.puzzleGameProgress.completedPuzzleIds.includes(event.puzzleId)) {
+                 shouldAward = true;
+            }
+          }
+          break;
+        case 'puzzle_game_specific_completed':
+          if (event.type === 'puzzle_game_completed_successfully' && 
+              event.puzzleId === achDef.trigger_value) {
+            shouldAward = true;
+          }
+          break;
+        case 'puzzle_game_low_moves':
+          if (event.type === 'puzzle_game_completed_successfully' && 
+              event.movesTaken !== undefined && 
+              achDef.trigger_value !== null && achDef.trigger_value !== undefined &&
+              event.movesTaken <= Number(achDef.trigger_value)) {
+            shouldAward = true;
+          }
+          break;
+        case 'puzzle_game_quick_time':
+          if (event.type === 'puzzle_game_completed_successfully' && 
+              event.durationInSeconds !== undefined && 
+              achDef.trigger_value !== null && achDef.trigger_value !== undefined &&
+              event.durationInSeconds <= Number(achDef.trigger_value)) {
+            shouldAward = true;
+          }
+          break;
+        case 'puzzle_game_all_unique_completed':
+          if ((event.type === 'puzzle_game_completed_successfully' || event.type === 'puzzle_game_stats_updated') && 
+              event.puzzleGameProgress && event.totalUniquePuzzlesAvailable !== undefined &&
+              achDef.trigger_value !== null && achDef.trigger_value !== undefined && // trigger_value is the count of all unique puzzles
+              event.puzzleGameProgress.completedPuzzleIds.length >= Number(achDef.trigger_value) &&
+              event.puzzleGameProgress.completedPuzzleIds.length === event.totalUniquePuzzlesAvailable) {
+            shouldAward = true;
+          }
+          break;
       }
     }
 
