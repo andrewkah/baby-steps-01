@@ -40,6 +40,8 @@ import {
   updateLastPlayedLevel,
   isStageUnlocked
 } from "./utils/progressManagerCountingGame";
+import { useAchievements } from "./achievements/useAchievements"; // Adjust path
+import { AchievementDefinition } from "./achievements/achievementTypes"; // Adjust path
 
 const { width, height } = Dimensions.get("window");
 
@@ -84,6 +86,7 @@ const LugandaCountingGame: React.FC = () => {
   const [gameLevels, setGameLevels] = useState<number[]>([]);
   const [stageCompleted, setStageCompleted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [newlyEarnedAchievement, setNewlyEarnedAchievement] = useState<AchievementDefinition | null>(null);
   
   // Progress state
   const [progress, setProgress] = useState<CountingGameProgress>(DEFAULT_PROGRESS);
@@ -93,6 +96,13 @@ const LugandaCountingGame: React.FC = () => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const { activeChild } = useChild();
   const gameStartTime = useRef(Date.now());
+
+  const { 
+  definedAchievements, 
+  earnedChildAchievements, 
+  isLoadingAchievements: isLoadingAch, // rename to avoid conflict
+  checkAndGrantNewAchievements 
+} = useAchievements();
 
   // Load saved progress when component mounts
   useEffect(() => {
@@ -126,10 +136,15 @@ const LugandaCountingGame: React.FC = () => {
         // Set a temporary default progress 
         setProgress(DEFAULT_PROGRESS);
       }
+      if (isLoadingAch || !activeChild) { // Use isLoadingAch from the hook
+        setIsLoading(true);
+      } else {
+        setIsLoading(false);
+      }
     };
 
     loadSavedProgress();
-  }, [activeChild]);
+  }, [isLoadingAch, activeChild]);
 
   // Add orientation locking
   useEffect(() => {
@@ -167,12 +182,33 @@ const LugandaCountingGame: React.FC = () => {
     if (!activeChild) return;
     
     // Update progress to mark this stage as completed
-    const updatedProgress = updateProgressForStageCompletion(
+    let updatedProgress = updateProgressForStageCompletion(
       progress,
       currentStage,
       score + 10, // Add bonus points for completing the stage
       activeChild.id
     );
+
+    // Check for achievements related to stage completion
+  const newlyEarnedFromStage = await checkAndGrantNewAchievements(
+    updatedProgress, // Pass the potentially updated progress
+    { type: 'stage_completed', stageId: currentStage }
+  );
+
+    let achievementPointsEarned = 0;
+    if (newlyEarnedFromStage.length > 0) {
+      newlyEarnedFromStage.forEach(ach => {
+        achievementPointsEarned += ach.points;
+        console.log(`NEW ACHIEVEMENT: ${ach.name}`);
+        setNewlyEarnedAchievement(ach); // For modal/toast
+        // Toast.show(`Achievement Unlocked: ${ach.name}! +${ach.points} points`, Toast.LONG);
+      });
+
+      updatedProgress = {
+        ...updatedProgress,
+        totalScore: updatedProgress.totalScore + achievementPointsEarned,
+      };
+    }
     
     setProgress(updatedProgress);
     await saveGameProgress(updatedProgress, activeChild.id);
@@ -261,13 +297,21 @@ const LugandaCountingGame: React.FC = () => {
         setGameLevels(randomNumbers);
       }
 
-      // Check if we have a saved level for this stage
-      const savedLevel = progress.lastPlayedLevel[stageId];
-      if (savedLevel && savedLevel > 1) {
-        setCurrentLevel(savedLevel);
-      } else {
-        // Reset level to 1 when starting a new stage
+      // Check if the stage is already completed
+      const isStageCompleted = progress.completedStages.includes(stageId);
+      
+      // If stage is completed, always start from level 1
+      if (isStageCompleted) {
         setCurrentLevel(1);
+      } else {
+        // Only use saved level if the stage is in progress (not completed)
+        const savedLevel = progress.lastPlayedLevel[stageId];
+        if (savedLevel && savedLevel > 1) {
+          setCurrentLevel(savedLevel);
+        } else {
+          // Reset level to 1 when starting a new stage
+          setCurrentLevel(1);
+        }
       }
       
       setStageCompleted(false);
@@ -473,7 +517,14 @@ const LugandaCountingGame: React.FC = () => {
 
     // If correct, add to score and prepare for next level
     if (isAnswerCorrect) {
-      setScore((prevScore) => prevScore + 10);
+      const newScore = score + 10; // Calculate new score first
+      setScore(newScore);
+
+      // Create a temporary progress object with the new score for checking
+      let tempProgressForAchievementCheck = {
+        ...progress,
+        totalScore: newScore, // Use the new score
+      };
 
       // Rotate animation for correct answer
       Animated.timing(rotateAnim, {
@@ -484,6 +535,31 @@ const LugandaCountingGame: React.FC = () => {
         rotateAnim.setValue(0);
       });
 
+       const newlyEarnedFromScore = await checkAndGrantNewAchievements(
+          tempProgressForAchievementCheck,
+          { type: 'score_updated' }
+        );
+
+        let achievementPointsEarned = 0;
+        if (newlyEarnedFromScore.length > 0) {
+          newlyEarnedFromScore.forEach(ach => {
+            achievementPointsEarned += ach.points;
+            console.log(`NEW ACHIEVEMENT (Score): ${ach.name}`);
+            setNewlyEarnedAchievement(ach); // For modal/toast
+            // Toast.show(`Achievement Unlocked: ${ach.name}! +${ach.points} points`, Toast.LONG);
+          });
+          // Update the actual progress state with these points
+          // This needs to be done carefully if handleStageCompletion also adds points
+          // Best to consolidate score updates if possible or ensure they don't double-add.
+          // For simplicity, we'll update the main progress state here.
+          // This assumes that a score update achievement doesn't overlap with stage completion bonus.
+          setProgress(prev => ({
+            ...prev,
+            totalScore: prev.totalScore + achievementPointsEarned
+          }));
+          // The saveGameProgress will happen in the setTimeout below or in handleStageCompletion
+        }
+
       // Move to next level after a delay
       setTimeout(async () => {
         const currentStageData =
@@ -491,6 +567,9 @@ const LugandaCountingGame: React.FC = () => {
           COUNTING_GAME_STAGES[0];
         if (currentLevel < currentStageData.levels) {
           await trackActivity(false);
+          if (achievementPointsEarned > 0 && activeChild) {
+            await saveGameProgress(progress, activeChild.id); // Save progress after score update
+          }
           setCurrentLevel((prevLevel) => prevLevel + 1);
         } else {
           // Stage completed!
@@ -510,6 +589,40 @@ const LugandaCountingGame: React.FC = () => {
         setSelectedCount(null);
       }, 1500);
     }
+  };
+
+  const renderAchievementUnlockedModal = () => {
+  if (!newlyEarnedAchievement) return null;
+
+    return (
+      <View className="absolute inset-0 bg-black/60 items-center justify-center z-50">
+        <View className="bg-white rounded-2xl p-6 w-4/5 max-w-sm items-center shadow-xl">
+          <View className="absolute -top-10 bg-amber-400 w-20 h-20 rounded-full items-center justify-center border-4 border-white">
+            <Ionicons name={(newlyEarnedAchievement.icon_name as any) || "star"} size={36} color="white" />
+          </View>
+          <Text variant="bold" className="text-xl text-amber-600 mt-8 mb-2 text-center">
+            Achievement Unlocked!
+          </Text>
+          <Text variant="bold" className="text-2xl text-slate-700 mb-2 text-center">
+            {newlyEarnedAchievement.name}
+          </Text>
+          <Text className="text-slate-500 text-center mb-4">
+            {newlyEarnedAchievement.description}
+          </Text>
+          <Text variant="bold" className="text-lg text-amber-500 mb-6">
+            +{newlyEarnedAchievement.points} Points!
+          </Text>
+          <TouchableOpacity
+            className="bg-amber-500 py-3 px-10 rounded-xl shadow-md"
+            onPress={() => setNewlyEarnedAchievement(null)}
+          >
+            <Text variant="bold" className="text-white text-lg text-center">
+              Awesome!
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   };
 
   const renderNumberOptions = (): JSX.Element[] => {
@@ -1191,6 +1304,7 @@ const LugandaCountingGame: React.FC = () => {
           </View>
         </View>
       )}
+      {renderAchievementUnlockedModal()} 
     </SafeAreaView>
   );
 };
