@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+"use client"
+
+import { useEffect, useState } from "react"
 import {
   View,
   ScrollView,
@@ -8,39 +10,30 @@ import {
   BackHandler,
   SafeAreaView,
   Animated,
-} from "react-native";
-import { Audio, AVPlaybackSource } from "expo-av";
-import { MaterialIcons, Feather, Ionicons } from "@expo/vector-icons";
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
-import {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { Text } from "@/components/StyledText";
-import { LinearGradient } from "expo-linear-gradient";
+} from "react-native"
+import { Audio, type AVPlaybackSource } from "expo-av"
+import { MaterialIcons, Ionicons } from "@expo/vector-icons"
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler"
+import { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
+import { useRouter } from "expo-router"
+import { StatusBar } from "expo-status-bar"
+import { TranslatedText } from "@/components/translated-text"
 
 interface Textile {
-  id: number;
-  name: string;
-  image: any;
-  description: string;
-  closeupImage: any;
-  audio: AVPlaybackSource;
+  id: number
+  name: string
+  image: any
+  description: string
+  closeupImage: any
+  audio: AVPlaybackSource
 }
 
 export default function TextilesScreen() {
-  const [selectedTextile, setSelectedTextile] = useState<Textile | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const windowWidth = Dimensions.get("window").width;
-  const router = useRouter();
-  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+  const [selectedTextile, setSelectedTextile] = useState<Textile | null>(null)
+  const [sound, setSound] = useState<Audio.Sound | null>(null)
+  const windowWidth = Dimensions.get("window").width
+  const router = useRouter()
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0]
 
   useEffect(() => {
     // Fade in animation when screen loads
@@ -48,25 +41,22 @@ export default function TextilesScreen() {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
-    }).start();
+    }).start()
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        if (selectedTextile) {
-          setSelectedTextile(null);
-          if (sound) {
-            sound.stopAsync();
-          }
-          return true;
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (selectedTextile) {
+        setSelectedTextile(null)
+        if (sound) {
+          sound.stopAsync()
         }
-        router.back();
-        return true;
+        return true
       }
-    );
+      router.back()
+      return true
+    })
 
-    return () => backHandler.remove();
-  }, [router, selectedTextile, sound]);
+    return () => backHandler.remove()
+  }, [router, selectedTextile, sound])
 
   const textiles = [
     {
@@ -96,35 +86,34 @@ export default function TextilesScreen() {
       closeupImage: require("@/assets/images/textile_baskets_closeup.png"),
       audio: require("@/assets/sounds/touch-1.mp3"),
     },
-  ];
+  ]
 
   async function playSound(audioFile: AVPlaybackSource) {
     if (sound) {
-      await sound.unloadAsync();
+      await sound.unloadAsync()
     }
 
-    const { sound: newSound } = await Audio.Sound.createAsync(audioFile);
-    setSound(newSound);
-    await newSound.playAsync();
+    const { sound: newSound } = await Audio.Sound.createAsync(audioFile)
+    setSound(newSound)
+    await newSound.playAsync()
   }
 
   const TextileCard = ({ item }: { item: Textile }) => {
-    const scale = useSharedValue(1);
+    const scale = useSharedValue(1)
 
     const pinchGesture = Gesture.Pinch()
       .onUpdate((event) => {
-        scale.value =
-          event.scale > 0.5 ? (event.scale < 3 ? event.scale : 3) : 0.5;
+        scale.value = event.scale > 0.5 ? (event.scale < 3 ? event.scale : 3) : 0.5
       })
       .onEnd(() => {
-        scale.value = withTiming(1);
-      });
+        scale.value = withTiming(1)
+      })
 
     const animatedStyle = useAnimatedStyle(() => {
       return {
         transform: [{ scale: scale.value }],
-      };
-    });
+      }
+    })
 
     return (
       <TouchableOpacity
@@ -139,48 +128,32 @@ export default function TextilesScreen() {
       >
         <GestureDetector gesture={pinchGesture}>
           <Animated.View style={animatedStyle}>
-            <Image
-              source={item.image}
-              className="w-full h-32"
-              resizeMode="cover"
-            />
+            <Image source={item.image} className="w-full h-32" resizeMode="cover" />
           </Animated.View>
         </GestureDetector>
 
         <View className="p-4 flex-1">
           <View className="flex-row justify-between items-center">
-            <Text
-              variant="bold"
-              className="text-lg text-indigo-800 flex-1 mr-2"
-            >
+            <TranslatedText variant="bold" className="text-lg text-indigo-800 flex-1 mr-2">
               {item.name}
-            </Text>
-            {/* <TouchableOpacity
-              className="p-2 rounded-full bg-indigo-100 shadow-sm"
-              onPress={(e) => {
-                e.stopPropagation();
-                playSound(item.audio);
-              }}
-            >
-              <MaterialIcons name="volume-up" size={22} color="#7b5af0" />
-            </TouchableOpacity> */}
+            </TranslatedText>
           </View>
 
-          <Text className="text-slate-700 mt-2" numberOfLines={2}>
+          <TranslatedText className="text-slate-700 mt-2" numberOfLines={2}>
             {item.description.substring(0, 70)}...
-          </Text>
+          </TranslatedText>
         </View>
       </TouchableOpacity>
-    );
-  };
+    )
+  }
 
   useEffect(() => {
     return sound
       ? () => {
-          sound.unloadAsync();
+          sound.unloadAsync()
         }
-      : undefined;
-  }, [sound]);
+      : undefined
+  }, [sound])
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -196,19 +169,18 @@ export default function TextilesScreen() {
             <Ionicons name="arrow-back" size={20} color="#7b5af0" />
           </TouchableOpacity>
 
-          <Text variant="bold" className="text-xl text-indigo-800">
+          <TranslatedText variant="bold" className="text-xl text-indigo-800">
             Buganda Textiles
-          </Text>
+          </TranslatedText>
 
           <View style={{ width: 40 }} />
         </View>
 
         <ScrollView className="flex-1 p-4">
           <Animated.View style={{ opacity: fadeAnim }}>
-            <Text className="text-base mb-4 text-slate-700">
-              Discover the beautiful textiles and fabric arts of the Buganda
-              Kingdom. Tap for more details
-            </Text>
+            <TranslatedText className="text-base mb-4 text-slate-700">
+              Discover the beautiful textiles and fabric arts of the Buganda Kingdom. Tap for more details
+            </TranslatedText>
 
             {/* Horizontal scrolling textiles */}
             <ScrollView
@@ -223,9 +195,9 @@ export default function TextilesScreen() {
             </ScrollView>
 
             {/* Featured textiles section */}
-            <Text variant="bold" className="text-lg text-indigo-800 mt-6 mb-3">
+            <TranslatedText variant="bold" className="text-lg text-indigo-800 mt-6 mb-3">
               Featured Textile Art
-            </Text>
+            </TranslatedText>
 
             <View className="mb-3">
               {textiles.slice(0, 2).map((textile) => (
@@ -235,32 +207,14 @@ export default function TextilesScreen() {
                   activeOpacity={0.7}
                   className="flex-row bg-white rounded-xl overflow-hidden shadow-sm border border-indigo-100 mb-4"
                 >
-                  <Image
-                    source={textile.closeupImage}
-                    className="w-28 h-28"
-                    resizeMode="cover"
-                  />
+                  <Image source={textile.closeupImage} className="w-28 h-28" resizeMode="cover" />
                   <View className="flex-1 p-3">
-                    <Text variant="bold" className="text-base text-indigo-800">
+                    <TranslatedText variant="bold" className="text-base text-indigo-800">
                       {textile.name}
-                    </Text>
-                    <Text className="text-slate-700 text-sm" numberOfLines={2}>
+                    </TranslatedText>
+                    <TranslatedText className="text-slate-700 text-sm" numberOfLines={2}>
                       {textile.description.substring(0, 80)}...
-                    </Text>
-
-                    {/* <TouchableOpacity
-                      className="self-start mt-1 p-1 rounded-full bg-indigo-100"
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        playSound(textile.audio);
-                      }}
-                    >
-                      <MaterialIcons
-                        name="volume-up"
-                        size={18}
-                        color="#7b5af0"
-                      />
-                    </TouchableOpacity> */}
+                    </TranslatedText>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -275,41 +229,30 @@ export default function TextilesScreen() {
               className="relative bg-white rounded-3xl overflow-hidden shadow-xl border-4 border-primary-200"
               style={{ maxHeight: "90%" }}
             >
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 16 }}
-              >
-                <Image
-                  source={selectedTextile.closeupImage}
-                  className="w-full h-48"
-                  resizeMode="cover"
-                />
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+                <Image source={selectedTextile.closeupImage} className="w-full h-48" resizeMode="cover" />
 
                 <View className="px-5 pt-4">
-                  <Text
-                    variant="bold"
-                    className="text-xl text-primary-700 mb-2 text-center"
-                  >
+                  <TranslatedText variant="bold" className="text-xl text-primary-700 mb-2 text-center">
                     {selectedTextile.name}
-                  </Text>
+                  </TranslatedText>
 
                   {/* Description in a styled container */}
                   <View className="bg-primary-50 w-full rounded-xl p-4 mb-4">
-                    <Text className="text-base text-primary-700 leading-relaxed">
+                    <TranslatedText className="text-base text-primary-700 leading-relaxed">
                       {selectedTextile.description}
-                    </Text>
+                    </TranslatedText>
                   </View>
 
                   <View className="bg-yellow-50 w-full rounded-xl p-4 mb-3 border border-yellow-100">
-                    <Text variant="bold" className="text-primary-700 mb-1">
+                    <TranslatedText variant="bold" className="text-primary-700 mb-1">
                       About the Texture:
-                    </Text>
-                    <Text className="text-primary-700 leading-relaxed">
-                      This closeup image shows the detailed texture and
-                      craftsmanship of the {selectedTextile.name.toLowerCase()},
-                      highlighting the intricate patterns and traditional
+                    </TranslatedText>
+                    <TranslatedText className="text-primary-700 leading-relaxed">
+                      This closeup image shows the detailed texture and craftsmanship of the{" "}
+                      {selectedTextile.name.toLowerCase()}, highlighting the intricate patterns and traditional
                       techniques used in its creation.
-                    </Text>
+                    </TranslatedText>
                   </View>
                 </View>
                 <View className="p-3 pt-0 flex-row justify-center items-center space-x-4">
@@ -319,9 +262,9 @@ export default function TextilesScreen() {
                     onPress={() => playSound(selectedTextile.audio)}
                   >
                     <MaterialIcons name="volume-up" size={20} color="#7b5af0" />
-                    <Text variant="medium" className="text-primary-600 ml-1.5">
+                    <TranslatedText variant="medium" className="text-primary-600 ml-1.5">
                       Play Sound
-                    </Text>
+                    </TranslatedText>
                   </TouchableOpacity>
 
                   {/* Close button */}
@@ -330,9 +273,9 @@ export default function TextilesScreen() {
                     onPress={() => setSelectedTextile(null)}
                     activeOpacity={0.8}
                   >
-                    <Text variant="bold" className="text-white">
+                    <TranslatedText variant="bold" className="text-white">
                       Close
-                    </Text>
+                    </TranslatedText>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -341,5 +284,5 @@ export default function TextilesScreen() {
         )}
       </SafeAreaView>
     </GestureHandlerRootView>
-  );
+  )
 }
