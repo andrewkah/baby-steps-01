@@ -189,11 +189,16 @@ const LugandaCountingGame: React.FC = () => {
       activeChild.id
     );
 
+    const event = {
+    type: 'stage_completed' as 'stage_completed', // Explicitly type as literal type
+    gameKey: 'counting_game',
+    stageId: currentStage, // for stage_completed
+    newTotalScore: updatedProgress.totalScore, // for score_updated
+    // ... any other relevant data for counting game achievements
+    };
+
     // Check for achievements related to stage completion
-  const newlyEarnedFromStage = await checkAndGrantNewAchievements(
-    updatedProgress, // Pass the potentially updated progress
-    { type: 'stage_completed', stageId: currentStage }
-  );
+    const newlyEarnedFromStage = await checkAndGrantNewAchievements(event);
 
     let achievementPointsEarned = 0;
     if (newlyEarnedFromStage.length > 0) {
@@ -535,10 +540,14 @@ const LugandaCountingGame: React.FC = () => {
         rotateAnim.setValue(0);
       });
 
-       const newlyEarnedFromScore = await checkAndGrantNewAchievements(
-          tempProgressForAchievementCheck,
-          { type: 'score_updated' }
-        );
+       // Create event object for score updated achievements
+       const scoreEvent = {
+          type: 'score_updated' as 'score_updated',
+          gameKey: 'counting_game',
+          newTotalScore: tempProgressForAchievementCheck.totalScore
+       };
+       
+       const newlyEarnedFromScore = await checkAndGrantNewAchievements(scoreEvent);
 
         let achievementPointsEarned = 0;
         if (newlyEarnedFromScore.length > 0) {

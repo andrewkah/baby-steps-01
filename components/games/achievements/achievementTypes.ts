@@ -1,14 +1,14 @@
+// ./achievements/achievementTypes.ts (or your correct path)
+
 export interface AchievementDefinition {
   id: string; // uuid
   name: string;
   description: string;
-  icon_name: string; // e.g., 'star', 'trophy-outline'
-  activity_type: string; // e.g., 'counting_game_stage_complete', 'counting_game_score'
+  icon_name: string;
+  activity_type: string;
   points: number;
-  // Add a trigger condition, could be a value or a specific ID
-  // For 'counting_game_stage_complete', trigger_value could be the stage ID
-  // For 'counting_game_score', trigger_value could be the score threshold
-  trigger_value?: number | string; 
+  trigger_value?: number | string | null; // Make null explicit if DB allows it
+  game_key?: string | null;             // <<< ADD THIS LINE (make it optional and nullable if appropriate)
   created_at?: string;
 }
 

@@ -9,7 +9,7 @@ const STAGES_DATA_KEY = 'luganda_stages';
 const USER_STATS_KEY = 'luganda_user_stats';
 
 // User Statistics Interface
-export interface UserStats { // <<< ADD 'export' HERE
+export interface UserStats { 
   totalWords: number;
   correctAnswers: number;
   wrongAnswers: number;

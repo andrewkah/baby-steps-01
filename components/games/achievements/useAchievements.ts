@@ -1,17 +1,19 @@
-// features/achievements/useAchievements.ts
+// ./achievements/useAchievements.ts
 import { useState, useEffect, useCallback } from 'react';
-import { useChild } from '@/context/ChildContext';
+import { useChild } from '@/context/ChildContext'; // Adjust path
 import {
-  fetchAllDefinedAchievements,
+  fetchAllDefinedAchievements as fetchAllDefinedAchievementsLogic, // Renamed for clarity
   fetchChildEarnedAchievements,
   checkAndGrantNewAchievements as checkAndGrantNewAchievementsLogic,
+  awardAchievementToChild,
 } from './achievementManager';
 import { AchievementDefinition, ChildAchievement } from './achievementTypes';
-import { CountingGameProgress } from '../utils/progressManagerCountingGame'; // Adjust path as needed
+// Remove game-specific progress types from here unless absolutely needed by the hook itself
+// The game component will prepare the event data.
 
-export const useAchievements = (specificChildId?: string) => { // Add optional specificChildId
+// Add gameKey to the hook's parameters
+export const useAchievements = (specificChildId?: string, gameKey?: string) => {
   const { activeChild } = useChild();
-  // Prioritize specificChildId if provided, otherwise use activeChild from context
   const childIdToFetchFor = specificChildId || activeChild?.id;
 
   const [definedAchievements, setDefinedAchievements] = useState<AchievementDefinition[]>([]);
@@ -19,7 +21,7 @@ export const useAchievements = (specificChildId?: string) => { // Add optional s
   const [isLoadingAchievements, setIsLoadingAchievements] = useState(true);
 
   const loadInitialAchievements = useCallback(async () => {
-    if (!childIdToFetchFor) { // Use the determined childId
+    if (!childIdToFetchFor) {
       setIsLoadingAchievements(false);
       setDefinedAchievements([]);
       setEarnedChildAchievements([]);
@@ -27,51 +29,47 @@ export const useAchievements = (specificChildId?: string) => { // Add optional s
     }
     setIsLoadingAchievements(true);
     try {
-      const [allDefs, childEarned] = await Promise.all([
-        fetchAllDefinedAchievements(),
-        fetchChildEarnedAchievements(childIdToFetchFor), // Fetch for the determined childId
-      ]);
+      // Fetch all defined achievements OR only for the specific gameKey if provided
+      // For profile screens, you might want all achievements. For in-game, maybe just game-specific.
+      // Let's assume for now it fetches all, and manager filters. Or fetchAll can take gameKey.
+      const allDefs = await fetchAllDefinedAchievementsLogic(); // Fetches ALL by default now
+      const childEarned = await fetchChildEarnedAchievements(childIdToFetchFor);
+      
       setDefinedAchievements(allDefs);
       setEarnedChildAchievements(childEarned);
     } catch (error) {
       console.error("Failed to load achievements data:", error);
-      // Optionally set empty arrays on error to prevent UI issues
       setDefinedAchievements([]);
       setEarnedChildAchievements([]);
     } finally {
       setIsLoadingAchievements(false);
     }
-  }, [childIdToFetchFor]); // Depend on childIdToFetchFor
+  }, [childIdToFetchFor]); // Removed gameKey dependency for initial load, as manager will filter later
 
   useEffect(() => {
     loadInitialAchievements();
   }, [loadInitialAchievements]);
 
+  // The event structure passed to this function will be crucial
   const checkAndGrantNewAchievements = useCallback(
-    async (
-      gameProgress: CountingGameProgress, // This argument implies it's used within a game context
-      event?: { type: 'stage_completed'; stageId: number } | { type: 'score_updated' }
+    async (eventPayload: Omit<Parameters<typeof checkAndGrantNewAchievementsLogic>[0], 'childId' | 'definedAchievements' | 'earnedAchievementIds'>['event']
     ): Promise<AchievementDefinition[]> => {
-      // This function is more relevant for game screens.
-      // For displaying on a profile, we mainly need the fetched data.
-      // Ensure childIdToFetchFor is valid if this function were to be used from a context where specificChildId is relevant
       const currentChildId = specificChildId || activeChild?.id;
       if (!currentChildId || isLoadingAchievements || !definedAchievements.length) {
         return [];
       }
 
       const earnedIds = earnedChildAchievements.map(ach => ach.achievement_id);
+      
       const newlyEarned = await checkAndGrantNewAchievementsLogic({
         childId: currentChildId,
-        gameProgress,
-        definedAchievements,
+        definedAchievements, // Pass all loaded definitions
         earnedAchievementIds: earnedIds,
-        event,
+        event: eventPayload, // The game component constructs this event object
       });
 
       if (newlyEarned.length > 0) {
-        // Re-fetch to update the earnedChildAchievements list
-        if (childIdToFetchFor) { // Re-fetch for the specific child if one was provided
+        if (childIdToFetchFor) {
             const updatedEarned = await fetchChildEarnedAchievements(childIdToFetchFor);
             setEarnedChildAchievements(updatedEarned);
         }
@@ -82,10 +80,10 @@ export const useAchievements = (specificChildId?: string) => { // Add optional s
   );
 
   return {
-    definedAchievements,
+    definedAchievements, // This will contain ALL achievements if gameKey not used in fetch
     earnedChildAchievements,
     isLoadingAchievements,
-    checkAndGrantNewAchievements, // Keep for completeness, though not directly used for display on this screen
+    checkAndGrantNewAchievements,
     refreshAchievements: loadInitialAchievements,
   };
 };

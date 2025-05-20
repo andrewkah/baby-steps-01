@@ -20,6 +20,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text } from "@/components/StyledText";
 import { useChild } from "@/context/ChildContext";
 import { saveActivity } from "@/lib/utils";
+import { useAchievements } from "./achievements/useAchievements";
+import { AchievementDefinition } from "./achievements/achievementTypes"; 
 
 // Import our data structure
 import {
@@ -52,6 +54,14 @@ type GameState =
 const LugandaLearningGame: React.FC = () => {
   const router = useRouter();
   const { activeChild } = useChild();
+  const { 
+  // definedAchievements, // Not directly used for display in-game, but hook needs it
+  // earnedChildAchievements, // Not directly used for display in-game
+  isLoadingAchievements, // Can be combined with main isLoading
+  checkAndGrantNewAchievements 
+} = useAchievements(activeChild?.id, 'luganda_learning_game'); // Pass childId and gameKey
+
+const [newlyEarnedAchievementLL, setNewlyEarnedAchievementLL] = useState<AchievementDefinition | null>(null);
   const gameStartTime = useRef(Date.now());
 
   // Get dimensions for responsive layout
@@ -388,50 +398,41 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
       return;
   }
 
-  const newTotalScore = totalScore + levelScore;
-
-  let newCompletedLevels = [...completedLevels];
-  if (!newCompletedLevels.includes(selectedLevel.id)) {
-      newCompletedLevels.push(selectedLevel.id);
+  const newTotalScoreState = totalScore + levelScore; // Use this for UI update
+  let newCompletedLevelsState = [...completedLevels];
+  if (!newCompletedLevelsState.includes(selectedLevel.id)) {
+    newCompletedLevelsState.push(selectedLevel.id);
   }
 
-  // It's crucial that unlockNextLevel and unlockNextStage from './utils/lugandawords'
-  // return NEW array instances and do not mutate the 'stages' state directly.
-  // Assuming they work correctly like the versions in progressManager.ts (non-mutating).
-  let currentLocalStages = [...stages]; // Work with a local copy for modifications
-  let wasStageNewlyCompletedAndNextUnlocked = false;
+  let currentLocalStagesState = [...stages];
+  let wasStageNewlyCompleted = false;
+  let nextStageUnlocked = false;
 
-  // First, attempt to unlock the next level in the current stage
-  currentLocalStages = unlockNextLevel(
-      selectedStage.id,
-      selectedLevel.id,
-      currentLocalStages // Pass the working copy
+  currentLocalStagesState = unlockNextLevel(
+    selectedStage.id,
+    selectedLevel.id,
+    currentLocalStagesState
   );
 
-  // Then, check if the current stage is completed with the newly completed level
-  if (isStageCompleted(selectedStage.id, newCompletedLevels)) {
-      const nextStageDefinition = currentLocalStages.find((s) => s.id === selectedStage.id + 1);
-      if (nextStageDefinition && newTotalScore >= nextStageDefinition.requiredScore) {
-          currentLocalStages = unlockNextStage(
-              selectedStage.id,
-              currentLocalStages // Pass the potentially modified stages (level unlocked)
-          );
-          wasStageNewlyCompletedAndNextUnlocked = true; // Mark that a new stage was unlocked
-      }
+  // Check if current stage is completed and unlock next if criteria met
+  const isCurrentStageNowCompleted = isStageCompleted(selectedStage.id, newCompletedLevelsState);
+  if (isCurrentStageNowCompleted) {
+    wasStageNewlyCompleted = true; // Mark that this stage was just completed
+    const nextStageDefinition = currentLocalStagesState.find((s) => s.id === selectedStage.id + 1);
+    if (nextStageDefinition && newTotalScoreState >= nextStageDefinition.requiredScore) {
+      currentLocalStagesState = unlockNextStage(
+        selectedStage.id,
+        currentLocalStagesState
+      );
+      nextStageUnlocked = true;
+    }
   }
 
-  // Update React state (this will schedule a re-render)
-  setTotalScore(newTotalScore);
-  setCompletedLevels(newCompletedLevels);
-  setStages(currentLocalStages);
-
-  // Track Activity
-  // The activity tracking should use the latest understanding of stage/level completion
-  await trackActivity(wasStageNewlyCompletedAndNextUnlocked);
+  await trackActivity(nextStageUnlocked); 
 
   // Prepare User Stats (integrate logic similar to progressManager.updateUserStats)
   const progressSoFar = await loadProgress(activeChild.id); // Load existing stats
-  let existingUserStats = progressSoFar.userStats || DEFAULT_USER_STATS; // Use default if undefined
+  let existingUserStats = progressSoFar.userStats || { ...DEFAULT_USER_STATS }; // Use default if undefined
 
   const lastPlayedDate = new Date(existingUserStats.lastPlayed || 0); // Handle case where lastPlayed might be missing
   const today = new Date();
@@ -449,31 +450,136 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
   }
 
 
-  const updatedUserStats: UserStats = {
-      totalWords: (existingUserStats.totalWords || 0) + currentWords.length,
-      correctAnswers: (existingUserStats.correctAnswers || 0) + (levelScore / 10), // Assuming 10 points per correct
-      wrongAnswers: (existingUserStats.wrongAnswers || 0) + (currentWords.length - (levelScore / 10)),
-      lastPlayed: today.toISOString(),
-      streakDays: newStreakDays,
+  const updatedUserStatsState: UserStats = {
+    totalWords: (existingUserStats.totalWords || 0) + currentWords.length,
+    correctAnswers: (existingUserStats.correctAnswers || 0) + (levelScore / 10),
+    wrongAnswers: (existingUserStats.wrongAnswers || 0) + (currentWords.length - (levelScore / 10)),
+    lastPlayed: today.toISOString(),
+    streakDays: newStreakDays,
   };
+
+  // --- ACHIEVEMENT CHECKING ---
+  let achievementPointsEarned = 0;
+  const eventsForAchievements = [];
+
+  // Event for level completion
+  eventsForAchievements.push({
+    type: 'level_completed' as const, // Use 'as const' for literal types
+    gameKey: 'luganda_learning_game',
+    levelId: selectedLevel.id,
+    stageId: selectedStage.id, // Good to have context
+    // newTotalScore: newTotalScoreState, // Can be sent if achievements depend on it at this exact moment
+    // currentUserStats: updatedUserStatsState, // Can be sent
+  });
+
+  // Event for perfect quiz (if applicable)
+  const maxPossibleScoreForLevel = currentWords.length * 10;
+  if (levelScore === maxPossibleScoreForLevel) {
+    eventsForAchievements.push({
+        type: 'level_perfect_clear' as const,
+        gameKey: 'luganda_learning_game',
+        levelId: selectedLevel.id,
+        currentLevelScore: levelScore,
+        currentLevelMaxScore: maxPossibleScoreForLevel,
+    });
+  }
+
+  // Event for stage completion (if it happened)
+  if (wasStageNewlyCompleted) {
+    eventsForAchievements.push({
+      type: 'stage_completed' as const,
+      gameKey: 'luganda_learning_game',
+      stageId: selectedStage.id,
+      // newTotalScore: newTotalScoreState,
+      // currentUserStats: updatedUserStatsState,
+    });
+  }
+  
+  // Event for score update and stats update (always send, achievements will check thresholds)
+  eventsForAchievements.push({
+    type: 'score_updated' as const, // Could also be 'stats_updated' or both
+    gameKey: 'luganda_learning_game',
+    newTotalScore: newTotalScoreState, // Pass the score *before* achievement points
+    currentUserStats: updatedUserStatsState, // Pass the latest stats
+  });
+  // Also an explicit stats_updated if you have achievements that only look at stats
+   eventsForAchievements.push({
+    type: 'stats_updated' as const,
+    gameKey: 'luganda_learning_game',
+    currentUserStats: updatedUserStatsState,
+  });
+
+
+  for (const event of eventsForAchievements) {
+      const newlyEarnedFromEvent = await checkAndGrantNewAchievements(event);
+      if (newlyEarnedFromEvent.length > 0) {
+        newlyEarnedFromEvent.forEach(ach => {
+          achievementPointsEarned += ach.points;
+          console.log(`LUGANDA LEARNING - NEW ACHIEVEMENT: ${ach.name}`);
+          setNewlyEarnedAchievementLL(ach); // For modal/toast
+          // Toast.show(`Achievement: ${ach.name}! +${ach.points} pts`, Toast.LONG);
+        });
+      }
+  }
+  
+  // Add achievement points to the total score that will be saved
+  const finalTotalScoreToSave = newTotalScoreState + achievementPointsEarned;
+
+  // Update React state with final scores including achievement points
+  setTotalScore(finalTotalScoreToSave); // UI reflects score + achievement points
+  setCompletedLevels(newCompletedLevelsState);
+  setStages(currentLocalStagesState);
 
   // Now, save everything using the newly computed values
   try {
-      await saveProgress( // This is saveProgress from progressManager.ts
-          newTotalScore,
-          newCompletedLevels,
-          currentLocalStages, // Save the locally updated stages
-          updatedUserStats,   // Save the correctly accumulated stats
-          activeChild.id
-      );
-      console.log("Game progress saved successfully.");
+    await saveProgress(
+      finalTotalScoreToSave, // Save the score including achievement points
+      newCompletedLevelsState,
+      currentLocalStagesState,
+      updatedUserStatsState,
+      activeChild.id
+    );
+    console.log("Luganda Learning: Game progress saved successfully.");
   } catch (error) {
-      console.error("Failed to save game progress from component:", error);
+    console.error("Luganda Learning: Failed to save game progress:", error);
   }
 
-  // Finally, navigate to the level complete screen
   setGameState("levelComplete");
 };
+
+  const renderAchievementUnlockedModalLL = () => {
+  if (!newlyEarnedAchievementLL) return null;
+
+    return (
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+        <View style={{ backgroundColor: 'white', borderRadius: 20, padding: 24, width: '85%', maxWidth: 380, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 }}>
+          <View style={{ position: 'absolute', top: -40, backgroundColor: '#f59e0b', width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'white' }}>
+            <Ionicons name={(newlyEarnedAchievementLL.icon_name as any) || "star"} size={36} color="white" />
+          </View>
+          <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#b45309', marginTop: 48, marginBottom: 8, textAlign: 'center' }}>
+            Achievement Unlocked!
+          </Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 24, color: '#374151', marginBottom: 8, textAlign: 'center' }}>
+            {newlyEarnedAchievementLL.name}
+          </Text>
+          <Text style={{ fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 16 }}>
+            {newlyEarnedAchievementLL.description}
+          </Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#f59e0b', marginBottom: 24 }}>
+            +{newlyEarnedAchievementLL.points} Points!
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#f59e0b', paddingVertical: 12, paddingHorizontal: 40, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41, elevation: 2 }}
+            onPress={() => setNewlyEarnedAchievementLL(null)}
+          >
+            <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 16, textAlign: 'center' }}>
+              Awesome!
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   const saveGameProgress = async () => {
     if (!activeChild) return;
@@ -1512,17 +1618,17 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
   // Main render function that switches between game states
   switch (gameState) {
     case "stageSelect":
-      return renderStageSelectScreen();
+      return <>{renderStageSelectScreen()}{renderAchievementUnlockedModalLL()}</>;
     case "levelSelect":
-      return renderLevelSelectScreen();
+      return <>{renderLevelSelectScreen()}{renderAchievementUnlockedModalLL()}</>;
     case "learning":
-      return renderLearningScreen();
+      return <>{renderLearningScreen()}{renderAchievementUnlockedModalLL()}</>;
     case "playing":
-      return renderGameScreen();
+      return <>{renderGameScreen()}{renderAchievementUnlockedModalLL()}</>;
     case "levelComplete":
-      return renderLevelCompletionScreen();
+      return <>{renderLevelCompletionScreen()}{renderAchievementUnlockedModalLL()}</>;
     default:
-      return renderStageSelectScreen();
+      return <>{renderStageSelectScreen()}{renderAchievementUnlockedModalLL()}</>;
   }
 };
 
