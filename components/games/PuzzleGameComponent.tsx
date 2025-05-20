@@ -1,147 +1,145 @@
-"use client"
-
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
-import { View, Image, TouchableOpacity, Dimensions, Animated, Alert, type ImageSourcePropType } from "react-native"
-import { PanResponder, type GestureResponderEvent, type PanResponderGestureState } from "react-native"
-import { Audio } from "expo-av"
-import { StatusBar } from "expo-status-bar"
-import { Ionicons } from "@expo/vector-icons"
-import { useRouter } from "expo-router"
-import { Text } from "@/components/StyledText"
-import { saveActivity } from "@/lib/utils"
-import { useChild } from "@/context/ChildContext"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-
-// Storage key for the game state
-const PUZZLE_GAME_STORAGE_KEY = "buganda_puzzle_game_state"
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Animated,
+  Alert,
+  ImageSourcePropType,
+} from "react-native";
+import {
+  PanResponder,
+  GestureResponderEvent,
+  PanResponderGestureState,
+} from "react-native";
+import { Audio } from "expo-av";
+import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { Text } from "@/components/StyledText";
+import { saveActivity } from "@/lib/utils"; // Import saveActivity
+import { useChild } from "@/context/ChildContext"; // Import useChild context
 
 // Get dimensions for landscape mode
-const { width, height } = Dimensions.get("window")
+const { width, height } = Dimensions.get("window");
 // Use the smaller dimension for the puzzle size but make it larger (reduced the subtraction amount)
-const PUZZLE_CONTAINER_SIZE = Math.min(height - 80, width / 1.5) // Increased from (height-120, width/2)
-const GRID_SIZE = 3 // Keep the same 3x3 puzzle grid
-const PUZZLE_PADDING = 20
-const TILE_SIZE = (PUZZLE_CONTAINER_SIZE - PUZZLE_PADDING * 2) / GRID_SIZE
-const TILE_MARGIN = 2 // This margin seems to be applied visually by spacing animated views
+const PUZZLE_CONTAINER_SIZE = Math.min(height - 80, width / 1.5); // Increased from (height-120, width/2)
+const GRID_SIZE = 3; // Keep the same 3x3 puzzle grid
+const PUZZLE_PADDING = 20;
+const TILE_SIZE = (PUZZLE_CONTAINER_SIZE - PUZZLE_PADDING * 2) / GRID_SIZE;
+const TILE_MARGIN = 2; // This margin seems to be applied visually by spacing animated views
 
 // Define TypeScript interfaces
 interface Position {
-  row: number
-  col: number
+  row: number;
+  col: number;
 }
 
 // Stores static data for each tile (ID, correct pos, image crop)
 interface TileStaticData {
-  id: number
-  correctPosition: Position // The solved position for this tile ID
-  imageX: number // Crop X for the full image
-  imageY: number // Crop Y for the full image
+  id: number;
+  correctPosition: Position; // The solved position for this tile ID
+  imageX: number; // Crop X for the full image
+  imageY: number; // Crop Y for the full image
 }
 
 interface PuzzleImage {
-  id: number
-  name: string
-  source: ImageSourcePropType
-  description: string
+  id: number;
+  name: string;
+  source: ImageSourcePropType;
+  description: string;
 }
 
 interface AnimatedPosition {
-  left: Animated.Value
-  top: Animated.Value
+  left: Animated.Value;
+  top: Animated.Value;
 }
 
 interface SoundEffects {
-  tileMove: Audio.Sound | null
-  success: Audio.Sound | null
-}
-
-// Game state interface for persistence
-interface PuzzleGameState {
-  level: number
-  completedPuzzles: number
-  score: number
-  lastPlayed: number
+  tileMove: Audio.Sound | null;
+  success: Audio.Sound | null;
 }
 
 // Helper to generate tile static data
 const generateTileStaticData = (): Record<number, TileStaticData> => {
-  const data: Record<number, TileStaticData> = {}
+  const data: Record<number, TileStaticData> = {};
   for (let i = 0; i < GRID_SIZE * GRID_SIZE - 1; i++) {
-    const id = i + 1
-    const row = Math.floor(i / GRID_SIZE)
-    const col = i % GRID_SIZE
+    const id = i + 1;
+    const row = Math.floor(i / GRID_SIZE);
+    const col = i % GRID_SIZE;
     data[id] = {
       id,
       correctPosition: { row, col },
       imageX: col * TILE_SIZE,
       imageY: row * TILE_SIZE,
-    }
+    };
   }
-  return data
-}
+  return data;
+};
 
 const isPuzzleSolvable = (puzzle: (number | null)[][]): boolean => {
   // Create a flattened array without the empty tile
-  const flatPuzzle: number[] = []
+  const flatPuzzle: number[] = [];
   for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
       if (puzzle[r][c] !== null) {
-        flatPuzzle.push(puzzle[r][c] as number)
+        flatPuzzle.push(puzzle[r][c] as number);
       }
     }
   }
 
   // Count inversions
-  let inversions = 0
+  let inversions = 0;
   for (let i = 0; i < flatPuzzle.length; i++) {
     for (let j = i + 1; j < flatPuzzle.length; j++) {
       if (flatPuzzle[i] > flatPuzzle[j]) {
-        inversions++
+        inversions++;
       }
     }
   }
 
   // Find empty position row from bottom (1-indexed)
-  let emptyRow = 0
+  let emptyRow = 0;
   for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
       if (puzzle[r][c] === null) {
         // Count from bottom, 1-indexed
-        emptyRow = GRID_SIZE - r
-        break
+        emptyRow = GRID_SIZE - r;
+        break;
       }
     }
-    if (emptyRow > 0) break
+    if (emptyRow > 0) break;
   }
 
   // Apply solvability rules
   if (GRID_SIZE % 2 === 1) {
     // Grid width is odd
-    return inversions % 2 === 0
+    return inversions % 2 === 0;
   } else {
     // Grid width is even
     if (emptyRow % 2 === 0) {
       // Empty row from bottom is even
-      return inversions % 2 === 1
+      return inversions % 2 === 1;
     } else {
       // Empty row from bottom is odd
-      return inversions % 2 === 0
+      return inversions % 2 === 0;
     }
   }
-}
+};
 
 const BugandaPuzzleGame: React.FC = () => {
-  const router = useRouter()
-  const { activeChild } = useChild()
-  const gameStartTime = useRef(Date.now())
+  const router = useRouter();
+  const { activeChild } = useChild(); // Get active child from context
+  const gameStartTime = useRef(Date.now()); // Track when game started
 
   const puzzleImages: PuzzleImage[] = [
     {
       id: 1,
       name: "Kasubi Tombs",
       source: require("../../assets/puzzles/kasubi-tombs.png"),
-      description: "A UNESCO World Heritage site and burial ground of Buganda kings",
+      description:
+        "A UNESCO World Heritage site and burial ground of Buganda kings",
     },
     {
       id: 2,
@@ -155,54 +153,46 @@ const BugandaPuzzleGame: React.FC = () => {
       source: require("../../assets/puzzles/lubiri-palace.png"),
       description: "The palace of the Kabaka (King) of Buganda",
     },
-  ]
+  ];
 
-  const [currentPuzzle, setCurrentPuzzle] = useState<number>(0)
-  const [grid, setGrid] = useState<(number | null)[][]>([])
-  const [emptySlotPosition, setEmptySlotPosition] = useState<Position>({ row: GRID_SIZE - 1, col: GRID_SIZE - 1 })
-  const [tileStaticData, _setTileStaticData] = useState<Record<number, TileStaticData>>(generateTileStaticData())
-
-  const [isComplete, setIsComplete] = useState<boolean>(false)
-  const [moves, setMoves] = useState<number>(0)
-  const [gameStarted, setGameStarted] = useState<boolean>(false)
-  const [showPreview, setShowPreview] = useState<boolean>(true)
-  const [level, setLevel] = useState<number>(1)
-  const [completedPuzzles, setCompletedPuzzles] = useState<number>(0)
-  const [totalScore, setTotalScore] = useState<number>(0)
+  const [currentPuzzle, setCurrentPuzzle] = useState<number>(0);
+  const [grid, setGrid] = useState<(number | null)[][]>([]);
+  const [emptySlotPosition, setEmptySlotPosition] = useState<Position>({ row: GRID_SIZE -1, col: GRID_SIZE -1 });
+  const [tileStaticData, _setTileStaticData] = useState<Record<number, TileStaticData>>(generateTileStaticData());
+  
+  const [isComplete, setIsComplete] = useState<boolean>(false);
+  const [moves, setMoves] = useState<number>(0);
+  const [gameStarted, setGameStarted] = useState<boolean>(false);
+  const [showPreview, setShowPreview] = useState<boolean>(true);
   const [soundEffects, setSoundEffects] = useState<SoundEffects>({
     tileMove: null,
     success: null,
-  })
-  const [animatedPositions, setAnimatedPositions] = useState<Record<number, AnimatedPosition>>({})
+  });
+  const [animatedPositions, setAnimatedPositions] = useState<
+    Record<number, AnimatedPosition>
+  >({});
 
-  const previewAnim = useRef(new Animated.Value(1)).current
-  const successAnim = useRef(new Animated.Value(0)).current
-
-  // Load game progress on mount
-  useEffect(() => {
-    if (activeChild) {
-      loadGameProgress()
-    }
-  }, [activeChild])
+  const previewAnim = useRef(new Animated.Value(1)).current;
+  const successAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const loadSounds = async () => {
-      const tileMoveSound = new Audio.Sound()
-      const successSound = new Audio.Sound()
+      const tileMoveSound = new Audio.Sound();
+      const successSound = new Audio.Sound();
       try {
-        await tileMoveSound.loadAsync(require("../../assets/audio/page-turn.mp3"))
-        await successSound.loadAsync(require("../../assets/audio/complete.mp3"))
-        setSoundEffects({ tileMove: tileMoveSound, success: successSound })
+        await tileMoveSound.loadAsync(require("../../assets/audio/page-turn.mp3"));
+        await successSound.loadAsync(require("../../assets/audio/complete.mp3"));
+        setSoundEffects({ tileMove: tileMoveSound, success: successSound });
       } catch (error) {
-        console.error("Failed to load sounds", error)
+        console.error("Failed to load sounds", error);
       }
-    }
-    loadSounds()
+    };
+    loadSounds();
     return () => {
-      soundEffects.tileMove?.unloadAsync()
-      soundEffects.success?.unloadAsync()
-    }
-  }, [])
+      soundEffects.tileMove?.unloadAsync();
+      soundEffects.success?.unloadAsync();
+    };
+  }, []);
 
   useEffect(() => {
     if (showPreview) {
@@ -212,133 +202,83 @@ const BugandaPuzzleGame: React.FC = () => {
           duration: 500,
           useNativeDriver: true,
         }).start(() => {
-          setShowPreview(false)
-          initializePuzzle()
-        })
-      }, 3000)
+          setShowPreview(false);
+          initializePuzzle();
+        });
+      }, 3000);
     }
-  }, [showPreview, currentPuzzle]) // Added currentPuzzle to re-init on puzzle change
+  }, [showPreview, currentPuzzle]); // Added currentPuzzle to re-init on puzzle change
 
   useEffect(() => {
     // Reset the game start time whenever a new puzzle starts
-    gameStartTime.current = Date.now()
-  }, [currentPuzzle, showPreview])
-
-  // Load game progress from AsyncStorage
-  const loadGameProgress = async () => {
-    if (!activeChild) return
-
-    try {
-      console.log(`Loading puzzle game progress for child ${activeChild.id}`)
-      const savedState = await AsyncStorage.getItem(`${PUZZLE_GAME_STORAGE_KEY}_${activeChild.id}`)
-
-      if (savedState) {
-        console.log("Found saved puzzle game state:", savedState)
-        const gameState: PuzzleGameState = JSON.parse(savedState)
-        setLevel(gameState.level)
-        setCompletedPuzzles(gameState.completedPuzzles)
-        setTotalScore(gameState.score)
-
-        // Set current puzzle based on completed puzzles
-        setCurrentPuzzle(gameState.completedPuzzles % puzzleImages.length)
-        console.log(
-          `Loaded puzzle game progress: level ${gameState.level}, puzzles ${gameState.completedPuzzles}, score ${gameState.score}`,
-        )
-      } else {
-        console.log("No saved puzzle game state found")
-      }
-    } catch (error) {
-      console.error("Error loading game progress:", error)
-    }
-  }
-
-  // Save game progress to AsyncStorage
-  const saveGameProgress = async () => {
-    if (!activeChild) return
-
-    try {
-      const gameState: PuzzleGameState = {
-        level,
-        completedPuzzles,
-        score: totalScore,
-        lastPlayed: Date.now(),
-      }
-
-      console.log(`Saving puzzle game state for child ${activeChild.id}:`, gameState)
-      await AsyncStorage.setItem(`${PUZZLE_GAME_STORAGE_KEY}_${activeChild.id}`, JSON.stringify(gameState))
-      console.log("Puzzle game state saved successfully")
-    } catch (error) {
-      console.error("Error saving game progress:", error)
-    }
-  }
+    gameStartTime.current = Date.now();
+  }, [currentPuzzle, showPreview]);
 
   const initializePuzzle = (): void => {
     // 1. Create solved grid
-    const solvedGrid: (number | null)[][] = []
-    let tileCounter = 1
+    const solvedGrid: (number | null)[][] = [];
+    let tileCounter = 1;
     for (let r = 0; r < GRID_SIZE; r++) {
-      solvedGrid[r] = []
+      solvedGrid[r] = [];
       for (let c = 0; c < GRID_SIZE; c++) {
         if (r === GRID_SIZE - 1 && c === GRID_SIZE - 1) {
-          solvedGrid[r][c] = null // Last slot is empty
+          solvedGrid[r][c] = null; // Last slot is empty
         } else {
-          solvedGrid[r][c] = tileCounter++
+          solvedGrid[r][c] = tileCounter++;
         }
       }
     }
-
-    let currentShuffledGrid = solvedGrid.map((row) => [...row])
-    let currentEmptySlot = { row: GRID_SIZE - 1, col: GRID_SIZE - 1 }
+    
+    let currentShuffledGrid = solvedGrid.map(row => [...row]);
+    let currentEmptySlot = { row: GRID_SIZE - 1, col: GRID_SIZE - 1 };
 
     // 2. Shuffle by making random valid moves
-    const shuffleMoveCount = 100 + Math.floor(Math.random() * 50) // Ensure enough shuffles
+    const shuffleMoveCount = 100 + Math.floor(Math.random() * 50); // Ensure enough shuffles
     for (let i = 0; i < shuffleMoveCount; i++) {
-      const movableTilesPositions: Position[] = []
-      const { row: er, col: ec } = currentEmptySlot
+      const movableTilesPositions: Position[] = [];
+      const { row: er, col: ec } = currentEmptySlot;
 
-      if (er > 0) movableTilesPositions.push({ row: er - 1, col: ec }) // Tile above empty
-      if (er < GRID_SIZE - 1) movableTilesPositions.push({ row: er + 1, col: ec }) // Tile below empty
-      if (ec > 0) movableTilesPositions.push({ row: er, col: ec - 1 }) // Tile left of empty
-      if (ec < GRID_SIZE - 1) movableTilesPositions.push({ row: er, col: ec + 1 }) // Tile right of empty
-
+      if (er > 0) movableTilesPositions.push({ row: er - 1, col: ec }); // Tile above empty
+      if (er < GRID_SIZE - 1) movableTilesPositions.push({ row: er + 1, col: ec }); // Tile below empty
+      if (ec > 0) movableTilesPositions.push({ row: er, col: ec - 1 }); // Tile left of empty
+      if (ec < GRID_SIZE - 1) movableTilesPositions.push({ row: er, col: ec + 1 }); // Tile right of empty
+      
       if (movableTilesPositions.length > 0) {
-        const randomMoveIndex = Math.floor(Math.random() * movableTilesPositions.length)
-        const tileToMoveOriginalPos = movableTilesPositions[randomMoveIndex]
-
+        const randomMoveIndex = Math.floor(Math.random() * movableTilesPositions.length);
+        const tileToMoveOriginalPos = movableTilesPositions[randomMoveIndex];
+        
         // Swap tile with empty slot in currentShuffledGrid
-        currentShuffledGrid[currentEmptySlot.row][currentEmptySlot.col] =
-          currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col]
-        currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col] = null
-
+        currentShuffledGrid[currentEmptySlot.row][currentEmptySlot.col] = currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col];
+        currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col] = null;
+        
         // Update currentEmptySlot to the position where the tile was
-        currentEmptySlot = { ...tileToMoveOriginalPos }
+        currentEmptySlot = { ...tileToMoveOriginalPos };
       }
     }
 
     // Ensure the puzzle is solvable
     while (!isPuzzleSolvable(currentShuffledGrid)) {
-      currentShuffledGrid = solvedGrid.map((row) => [...row])
-      currentEmptySlot = { row: GRID_SIZE - 1, col: GRID_SIZE - 1 }
+      currentShuffledGrid = solvedGrid.map(row => [...row]);
+      currentEmptySlot = { row: GRID_SIZE - 1, col: GRID_SIZE - 1 };
       for (let i = 0; i < shuffleMoveCount; i++) {
-        const movableTilesPositions: Position[] = []
-        const { row: er, col: ec } = currentEmptySlot
+        const movableTilesPositions: Position[] = [];
+        const { row: er, col: ec } = currentEmptySlot;
 
-        if (er > 0) movableTilesPositions.push({ row: er - 1, col: ec }) // Tile above empty
-        if (er < GRID_SIZE - 1) movableTilesPositions.push({ row: er + 1, col: ec }) // Tile below empty
-        if (ec > 0) movableTilesPositions.push({ row: er, col: ec - 1 }) // Tile left of empty
-        if (ec < GRID_SIZE - 1) movableTilesPositions.push({ row: er, col: ec + 1 }) // Tile right of empty
-
+        if (er > 0) movableTilesPositions.push({ row: er - 1, col: ec }); // Tile above empty
+        if (er < GRID_SIZE - 1) movableTilesPositions.push({ row: er + 1, col: ec }); // Tile below empty
+        if (ec > 0) movableTilesPositions.push({ row: er, col: ec - 1 }); // Tile left of empty
+        if (ec < GRID_SIZE - 1) movableTilesPositions.push({ row: er, col: ec + 1 }); // Tile right of empty
+        
         if (movableTilesPositions.length > 0) {
-          const randomMoveIndex = Math.floor(Math.random() * movableTilesPositions.length)
-          const tileToMoveOriginalPos = movableTilesPositions[randomMoveIndex]
-
+          const randomMoveIndex = Math.floor(Math.random() * movableTilesPositions.length);
+          const tileToMoveOriginalPos = movableTilesPositions[randomMoveIndex];
+          
           // Swap tile with empty slot in currentShuffledGrid
-          currentShuffledGrid[currentEmptySlot.row][currentEmptySlot.col] =
-            currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col]
-          currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col] = null
-
+          currentShuffledGrid[currentEmptySlot.row][currentEmptySlot.col] = currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col];
+          currentShuffledGrid[tileToMoveOriginalPos.row][tileToMoveOriginalPos.col] = null;
+          
           // Update currentEmptySlot to the position where the tile was
-          currentEmptySlot = { ...tileToMoveOriginalPos }
+          currentEmptySlot = { ...tileToMoveOriginalPos };
         }
       }
     }
@@ -346,89 +286,89 @@ const BugandaPuzzleGame: React.FC = () => {
     // Check if the shuffled puzzle is solvable
     if (!isPuzzleSolvable(currentShuffledGrid)) {
       // Swap any two tiles to make it solvable
-      let firstNonEmptyTile = null
-      let secondNonEmptyTile = null
-
+      let firstNonEmptyTile = null;
+      let secondNonEmptyTile = null;
+      
       // Find two non-empty tiles
       outerLoop: for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
           if (currentShuffledGrid[r][c] !== null) {
             if (firstNonEmptyTile === null) {
-              firstNonEmptyTile = { row: r, col: c }
+              firstNonEmptyTile = { row: r, col: c };
             } else {
-              secondNonEmptyTile = { row: r, col: c }
-              break outerLoop
+              secondNonEmptyTile = { row: r, col: c };
+              break outerLoop;
             }
           }
         }
       }
-
+      
       // Swap them
       if (firstNonEmptyTile && secondNonEmptyTile) {
-        const temp = currentShuffledGrid[firstNonEmptyTile.row][firstNonEmptyTile.col]
-        currentShuffledGrid[firstNonEmptyTile.row][firstNonEmptyTile.col] =
-          currentShuffledGrid[secondNonEmptyTile.row][secondNonEmptyTile.col]
-        currentShuffledGrid[secondNonEmptyTile.row][secondNonEmptyTile.col] = temp
+        const temp = currentShuffledGrid[firstNonEmptyTile.row][firstNonEmptyTile.col];
+        currentShuffledGrid[firstNonEmptyTile.row][firstNonEmptyTile.col] = 
+          currentShuffledGrid[secondNonEmptyTile.row][secondNonEmptyTile.col];
+        currentShuffledGrid[secondNonEmptyTile.row][secondNonEmptyTile.col] = temp;
       }
     }
 
-    setGrid(currentShuffledGrid)
-    setEmptySlotPosition(currentEmptySlot)
+    setGrid(currentShuffledGrid);
+    setEmptySlotPosition(currentEmptySlot);
 
     // 3. Initialize animated positions for tiles based on the shuffled grid
-    const newAnimatedPositions: Record<number, AnimatedPosition> = {}
+    const newAnimatedPositions: Record<number, AnimatedPosition> = {};
     currentShuffledGrid.forEach((rowItems, r) => {
       rowItems.forEach((tileId, c) => {
         if (tileId !== null) {
           newAnimatedPositions[tileId] = {
             left: new Animated.Value(c * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING),
             top: new Animated.Value(r * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING),
-          }
+          };
         }
-      })
-    })
-    setAnimatedPositions(newAnimatedPositions)
+      });
+    });
+    setAnimatedPositions(newAnimatedPositions);
 
-    setGameStarted(true)
-    setMoves(0)
-    setIsComplete(false)
-    successAnim.setValue(0) // Reset success animation
-  }
-
+    setGameStarted(true);
+    setMoves(0);
+    setIsComplete(false);
+    successAnim.setValue(0); // Reset success animation
+  };
+  
   const moveTile = (tileId: number): void => {
-    if (isComplete || !grid.length) return
+    if (isComplete || !grid.length) return;
 
-    let tilePos: Position | null = null
+    let tilePos: Position | null = null;
     for (let r = 0; r < GRID_SIZE; r++) {
       for (let c = 0; c < GRID_SIZE; c++) {
         if (grid[r][c] === tileId) {
-          tilePos = { row: r, col: c }
-          break
+          tilePos = { row: r, col: c };
+          break;
         }
       }
-      if (tilePos) break
+      if (tilePos) break;
     }
 
     if (!tilePos) {
-      console.error(`Tile ${tileId} not found in grid.`)
-      return
+      console.error(`Tile ${tileId} not found in grid.`);
+      return;
     }
 
-    const { row: tr, col: tc } = tilePos
-    const { row: er, col: ec } = emptySlotPosition
+    const { row: tr, col: tc } = tilePos;
+    const { row: er, col: ec } = emptySlotPosition;
 
     // Check if the tile is adjacent to the empty slot
-    const isAdjacent = Math.abs(tr - er) + Math.abs(tc - ec) === 1
+    const isAdjacent = Math.abs(tr - er) + Math.abs(tc - ec) === 1;
 
     if (isAdjacent) {
-      soundEffects.tileMove?.replayAsync()
+      soundEffects.tileMove?.replayAsync();
 
-      const newLeft = ec * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING
-      const newTop = er * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING
+      const newLeft = ec * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING;
+      const newTop = er * (TILE_SIZE + TILE_MARGIN * 2) + PUZZLE_PADDING;
 
-      const newGrid = grid.map((r_) => [...r_]) // Deep copy grid
-      newGrid[er][ec] = tileId // Move tile to empty slot's old position
-      newGrid[tr][tc] = null // Tile's old position becomes empty
+      const newGrid = grid.map(r_ => [...r_]); // Deep copy grid
+      newGrid[er][ec] = tileId;       // Move tile to empty slot's old position
+      newGrid[tr][tc] = null;         // Tile's old position becomes empty
 
       Animated.parallel([
         Animated.timing(animatedPositions[tileId].left, {
@@ -443,193 +383,173 @@ const BugandaPuzzleGame: React.FC = () => {
         }),
       ]).start(({ finished }) => {
         if (finished) {
-          setGrid(newGrid) // Update grid state after animation
-          setEmptySlotPosition({ row: tr, col: tc }) // Update empty slot to tile's old position
-          checkPuzzleCompletion(newGrid) // Pass the new grid for completion check
+          setGrid(newGrid); // Update grid state after animation
+          setEmptySlotPosition({ row: tr, col: tc }); // Update empty slot to tile's old position
+          checkPuzzleCompletion(newGrid); // Pass the new grid for completion check
         }
-      })
-      setMoves((m) => m + 1)
+      });
+      setMoves(m => m + 1);
     }
-  }
+  };
 
-  const trackActivity = async (isCompleted = true) => {
-    if (!activeChild) return
+  const trackActivity = async (isCompleted: boolean = true) => {
+    if (!activeChild) return;
 
     // Calculate duration in seconds
-    const duration = Math.round((Date.now() - gameStartTime.current) / 1000)
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000);
 
     // Save activity to Supabase
     await saveActivity({
       child_id: activeChild.id,
       activity_type: "puzzle",
       activity_name: `${puzzleImages[currentPuzzle].name} Puzzle`,
-      score: isCompleted ? "100%" : `${Math.round(moves > 0 ? 100 / moves : 100)}%`,
+      score: isCompleted ? "100%" : `${Math.round((moves > 0 ? 100 / moves : 100))}%`,
       duration,
       completed_at: new Date().toISOString(),
-      details: `${isCompleted ? "Completed" : "Attempted"} the ${puzzleImages[currentPuzzle].name} puzzle in ${moves} moves`,
-      level,
-    })
-  }
+      details: `${isCompleted ? 'Completed' : 'Attempted'} the ${puzzleImages[currentPuzzle].name} puzzle in ${moves} moves`,
+      level: currentPuzzle + 1,
+    });
+  };
 
   const checkPuzzleCompletion = (currentGridToCheck: (number | null)[][]): void => {
-    let completed = true
+    let completed = true;
     for (let r = 0; r < GRID_SIZE; r++) {
       for (let c = 0; c < GRID_SIZE; c++) {
-        const tileIdInGrid = currentGridToCheck[r][c]
-        if (r === GRID_SIZE - 1 && c === GRID_SIZE - 1) {
-          // Last slot should be empty
+        const tileIdInGrid = currentGridToCheck[r][c];
+        if (r === GRID_SIZE - 1 && c === GRID_SIZE - 1) { // Last slot should be empty
           if (tileIdInGrid !== null) {
-            completed = false
-            break
+            completed = false;
+            break;
           }
         } else {
-          const expectedTileId = r * GRID_SIZE + c + 1
+          const expectedTileId = r * GRID_SIZE + c + 1;
           if (tileIdInGrid !== expectedTileId) {
-            completed = false
-            break
+            completed = false;
+            break;
           }
         }
       }
-      if (!completed) break
+      if (!completed) break;
     }
 
     if (completed) {
-      setIsComplete(true)
-      soundEffects.success?.replayAsync()
-
-      // Update game progress
-      const newCompletedPuzzles = completedPuzzles + 1
-      setCompletedPuzzles(newCompletedPuzzles)
-
-      // Calculate score based on moves (fewer moves = higher score)
-      const baseScore = 100
-      const movesPenalty = Math.min(50, moves) // Cap penalty at 50
-      const puzzleScore = baseScore - movesPenalty
-      const newTotalScore = totalScore + puzzleScore
-      setTotalScore(newTotalScore)
-
-      // Update level if needed (every 3 puzzles)
-      if (newCompletedPuzzles % 3 === 0) {
-        setLevel((prevLevel) => prevLevel + 1)
-      }
-
-      // Save progress to AsyncStorage
-      saveGameProgress()
-
+      setIsComplete(true);
+      soundEffects.success?.replayAsync();
+      
       // Track the completed activity
-      trackActivity(true)
-
+      trackActivity(true);
+      
       Animated.spring(successAnim, {
         toValue: 1,
         friction: 5,
         tension: 40,
         useNativeDriver: true,
-      }).start()
+      }).start();
 
       setTimeout(() => {
         Alert.alert(
           "Congratulations!",
-          `You completed the ${puzzleImages[currentPuzzle].name} puzzle in ${moves} moves!`, // moves+1 because setMoves is async
+          `You completed the ${puzzleImages[currentPuzzle].name} puzzle in ${moves + 1} moves!`, // moves+1 because setMoves is async
           [
             {
               text: "Next Puzzle",
               onPress: () => {
                 // Reset gameStartTime for the next puzzle
-                gameStartTime.current = Date.now()
-                setCurrentPuzzle((prev) => (prev + 1) % puzzleImages.length)
-                setShowPreview(true)
-                previewAnim.setValue(1)
+                gameStartTime.current = Date.now();
+                setCurrentPuzzle((prev) => (prev + 1) % puzzleImages.length);
+                setShowPreview(true);
+                previewAnim.setValue(1);
               },
             },
-          ],
-        )
-      }, 1000)
+          ]
+        );
+      }, 1000);
     }
-  }
+  };
 
   const handleReset = () => {
     // Track the current attempt before resetting
     if (gameStarted && !showPreview && !isComplete && moves > 0) {
-      trackActivity(false)
+      trackActivity(false);
     }
-
+    
     // Reset gameStartTime
-    gameStartTime.current = Date.now()
-    initializePuzzle()
-  }
+    gameStartTime.current = Date.now();
+    initializePuzzle();
+  };
 
   // When leaving the game, track the unfinished activity
   useEffect(() => {
     return () => {
       // Only track if game was actually played but not completed
       if (gameStarted && !showPreview && !isComplete && moves > 0) {
-        trackActivity(false)
+        trackActivity(false);
       }
-    }
-  }, [gameStarted, showPreview, isComplete, moves])
+    };
+  }, [gameStarted, showPreview, isComplete, moves]);
 
   const createTilePanResponder = (tileId: number, tileRow: number, tileCol: number) => {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => !isComplete,
-      onMoveShouldSetPanResponder: (_: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        const { dx, dy } = gestureState
-        return !isComplete && (Math.abs(dx) > 10 || Math.abs(dy) > 10)
+      onMoveShouldSetPanResponder: (
+        _: GestureResponderEvent,
+        gestureState: PanResponderGestureState
+      ) => {
+        const { dx, dy } = gestureState;
+        return !isComplete && (Math.abs(dx) > 10 || Math.abs(dy) > 10);
       },
-      onPanResponderRelease: (_: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        const { dx, dy } = gestureState
-        const { row: emptyRow, col: emptyCol } = emptySlotPosition
+      onPanResponderRelease: (
+        _: GestureResponderEvent,
+        gestureState: PanResponderGestureState
+      ) => {
+        const { dx, dy } = gestureState;
+        const { row: emptyRow, col: emptyCol } = emptySlotPosition;
 
-        let canSwipeMove = false
-        if (Math.abs(dx) > Math.abs(dy)) {
-          // Horizontal swipe
-          if (dx > 0 && tileRow === emptyRow && tileCol + 1 === emptyCol) {
-            // Swipe Right towards empty
-            canSwipeMove = true
-          } else if (dx < 0 && tileRow === emptyRow && tileCol - 1 === emptyCol) {
-            // Swipe Left towards empty
-            canSwipeMove = true
+        let canSwipeMove = false;
+        if (Math.abs(dx) > Math.abs(dy)) { // Horizontal swipe
+          if (dx > 0 && tileRow === emptyRow && tileCol + 1 === emptyCol) { // Swipe Right towards empty
+            canSwipeMove = true;
+          } else if (dx < 0 && tileRow === emptyRow && tileCol - 1 === emptyCol) { // Swipe Left towards empty
+            canSwipeMove = true;
           }
-        } else {
-          // Vertical swipe
-          if (dy > 0 && tileCol === emptyCol && tileRow + 1 === emptyRow) {
-            // Swipe Down towards empty
-            canSwipeMove = true
-          } else if (dy < 0 && tileCol === emptyCol && tileRow - 1 === emptyRow) {
-            // Swipe Up towards empty
-            canSwipeMove = true
+        } else { // Vertical swipe
+          if (dy > 0 && tileCol === emptyCol && tileRow + 1 === emptyRow) { // Swipe Down towards empty
+            canSwipeMove = true;
+          } else if (dy < 0 && tileCol === emptyCol && tileRow - 1 === emptyRow) { // Swipe Up towards empty
+            canSwipeMove = true;
           }
         }
 
         if (canSwipeMove) {
-          moveTile(tileId)
+          moveTile(tileId);
         }
       },
-    })
-  }
+    });
+  };
 
   const renderPuzzleTiles = () => {
     if (showPreview || !grid.length || Object.keys(animatedPositions).length === 0) {
-      return null
+        return null;
     }
 
     return grid.flatMap((rowItems, r) =>
       rowItems.map((tileId, c) => {
-        if (tileId === null) return null // Don't render for the empty slot
+        if (tileId === null) return null; // Don't render for the empty slot
 
-        const staticInfo = tileStaticData[tileId]
+        const staticInfo = tileStaticData[tileId];
         if (!staticInfo) {
-          console.warn(`Static data not found for tile ${tileId}`)
-          return null
+          console.warn(`Static data not found for tile ${tileId}`);
+          return null;
         }
 
-        const animPos = animatedPositions[tileId]
+        const animPos = animatedPositions[tileId];
         if (!animPos) {
           // console.warn(`Animated position not found for tile ${tileId}`);
-          return null // Can happen briefly during init
+          return null; // Can happen briefly during init
         }
 
-        const panResponder = createTilePanResponder(tileId, r, c)
-        const isTileAdjacentToEmpty = Math.abs(r - emptySlotPosition.row) + Math.abs(c - emptySlotPosition.col) === 1
+        const panResponder = createTilePanResponder(tileId, r, c);
+        const isTileAdjacentToEmpty = Math.abs(r - emptySlotPosition.row) + Math.abs(c - emptySlotPosition.col) === 1;
 
         return (
           <Animated.View
@@ -648,7 +568,7 @@ const BugandaPuzzleGame: React.FC = () => {
               className="w-full h-full justify-center items-center"
               hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
               onPress={() => {
-                moveTile(tileId)
+                moveTile(tileId);
               }}
               activeOpacity={0.6}
               accessible={true}
@@ -681,10 +601,10 @@ const BugandaPuzzleGame: React.FC = () => {
               </View>
             </TouchableOpacity>
           </Animated.View>
-        )
-      }),
-    )
-  }
+        );
+      })
+    );
+  };
 
   return (
     <View className="flex-1 bg-indigo-50">
@@ -695,9 +615,9 @@ const BugandaPuzzleGame: React.FC = () => {
         onPress={() => {
           // Track activity before leaving if puzzle was started but not completed
           if (gameStarted && !showPreview && !isComplete && moves > 0) {
-            trackActivity(false)
+            trackActivity(false);
           }
-          router.back()
+          router.back();
         }}
         activeOpacity={0.7}
       >
@@ -718,7 +638,11 @@ const BugandaPuzzleGame: React.FC = () => {
                 className="absolute w-full h-full justify-center items-center bg-purple-50 z-10"
                 style={{ opacity: previewAnim }}
               >
-                <Image source={puzzleImages[currentPuzzle].source} className="w-4/5 h-4/5" resizeMode="contain" />
+                <Image
+                  source={puzzleImages[currentPuzzle].source}
+                  className="w-4/5 h-4/5"
+                  resizeMode="contain"
+                />
                 <Text variant="bold" className="text-lg text-purple-700 mt-2.5">
                   Memorize the image
                 </Text>
@@ -747,7 +671,10 @@ const BugandaPuzzleGame: React.FC = () => {
                 className="w-[70%] h-[60%] rounded-lg border-3 border-white"
                 resizeMode="contain"
               />
-              <Text variant="bold" className="text-2xl text-white mt-5 shadow-sm">
+              <Text
+                variant="bold"
+                className="text-2xl text-white mt-5 shadow-sm"
+              >
                 Well done!
               </Text>
             </Animated.View>
@@ -759,14 +686,15 @@ const BugandaPuzzleGame: React.FC = () => {
             <Text variant="bold" className="text-2xl text-indigo-800 mb-2.5">
               {puzzleImages[currentPuzzle].name}
             </Text>
-            <View className="flex-row items-center space-x-4">
-              {gameStarted && <Text className="text-xl text-indigo-500">Moves: {moves}</Text>}
-              <Text className="text-xl text-indigo-500">Level: {level}</Text>
-            </View>
+            {gameStarted && (
+              <Text className="text-xl text-indigo-500">Moves: {moves}</Text>
+            )}
           </View>
 
           <View className="w-full items-center my-5">
-            <Text className="text-lg text-center text-slate-600 mb-6">{puzzleImages[currentPuzzle].description}</Text>
+            <Text className="text-lg text-center text-slate-600 mb-6">
+              {puzzleImages[currentPuzzle].description}
+            </Text>
 
             {gameStarted && !showPreview && (
               <TouchableOpacity
@@ -786,7 +714,7 @@ const BugandaPuzzleGame: React.FC = () => {
         </View>
       </View>
     </View>
-  )
-}
+  );
+};
 
-export default BugandaPuzzleGame
+export default BugandaPuzzleGame;

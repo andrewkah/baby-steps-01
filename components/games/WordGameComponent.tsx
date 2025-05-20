@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { gameLevels } from "./utils/wordgamewords"; // Import game levels
 import { Text } from "@/components/StyledText";
 import { useChild } from "@/context/ChildContext"; // Import useChild context
-import { saveNewActivity } from "@/lib/utils"; // Import saveActivity function
+import { saveActivity } from "@/lib/utils"; // Import saveActivity function
 
 // Get screen dimensions
 const { width, height } = Dimensions.get("window");
@@ -49,24 +49,8 @@ const getImageSource = (imageName: string | undefined) => {
   switch (imageName) {
     case 'wildlife.jpg':
       return require('@/assets/images/wildlife.jpg');
-    case 'rain.jpg':
-      return require('@/assets/images/rain.jpg');
     case 'coin.jpg':
       return require('@/assets/images/coin.png');
-    case 'dog.jpg':
-      return require('@/assets/images/dog.jpg');
-    case 'goat.png':
-      return require('@/assets/images/goat.png');
-    case 'meat.jpg':
-      return require('@/assets/images/meat.jpg');
-    case 'black-kid.jpg':
-      return require('@/assets/images/black-kid.jpg');
-    case 'chicken.jpg':
-      return require('@/assets/images/chicken.jpg');
-    case 'rainforest.jpg':
-      return require('@/assets/images/rainforest.jpg');
-    case 'river-kids.jpg':
-      return require('@/assets/images/river-kids.jpg');
     // Add cases for other images
     default:
       return require('@/assets/images/coin.png');
@@ -188,7 +172,7 @@ const WordGame: React.FC = () => {
 
     const duration = Date.now() - levelStartTime.current; // Duration in milliseconds
 
-    await saveNewActivity({
+    await saveActivity({
       child_id: activeChild.id,
       activity_type: "words", // Using 'words' activity type
       activity_name: `Word Game Level ${currentLevelIndex + 1}`,
@@ -204,7 +188,7 @@ const WordGame: React.FC = () => {
   const trackGameCompletion = async () => {
     if (!activeChild) return;
 
-    await saveNewActivity({
+    await saveActivity({
       child_id: activeChild.id,
       activity_type: "words",
       activity_name: "Word Game Completed",
@@ -500,7 +484,7 @@ const WordGame: React.FC = () => {
           <View className="w-24 h-24 bg-white rounded-full items-center justify-center shadow-lg border-4 border-secondary-200">
             <Image
               source={getImageSource(gameLevels[currentLevelIndex].image)}
-              className="w-40 h-40 rounded-full"
+              className="w-20 h-20 rounded-full"
               resizeMode="cover"
             />
           </View>

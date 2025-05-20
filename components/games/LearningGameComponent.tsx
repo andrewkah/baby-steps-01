@@ -1,7 +1,4 @@
-"use client"
-
-import type React from "react"
-import { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   TouchableOpacity,
@@ -12,31 +9,29 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
-} from "react-native"
-import { Audio } from "expo-av"
-import { LinearGradient } from "expo-linear-gradient"
-import { StatusBar } from "expo-status-bar"
-import { useRouter } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { Text } from "@/components/StyledText"
-import { useChild } from "@/context/ChildContext"
-import { saveActivity } from "@/lib/utils"
-
-// Storage key for the game state
-const LEARNING_GAME_STORAGE_KEY = "learning_game_state"
+  ImageBackground,
+} from "react-native";
+import { Audio } from "expo-av";
+import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
+import { useRouter } from "expo-router";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Text } from "@/components/StyledText";
+import { useChild } from "@/context/ChildContext";
+import { saveActivity } from "@/lib/utils";
 
 // Import our data structure
 import {
   LUGANDA_STAGES,
-  type Stage,
-  type Level,
-  type WordItem,
+  Stage,
+  Level,
+  WordItem,
   getWordsForLevel,
   unlockNextLevel,
   unlockNextStage,
   isStageCompleted,
-} from "./utils/lugandawords"
+} from "./utils/lugandawords";
 
 import {
   loadGameProgress as loadProgress,
@@ -46,59 +41,53 @@ import {
 } from './utils/progressManagerLugandaLearning'; // Adjust the import path as necessary
 
 // Game state types
-type GameState = "menu" | "stageSelect" | "levelSelect" | "learning" | "playing" | "levelComplete"
-
-// Game state interface for persistence
-interface LearningGameState {
-  level: number
-  wordsLearned: number
-  score: number
-  lastPlayed: number
-  completedLevels: number[]
-  stages: Stage[]
-}
+type GameState =
+  | "menu"
+  | "stageSelect"
+  | "levelSelect"
+  | "learning"
+  | "playing"
+  | "levelComplete";
 
 const LugandaLearningGame: React.FC = () => {
-  const router = useRouter()
-  const { activeChild } = useChild()
-  const gameStartTime = useRef(Date.now())
+  const router = useRouter();
+  const { activeChild } = useChild();
+  const gameStartTime = useRef(Date.now());
 
   // Get dimensions for responsive layout
-  const { width, height } = Dimensions.get("window")
-  const isLandscape = width > height
+  const { width, height } = Dimensions.get("window");
+  const isLandscape = width > height;
 
   // Game state management
-  const [gameState, setGameState] = useState<GameState>("stageSelect")
-  const [stages, setStages] = useState<Stage[]>(LUGANDA_STAGES)
-  const [selectedStage, setSelectedStage] = useState<Stage | null>(null)
-  const [selectedLevel, setSelectedLevel] = useState<Level | null>(null)
-  const [currentLearningIndex, setCurrentLearningIndex] = useState<number>(0)
-  const [currentWords, setCurrentWords] = useState<WordItem[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [gameState, setGameState] = useState<GameState>("stageSelect");
+  const [stages, setStages] = useState<Stage[]>(LUGANDA_STAGES);
+  const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
+  const [currentLearningIndex, setCurrentLearningIndex] = useState<number>(0);
+  const [currentWords, setCurrentWords] = useState<WordItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Game progress state
-  const [totalScore, setTotalScore] = useState<number>(0)
-  const [completedLevels, setCompletedLevels] = useState<number[]>([])
-  const [wordsLearned, setWordsLearned] = useState<number>(0)
-  const [level, setLevel] = useState<number>(1)
+  const [totalScore, setTotalScore] = useState<number>(0);
+  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
 
   // Playing state
-  const [currentWordIndex, setCurrentWordIndex] = useState<number>(0)
-  const [currentWord, setCurrentWord] = useState<WordItem | null>(null)
-  const [options, setOptions] = useState<string[]>([])
-  const [levelScore, setLevelScore] = useState<number>(0)
-  const [selectedOption, setSelectedOption] = useState<string | null>(null)
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
-  const [sound, setSound] = useState<Audio.Sound | undefined>()
-  const [correctSound, setCorrectSound] = useState<Audio.Sound | undefined>()
-  const [wrongSound, setWrongSound] = useState<Audio.Sound | undefined>()
+  const [currentWordIndex, setCurrentWordIndex] = useState<number>(0);
+  const [currentWord, setCurrentWord] = useState<WordItem | null>(null);
+  const [options, setOptions] = useState<string[]>([]);
+  const [levelScore, setLevelScore] = useState<number>(0);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | undefined>();
+  const [correctSound, setCorrectSound] = useState<Audio.Sound | undefined>();
+  const [wrongSound, setWrongSound] = useState<Audio.Sound | undefined>();
 
   // Animations
-  const progressWidth = useState<Animated.Value>(new Animated.Value(0))[0]
-  const shakeAnimation = useState<Animated.Value>(new Animated.Value(0))[0]
-  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0]
-  const confettiAnim = useState<Animated.Value>(new Animated.Value(0))[0]
-  const [shakingOption, setShakingOption] = useState<string | null>(null)
+  const progressWidth = useState<Animated.Value>(new Animated.Value(0))[0];
+  const shakeAnimation = useState<Animated.Value>(new Animated.Value(0))[0];
+  const fadeAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+  const confettiAnim = useState<Animated.Value>(new Animated.Value(0))[0];
+  const [shakingOption, setShakingOption] = useState<string | null>(null);
 
   // Update animation when state changes
   useEffect(() => {
@@ -106,12 +95,12 @@ const LugandaLearningGame: React.FC = () => {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
-    }).start()
+    }).start();
 
     return () => {
-      fadeAnim.setValue(0)
-    }
-  }, [gameState, currentLearningIndex, currentWordIndex])
+      fadeAnim.setValue(0);
+    };
+  }, [gameState, currentLearningIndex, currentWordIndex]);
 
   // Load game progress on mount
   useEffect(() => {
@@ -129,7 +118,7 @@ const LugandaLearningGame: React.FC = () => {
       }
     };
 
-    init()
+    init();
 
     return () => {
       if (sound) sound.unloadAsync();
@@ -141,17 +130,17 @@ const LugandaLearningGame: React.FC = () => {
   // Setup when selecting a level
   useEffect(() => {
     if (selectedLevel) {
-      const words = getWordsForLevel(selectedStage?.id || 0, selectedLevel.id)
-      setCurrentWords(words)
+      const words = getWordsForLevel(selectedStage?.id || 0, selectedLevel.id);
+      setCurrentWords(words);
 
       if (gameState === "playing") {
-        setCurrentWordIndex(0)
-        setLevelScore(0)
-        setCurrentWord(words[0])
-        generateOptions(words[0], words)
+        setCurrentWordIndex(0);
+        setLevelScore(0);
+        setCurrentWord(words[0]);
+        generateOptions(words[0], words);
       }
     }
-  }, [selectedLevel, gameState])
+  }, [selectedLevel, gameState]);
 
   // Update progress bar
   useEffect(() => {
@@ -160,9 +149,9 @@ const LugandaLearningGame: React.FC = () => {
         toValue: (currentWordIndex / currentWords.length) * 100,
         duration: 500,
         useNativeDriver: false,
-      }).start()
+      }).start();
     }
-  }, [currentWordIndex, gameState, currentWords])
+  }, [currentWordIndex, gameState, currentWords]);
 
   // Handle shaking animation for wrong answers
   useEffect(() => {
@@ -189,122 +178,128 @@ const LugandaLearningGame: React.FC = () => {
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setShakingOption(null)
-      })
+        setShakingOption(null);
+      });
     }
-  }, [shakingOption])
+  }, [shakingOption]);
 
   const loadSounds = async (): Promise<void> => {
     try {
-      const correctSoundObject = new Audio.Sound()
-      await correctSoundObject.loadAsync(require("../../assets/sounds/correct.mp3"))
-      setCorrectSound(correctSoundObject)
+      const correctSoundObject = new Audio.Sound();
+      await correctSoundObject.loadAsync(
+        require("../../assets/sounds/correct.mp3")
+      );
+      setCorrectSound(correctSoundObject);
 
-      const wrongSoundObject = new Audio.Sound()
-      await wrongSoundObject.loadAsync(require("../../assets/sounds/wrong.mp3"))
-      setWrongSound(wrongSoundObject)
+      const wrongSoundObject = new Audio.Sound();
+      await wrongSoundObject.loadAsync(
+        require("../../assets/sounds/wrong.mp3")
+      );
+      setWrongSound(wrongSoundObject);
     } catch (error) {
-      console.error("Error loading sounds", error)
+      console.error("Error loading sounds", error);
     }
-  }
+  };
 
-  const playWordSound = async (word: WordItem = currentWord!): Promise<void> => {
+  const playWordSound = async (
+    word: WordItem = currentWord!
+  ): Promise<void> => {
     try {
       if (sound) {
-        await sound.unloadAsync()
+        await sound.unloadAsync();
       }
 
       const { sound: newSound } = await Audio.Sound.createAsync(
-        require("../../assets/sounds/wrong.mp3"), // Replace with actual sound file
-      )
-      setSound(newSound)
-      await newSound.playAsync()
+        require("../../assets/sounds/wrong.mp3") // Replace with actual sound file
+      );
+      setSound(newSound);
+      await newSound.playAsync();
     } catch (error) {
-      console.error("Error playing sound", error)
+      console.error("Error playing sound", error);
     }
-  }
+  };
 
   // Stage selection
   const selectStage = (stage: Stage) => {
     if (!stage.isLocked) {
-      setSelectedStage(stage)
-      setGameState("levelSelect")
+      setSelectedStage(stage);
+      setGameState("levelSelect");
       // Reset timer when selecting a stage
-      gameStartTime.current = Date.now()
+      gameStartTime.current = Date.now();
     }
-  }
+  };
 
   // Level selection
   const selectLevel = (level: Level) => {
     if (!level.isLocked) {
-      setSelectedLevel(level)
-      setGameState("learning")
-      setCurrentLearningIndex(0)
+      setSelectedLevel(level);
+      setGameState("learning");
+      setCurrentLearningIndex(0);
       // Reset timer when selecting a level
-      gameStartTime.current = Date.now()
+      gameStartTime.current = Date.now();
     }
-  }
+  };
 
   // Learning navigation
   const nextLearningWord = (): void => {
     if (currentLearningIndex < currentWords.length - 1) {
-      fadeAnim.setValue(0)
-      setCurrentLearningIndex(currentLearningIndex + 1)
+      fadeAnim.setValue(0);
+      setCurrentLearningIndex(currentLearningIndex + 1);
     }
-  }
+  };
 
   const previousLearningWord = (): void => {
     if (currentLearningIndex > 0) {
-      fadeAnim.setValue(0)
-      setCurrentLearningIndex(currentLearningIndex - 1)
+      fadeAnim.setValue(0);
+      setCurrentLearningIndex(currentLearningIndex - 1);
     }
-  }
+  };
 
   const startGame = (): void => {
-    setGameState("playing")
-    setCurrentWordIndex(0)
-    setLevelScore(0)
-    setSelectedOption(null)
-    setIsCorrect(null)
+    setGameState("playing");
+    setCurrentWordIndex(0);
+    setLevelScore(0);
+    setSelectedOption(null);
+    setIsCorrect(null);
     if (currentWords.length > 0) {
-      setCurrentWord(currentWords[0])
-      generateOptions(currentWords[0], currentWords)
+      setCurrentWord(currentWords[0]);
+      generateOptions(currentWords[0], currentWords);
     }
-  }
+  };
 
   // Generate options for the game
   const generateOptions = (word: WordItem, wordList: WordItem[]): void => {
-    const correctAnswer = word.english
-    let optionsArray: string[] = [correctAnswer]
+    const correctAnswer = word.english;
+    let optionsArray: string[] = [correctAnswer];
 
     // Add 3 random incorrect options
     while (optionsArray.length < 4) {
-      const randomIndex = Math.floor(Math.random() * wordList.length)
-      const randomOption = wordList[randomIndex].english
+      const randomIndex = Math.floor(Math.random() * wordList.length);
+      const randomOption = wordList[randomIndex].english;
 
       if (!optionsArray.includes(randomOption)) {
-        optionsArray.push(randomOption)
+        optionsArray.push(randomOption);
       }
     }
 
     // Shuffle options
-    optionsArray = optionsArray.sort(() => Math.random() - 0.5)
-    setOptions(optionsArray)
-  }
+    optionsArray = optionsArray.sort(() => Math.random() - 0.5);
+    setOptions(optionsArray);
+  };
 
   const handleOptionSelect = (option: string): void => {
-    if (!currentWord || selectedOption) return
+    if (!currentWord || selectedOption) return;
 
-    setSelectedOption(option)
+    setSelectedOption(option);
 
     if (option === currentWord.english) {
       // Correct answer
-      setIsCorrect(true)
-      setLevelScore(levelScore + 10)
+      setIsCorrect(true);
+      setLevelScore(levelScore + 10);
 
       // Play sound and animate
       if (correctSound) {
-        correctSound.replayAsync()
+        correctSound.replayAsync();
       }
 
       // Animate confetti on correct answer
@@ -313,53 +308,53 @@ const LugandaLearningGame: React.FC = () => {
         duration: 800,
         useNativeDriver: true,
       }).start(() => {
-        confettiAnim.setValue(0)
-      })
+        confettiAnim.setValue(0);
+      });
 
       // Move to next word after a delay
       setTimeout(() => {
-        nextWord()
-      }, 1500)
+        nextWord();
+      }, 1500);
     } else {
       // Wrong answer
-      setIsCorrect(false)
-      setShakingOption(option)
+      setIsCorrect(false);
+      setShakingOption(option);
 
       if (wrongSound) {
-        wrongSound.replayAsync()
+        wrongSound.replayAsync();
       }
 
       // Allow trying again after a delay
       setTimeout(() => {
-        setSelectedOption(null)
-        setIsCorrect(null)
-      }, 1500)
+        setSelectedOption(null);
+        setIsCorrect(null);
+      }, 1500);
     }
-  }
+  };
 
   const nextWord = useCallback((): void => {
-    const nextIndex = currentWordIndex + 1
-    fadeAnim.setValue(0)
+    const nextIndex = currentWordIndex + 1;
+    fadeAnim.setValue(0);
 
     if (nextIndex < currentWords.length) {
-      setCurrentWordIndex(nextIndex)
-      setCurrentWord(currentWords[nextIndex])
-      setSelectedOption(null)
-      setIsCorrect(null)
+      setCurrentWordIndex(nextIndex);
+      setCurrentWord(currentWords[nextIndex]);
+      setSelectedOption(null);
+      setIsCorrect(null);
 
       setTimeout(() => {
-        generateOptions(currentWords[nextIndex], currentWords)
-      }, 300)
+        generateOptions(currentWords[nextIndex], currentWords);
+      }, 300);
     } else {
       // Level completed
-      completeLevelAndUpdateProgress()
+      completeLevelAndUpdateProgress();
     }
-  }, [currentWordIndex, currentWords])
+  }, [currentWordIndex, currentWords]);
 
-  const trackActivity = async (isStageComplete = false) => {
-    if (!activeChild) return
+  const trackActivity = async (isStageComplete: boolean = false) => {
+    if (!activeChild) return;
 
-    const duration = Math.round((Date.now() - gameStartTime.current) / 1000) // duration in seconds
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000); // duration in seconds
 
     await saveActivity({
       child_id: activeChild.id,
@@ -377,11 +372,11 @@ const LugandaLearningGame: React.FC = () => {
       }`,
       stage: selectedStage?.id,
       level: selectedLevel?.id,
-    })
+    });
 
     // Reset timer for next activity
-    gameStartTime.current = Date.now()
-  }
+    gameStartTime.current = Date.now();
+  };
 
   // REMOVE this function from your component, its logic will be integrated:
 // const saveGameProgress = async () => { ... };
@@ -536,7 +531,9 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
               Select a Stage
             </Text>
             <View className="flex-row items-center">
-              <Text className="text-xs text-slate-500 mr-2">Swipe to explore</Text>
+              <Text className="text-xs text-slate-500 mr-2">
+                Swipe to explore
+              </Text>
               <Ionicons name="arrow-forward" size={14} color="#6366f1" />
             </View>
           </View>
@@ -563,7 +560,9 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                   height: height * 0.5,
                   maxHeight: 450,
                 }}
-                className={`rounded-2xl overflow-hidden shadow-md mx-2 ${stage.isLocked ? "opacity-70" : ""}`}
+                className={`rounded-2xl overflow-hidden shadow-md mx-2 ${
+                  stage.isLocked ? "opacity-70" : ""
+                }`}
                 onPress={() => selectStage(stage)}
                 disabled={stage.isLocked}
                 activeOpacity={0.9}
@@ -586,12 +585,19 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
 
                       {/* Image alongside title */}
                       <View className="ml-auto bg-white p-2 rounded-full shadow-sm">
-                        <Image source={stage.image} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                        <Image
+                          source={stage.image}
+                          style={{ width: 24, height: 24 }}
+                          resizeMode="contain"
+                        />
                       </View>
                     </View>
 
                     {/* Stage title */}
-                    <Text variant="bold" className="text-lg  text-white mb-1.5 tracking-wide">
+                    <Text
+                      variant="bold"
+                      className="text-lg  text-white mb-1.5 tracking-wide"
+                    >
                       {stage.title}
                     </Text>
 
@@ -611,18 +617,38 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                     <View className="flex-row flex-wrap">
                       {/* Level count badge */}
                       <View className="flex-row items-center bg-white bg-opacity-60 px-3 py-1.5 rounded-full mr-2">
-                        <Ionicons name="school-outline" size={14} color={stage.color} />
-                        <Text variant="bold" className="text-sm ml-1" style={{ color: stage.color }}>
+                        <Ionicons
+                          name="school-outline"
+                          size={14}
+                          color={stage.color}
+                        />
+                        <Text
+                          variant="bold"
+                          className="text-sm ml-1"
+                          style={{ color: stage.color }}
+                        >
                           {stage.levels.length}
                         </Text>
                       </View>
 
                       {/* Completed levels badge */}
                       <View className="flex-row items-center bg-white bg-opacity-60 px-3 py-1.5 rounded-full mr-2">
-                        <Ionicons name="checkmark-circle-outline" size={14} color={stage.color} />
-                        <Text variant="bold" className="ml-1" style={{ color: stage.color }}>
-                          {stage.levels.filter((level) => completedLevels.includes(level.id)).length}/
-                          {stage.levels.length}
+                        <Ionicons
+                          name="checkmark-circle-outline"
+                          size={14}
+                          color={stage.color}
+                        />
+                        <Text
+                          variant="bold"
+                          className="ml-1"
+                          style={{ color: stage.color }}
+                        >
+                          {
+                            stage.levels.filter((level) =>
+                              completedLevels.includes(level.id)
+                            ).length
+                          }
+                          /{stage.levels.length}
                         </Text>
                       </View>
                     </View>
@@ -640,7 +666,11 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                         </TouchableOpacity>
                       ) : (
                         <View className="flex-row items-center justify-center bg-black bg-opacity-25 px-3 py-1.5 rounded-full border border-white border-opacity-30">
-                          <Ionicons name="lock-closed" size={14} color="white" />
+                          <Ionicons
+                            name="lock-closed"
+                            size={14}
+                            color="white"
+                          />
                           <Text variant="bold" className="text-white ml-1">
                             {stage.requiredScore}
                           </Text>
@@ -657,12 +687,12 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
           />
         </Animated.View>
       </SafeAreaView>
-    )
-  }
+    );
+  };
 
   // LEVEL SELECTION SCREEN
   const renderLevelSelectScreen = () => {
-    if (!selectedStage) return null
+    if (!selectedStage) return null;
 
     return (
       <SafeAreaView className="flex-1 bg-slate-50 pt-3">
@@ -701,16 +731,25 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
         >
           <Animated.View className="px-4 pt-2" style={{ opacity: fadeAnim }}>
             {/* More Compact Stage Banner */}
-            <View className="p-3 rounded mb-3 shadow-sm py-8" style={{ backgroundColor: selectedStage.color }}>
+            <View
+              className="p-3 rounded mb-3 shadow-sm py-8"
+              style={{ backgroundColor: selectedStage.color }}
+            >
               <View className="flex-row items-center">
                 {/* Image and Title in one row */}
                 <View className="bg-white p-2 rounded-full mr-3">
-                  <Image source={selectedStage.image} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                  <Image
+                    source={selectedStage.image}
+                    style={{ width: 24, height: 24 }}
+                    resizeMode="contain"
+                  />
                 </View>
 
                 <View className="flex-1">
                   <View className="flex-row items-baseline">
-                    <Text className="text-white text-opacity-90 text-xs mr-2">Stage {selectedStage.id}</Text>
+                    <Text className="text-white text-opacity-90 text-xs mr-2">
+                      Stage {selectedStage.id}
+                    </Text>
                     <Text variant="bold" className="text-white text-lg">
                       {selectedStage.title}
                     </Text>
@@ -719,8 +758,12 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                   {/* Progress info in the same row */}
                   <View className="flex-row items-center mt-1">
                     <Text className="text-white text-opacity-90 text-xs mr-2">
-                      {selectedStage.levels.filter((level) => completedLevels.includes(level.id)).length} /{" "}
-                      {selectedStage.levels.length}
+                      {
+                        selectedStage.levels.filter((level) =>
+                          completedLevels.includes(level.id)
+                        ).length
+                      }{" "}
+                      / {selectedStage.levels.length}
                     </Text>
 
                     {/* Progress bar takes remaining space */}
@@ -729,7 +772,9 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                         className="h-full bg-white"
                         style={{
                           width: `${
-                            (selectedStage.levels.filter((level) => completedLevels.includes(level.id)).length /
+                            (selectedStage.levels.filter((level) =>
+                              completedLevels.includes(level.id)
+                            ).length /
                               selectedStage.levels.length) *
                             100
                           }%`,
@@ -738,8 +783,9 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                     </View>
 
                     <Text className="text-white text-opacity-90 text-xs">
-                      {selectedStage.levels.filter((level) => completedLevels.includes(level.id)).length ===
-                      selectedStage.levels.length
+                      {selectedStage.levels.filter((level) =>
+                        completedLevels.includes(level.id)
+                      ).length === selectedStage.levels.length
                         ? "Completed"
                         : "In Progress"}
                     </Text>
@@ -753,7 +799,9 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
               <Text variant="bold" className="text-lg text-slate-800">
                 Select a Level
               </Text>
-              <Text className="text-xs text-slate-500">{selectedStage.levels.length} levels</Text>
+              <Text className="text-xs text-slate-500">
+                {selectedStage.levels.length} levels
+              </Text>
             </View>
 
             {/* More efficient level grid */}
@@ -767,8 +815,8 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                     level.isLocked
                       ? "bg-slate-100 border-slate-200"
                       : completedLevels.includes(level.id)
-                        ? "bg-white border-emerald-300"
-                        : "bg-white border-indigo-200"
+                      ? "bg-white border-emerald-300"
+                      : "bg-white border-indigo-200"
                   }
                 `}
                   onPress={() => selectLevel(level)}
@@ -779,32 +827,59 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                     {level.isLocked ? (
                       <View className="items-center">
                         <View className="w-10 h-10 rounded-full bg-slate-200 justify-center items-center mb-2">
-                          <Ionicons name="lock-closed" size={18} color="#94a3b8" />
+                          <Ionicons
+                            name="lock-closed"
+                            size={18}
+                            color="#94a3b8"
+                          />
                         </View>
-                        <Text variant="bold" className="text-sm text-slate-400 text-center">
+                        <Text
+                          variant="bold"
+                          className="text-sm text-slate-400 text-center"
+                        >
                           {level.title}
                         </Text>
-                        <Text className="text-xs text-slate-400 mt-0.5">Locked</Text>
+                        <Text className="text-xs text-slate-400 mt-0.5">
+                          Locked
+                        </Text>
                       </View>
                     ) : completedLevels.includes(level.id) ? (
                       <View className="items-center">
                         <View className="w-10 h-10 rounded-full bg-emerald-100 justify-center items-center mb-2">
-                          <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color="#10b981"
+                          />
                         </View>
-                        <Text variant="bold" className="text-sm text-slate-700 text-center">
+                        <Text
+                          variant="bold"
+                          className="text-sm text-slate-700 text-center"
+                        >
                           {level.title}
                         </Text>
-                        <Text className="text-xs text-emerald-600 mt-0.5">Completed</Text>
+                        <Text className="text-xs text-emerald-600 mt-0.5">
+                          Completed
+                        </Text>
                       </View>
                     ) : (
                       <View className="items-center">
                         <View className="w-10 h-10 rounded-full bg-indigo-100 justify-center items-center mb-2">
-                          <Ionicons name="play-circle" size={20} color="#7b5af0" />
+                          <Ionicons
+                            name="play-circle"
+                            size={20}
+                            color="#7b5af0"
+                          />
                         </View>
-                        <Text variant="bold" className="text-sm text-slate-700 text-center">
+                        <Text
+                          variant="bold"
+                          className="text-sm text-slate-700 text-center"
+                        >
                           {level.title}
                         </Text>
-                        <Text className="text-xs text-slate-500 mt-0.5">{level.words.length} Words</Text>
+                        <Text className="text-xs text-slate-500 mt-0.5">
+                          {level.words.length} Words
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -814,15 +889,15 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
-    )
-  }
+    );
+  };
 
   // LEARNING SCREEN
   const renderLearningScreen = () => {
-    if (!selectedLevel || currentWords.length === 0) return null
+    if (!selectedLevel || currentWords.length === 0) return null;
 
-    const currentLearnWord = currentWords[currentLearningIndex]
-    const layout = isLandscape ? "landscape" : "portrait"
+    const currentLearnWord = currentWords[currentLearningIndex];
+    const layout = isLandscape ? "landscape" : "portrait";
     return (
       <SafeAreaView className="flex-1 bg-slate-50 pt-6">
         <StatusBar style="dark" />
@@ -844,14 +919,19 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
               <View
                 className="h-full bg-indigo-500"
                 style={{
-                  width: `${((currentLearningIndex + 1) / currentWords.length) * 100}%`,
+                  width: `${
+                    ((currentLearningIndex + 1) / currentWords.length) * 100
+                  }%`,
                 }}
               />
             </View>
           </View>
 
-          <TouchableOpacity className="bg-indigo-500 py-1.5 px-3 rounded-full" onPress={startGame}>
-            <Text variant="bold" className="text-white text-sm">
+          <TouchableOpacity
+            className="bg-indigo-500 py-1.5 px-3 rounded-full"
+            onPress={startGame}
+          >
+            <Text variant="bold" className="text-white  text-sm">
               Play Game
             </Text>
           </TouchableOpacity>
@@ -865,7 +945,11 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                 className="bg-white p-5 rounded-2xl shadow-sm w-full justify-center items-center"
                 style={{ opacity: fadeAnim }}
               >
-                <Image source={currentLearnWord.image} style={{ width: "100%", height: "80%" }} resizeMode="contain" />
+                <Image
+                  source={currentLearnWord.image}
+                  style={{ width: "100%", height: "80%" }}
+                  resizeMode="contain"
+                />
               </Animated.View>
             </View>
 
@@ -899,33 +983,56 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                 <Text variant="bold" className="text-3xl text-indigo-700 pt-3">
                   {currentLearnWord.luganda}
                 </Text>
-                <Text className="text-xl text-slate-700 mb-4">{currentLearnWord.english}</Text>
+                <Text className="text-xl text-slate-700 mb-4">
+                  {currentLearnWord.english}
+                </Text>
 
                 <View className="bg-slate-50 p-4 rounded-lg mb-2">
-                  <Text className="text-base text-slate-800 italic mb-2">"{currentLearnWord.example}"</Text>
-                  <Text className="text-sm text-slate-500">{currentLearnWord.exampleTranslation}</Text>
+                  <Text className="text-base text-slate-800 italic mb-2">
+                    "{currentLearnWord.example}"
+                  </Text>
+                  <Text className="text-sm text-slate-500">
+                    {currentLearnWord.exampleTranslation}
+                  </Text>
                 </View>
               </Animated.View>
 
               <View className="flex-row justify-between p">
                 <TouchableOpacity
-                  className={`py-3 px-5 rounded-xl ${currentLearningIndex === 0 ? "bg-slate-200" : "bg-indigo-500"}`}
+                  className={`py-3 px-5 rounded-xl ${
+                    currentLearningIndex === 0
+                      ? "bg-slate-200"
+                      : "bg-indigo-500"
+                  }`}
                   onPress={previousLearningWord}
                   disabled={currentLearningIndex === 0}
                 >
-                  <Text className={` ${currentLearningIndex === 0 ? "text-slate-400" : "text-white"}`} variant="bold">
+                  <Text
+                    className={` ${
+                      currentLearningIndex === 0
+                        ? "text-slate-400"
+                        : "text-white"
+                    }`}
+                    variant="bold"
+                  >
                     Previous
                   </Text>
                 </TouchableOpacity>
 
                 {currentLearningIndex < currentWords.length - 1 ? (
-                  <TouchableOpacity className="bg-indigo-500 py-3 px-5 rounded-xl" onPress={nextLearningWord}>
+                  <TouchableOpacity
+                    className="bg-indigo-500 py-3 px-5 rounded-xl"
+                    onPress={nextLearningWord}
+                  >
                     <Text variant="bold" className="text-white">
                       Next
                     </Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity className="bg-emerald-500 py-3 px-5 rounded-xl" onPress={startGame}>
+                  <TouchableOpacity
+                    className="bg-emerald-500 py-3 px-5 rounded-xl"
+                    onPress={startGame}
+                  >
                     <Text variant="bold" className="text-white">
                       Start Quiz
                     </Text>
@@ -964,36 +1071,62 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                     </TouchableOpacity>
                   </View>
 
-                  <Text variant="bold" className="text-3xl text-indigo-700 mb-1">
+                  <Text
+                    variant="bold"
+                    className="text-3xl text-indigo-700 mb-1"
+                  >
                     {currentLearnWord.luganda}
                   </Text>
-                  <Text className="text-xl text-slate-700 mb-4">{currentLearnWord.english}</Text>
+                  <Text className="text-xl text-slate-700 mb-4">
+                    {currentLearnWord.english}
+                  </Text>
 
                   <View className="bg-slate-50 p-4 rounded-lg">
-                    <Text className="text-base text-slate-800 italic mb-2">"{currentLearnWord.example}"</Text>
-                    <Text className="text-sm text-slate-500">{currentLearnWord.exampleTranslation}</Text>
+                    <Text className="text-base text-slate-800 italic mb-2">
+                      "{currentLearnWord.example}"
+                    </Text>
+                    <Text className="text-sm text-slate-500">
+                      {currentLearnWord.exampleTranslation}
+                    </Text>
                   </View>
                 </View>
 
                 <View className="flex-row justify-between px-2">
                   <TouchableOpacity
-                    className={`py-3 px-6 rounded-xl ${currentLearningIndex === 0 ? "bg-slate-200" : "bg-indigo-500"}`}
+                    className={`py-3 px-6 rounded-xl ${
+                      currentLearningIndex === 0
+                        ? "bg-slate-200"
+                        : "bg-indigo-500"
+                    }`}
                     onPress={previousLearningWord}
                     disabled={currentLearningIndex === 0}
                   >
-                    <Text className={` ${currentLearningIndex === 0 ? "text-slate-400" : "text-white"}`} variant="bold">
+                    <Text
+                      className={` ${
+                        currentLearningIndex === 0
+                          ? "text-slate-400"
+                          : "text-white"
+                      }`}
+                      variant="bold"
+                    >
                       Previous
                     </Text>
                   </TouchableOpacity>
 
                   {currentLearningIndex < currentWords.length - 1 ? (
-                    <TouchableOpacity className="bg-indigo-500 py-3 px-6 rounded-xl" onPress={nextLearningWord}>
+                    <TouchableOpacity
+                      className="bg-indigo-500 py-3 px-6 rounded-xl"
+                      onPress={nextLearningWord}
+                    >
                       <Text variant="bold" className="text-white">
                         Next
                       </Text>
                     </TouchableOpacity>
                   ) : (
-                    <TouchableOpacity className="bg-emerald-500 py-3 px-6 rounded-xl" onPress={startGame}>
+                    <TouchableOpacity
+                      className="bg-emerald-500 py-3 px-6 rounded-xl"
+                      onPress={startGame}
+                    >
                       <Text variant="bold" className="text-white">
                         Start Quiz
                       </Text>
@@ -1005,13 +1138,13 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
           </ScrollView>
         )}
       </SafeAreaView>
-    )
-  }
+    );
+  };
 
   // GAME SCREEN
   const renderGameScreen = () => {
-    if (!currentWord) return null
-    const layout = isLandscape ? "landscape" : "portrait"
+    if (!currentWord) return null;
+    const layout = isLandscape ? "landscape" : "portrait";
 
     return (
       <SafeAreaView className="flex-1 bg-slate-50">
@@ -1036,7 +1169,7 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
               style={{ width: 20, height: 20, marginRight: 4 }}
               resizeMode="contain"
             />
-            <Text variant="bold" className="text-amber-500">
+            <Text variant="bold" className=" text-amber-500">
               {levelScore}
             </Text>
           </View>
@@ -1060,7 +1193,8 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
               Question {currentWordIndex + 1} of {currentWords.length}
             </Text>
             <Text className="text-xs text-slate-500">
-              {Math.round((currentWordIndex / currentWords.length) * 100)}% Complete
+              {Math.round((currentWordIndex / currentWords.length) * 100)}%
+              Complete
             </Text>
           </View>
         </View>
@@ -1071,15 +1205,27 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
             <View className="flex-1 flex-row px-3">
               <View className="w-1/2 p-2 justify-center">
                 <View className="bg-white p-6 rounded-2xl shadow-sm">
-                  <Text className="text-lg text-slate-600 mb-6 text-center">What is the English translation of:</Text>
+                  <Text className="text-lg text-slate-600 mb-6 text-center">
+                    What is the English translation of:
+                  </Text>
 
                   <View className="items-center mb-5">
                     <View className="flex-row items-center">
-                      <Text variant="bold" className="text-3xl text-indigo-700 text-center pt-3">
+                      <Text
+                        variant="bold"
+                        className="text-3xl text-indigo-700 text-center pt-3"
+                      >
                         {currentWord.luganda}
                       </Text>
-                      <TouchableOpacity className="ml-3 p-2 bg-indigo-100 rounded-full" onPress={() => playWordSound()}>
-                        <Ionicons name="volume-high" size={20} color="#6366f1" />
+                      <TouchableOpacity
+                        className="ml-3 p-2 bg-indigo-100 rounded-full"
+                        onPress={() => playWordSound()}
+                      >
+                        <Ionicons
+                          name="volume-high"
+                          size={20}
+                          color="#6366f1"
+                        />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1087,7 +1233,12 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                   {/* Feedback */}
                   {isCorrect !== null && (
                     <View className="items-center my-4">
-                      <Text className={`text-lg ${isCorrect ? "text-emerald-500" : "text-red-500"}`} variant="bold">
+                      <Text
+                        className={`text-lg ${
+                          isCorrect ? "text-emerald-500" : "text-red-500"
+                        }`}
+                        variant="bold"
+                      >
                         {isCorrect ? "Correct! 🎉" : "Try again! 😕"}
                       </Text>
                     </View>
@@ -1100,7 +1251,11 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                   {options.map((option, index) => (
                     <Animated.View
                       key={index}
-                      style={[option === shakingOption ? { transform: [{ translateX: shakeAnimation }] } : {}]}
+                      style={[
+                        option === shakingOption
+                          ? { transform: [{ translateX: shakeAnimation }] }
+                          : {},
+                      ]}
                     >
                       <TouchableOpacity
                         className={`
@@ -1109,10 +1264,10 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                             selectedOption === null
                               ? "bg-white border-slate-200"
                               : option === currentWord.english
-                                ? "bg-emerald-100 border-emerald-500"
-                                : option === selectedOption
-                                  ? "bg-red-100 border-red-500"
-                                  : "bg-white border-slate-200"
+                              ? "bg-emerald-100 border-emerald-500"
+                              : option === selectedOption
+                              ? "bg-red-100 border-red-500"
+                              : "bg-white border-slate-200"
                           }
                         `}
                         onPress={() => handleOptionSelect(option)}
@@ -1125,10 +1280,10 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                             selectedOption === null
                               ? "text-slate-700"
                               : option === currentWord.english
-                                ? "text-emerald-700"
-                                : option === selectedOption
-                                  ? "text-red-700"
-                                  : "text-slate-700"
+                              ? "text-emerald-700"
+                              : option === selectedOption
+                              ? "text-red-700"
+                              : "text-slate-700"
                           }
                         `}
                           variant="bold"
@@ -1145,14 +1300,22 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
             // Portrait layout
             <View className="flex-1 px-4">
               <View className="bg-white p-6 rounded-2xl shadow-sm mb-5">
-                <Text className="text-base text-slate-600 mb-5 text-center">What is the English translation of:</Text>
+                <Text className="text-base text-slate-600 mb-5 text-center">
+                  What is the English translation of:
+                </Text>
 
                 <View className="items-center mb-5">
                   <View className="flex-row items-center">
-                    <Text variant="bold" className="text-3xl text-indigo-700 text-center">
+                    <Text
+                      variant="bold"
+                      className="text-3xl text-indigo-700 text-center"
+                    >
                       {currentWord.luganda}
                     </Text>
-                    <TouchableOpacity className="ml-3 p-2 bg-indigo-100 rounded-full" onPress={() => playWordSound()}>
+                    <TouchableOpacity
+                      className="ml-3 p-2 bg-indigo-100 rounded-full"
+                      onPress={() => playWordSound()}
+                    >
                       <Ionicons name="volume-high" size={20} color="#6366f1" />
                     </TouchableOpacity>
                   </View>
@@ -1161,7 +1324,12 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                 {/* Feedback */}
                 {isCorrect !== null && (
                   <View className="items-center my-3">
-                    <Text variant="bold" className={`text-lg ${isCorrect ? "text-emerald-500" : "text-red-500"}`}>
+                    <Text
+                      variant="bold"
+                      className={`text-lg ${
+                        isCorrect ? "text-emerald-500" : "text-red-500"
+                      }`}
+                    >
                       {isCorrect ? "Correct! 🎉" : "Try again 😕"}
                     </Text>
                   </View>
@@ -1172,7 +1340,11 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                 {options.map((option, index) => (
                   <Animated.View
                     key={index}
-                    style={[option === shakingOption ? { transform: [{ translateX: shakeAnimation }] } : {}]}
+                    style={[
+                      option === shakingOption
+                        ? { transform: [{ translateX: shakeAnimation }] }
+                        : {},
+                    ]}
                   >
                     <TouchableOpacity
                       className={`
@@ -1181,10 +1353,10 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                           selectedOption === null
                             ? "bg-white border-slate-200"
                             : option === currentWord.english
-                              ? "bg-emerald-100 border-emerald-500"
-                              : option === selectedOption
-                                ? "bg-red-100 border-red-500"
-                                : "bg-white border-slate-200"
+                            ? "bg-emerald-100 border-emerald-500"
+                            : option === selectedOption
+                            ? "bg-red-100 border-red-500"
+                            : "bg-white border-slate-200"
                         }
                       `}
                       onPress={() => handleOptionSelect(option)}
@@ -1199,10 +1371,10 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                           selectedOption === null
                             ? "text-slate-700"
                             : option === currentWord.english
-                              ? "text-emerald-700"
-                              : option === selectedOption
-                                ? "text-red-700"
-                                : "text-slate-700"
+                            ? "text-emerald-700"
+                            : option === selectedOption
+                            ? "text-red-700"
+                            : "text-slate-700"
                         }
                       `}
                       >
@@ -1235,8 +1407,8 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
           )}
         </Animated.View>
       </SafeAreaView>
-    )
-  }
+    );
+  };
 
   // LEVEL COMPLETION SCREEN
   const renderLevelCompletionScreen = () => {
@@ -1246,7 +1418,10 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
 
         <View className="flex-1 justify-center items-center">
           <LinearGradient
-            colors={[selectedStage?.color || "#6366f1", (selectedStage?.color || "#6366f1") + "CC"]}
+            colors={[
+              selectedStage?.color || "#6366f1",
+              (selectedStage?.color || "#6366f1") + "CC",
+            ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="p-12 rounded-3xl w-full items-center shadow-lg"
@@ -1258,7 +1433,7 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
             <Text variant="bold" className="text-xl text-white mb-2">
               Level Complete!
             </Text>
-            <Text className="text-white text-center mb-2">
+            <Text className="text-white text-center  mb-2">
               Congratulations, you've completed {selectedLevel?.title}!
             </Text>
 
@@ -1272,7 +1447,7 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
                 </Text>
               </View>
               <View className="flex-row justify-between mb-2">
-                <Text variant="bold" className="text-white">
+                <Text variant="bold" className="text-white ">
                   Score Earned:
                 </Text>
                 <Text variant="bold" className="text-white">
@@ -1293,9 +1468,9 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
               <TouchableOpacity
                 className="bg-white py-3 px-5 rounded-xl"
                 onPress={() => {
-                  setGameState("levelSelect")
+                  setGameState("levelSelect");
                   // Reset timer for next activity
-                  gameStartTime.current = Date.now()
+                  gameStartTime.current = Date.now();
                 }}
               >
                 <Text variant="bold" className="text-indigo-600">
@@ -1306,9 +1481,9 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
               <TouchableOpacity
                 className="bg-emerald-500 py-3 px-5 rounded-xl"
                 onPress={() => {
-                  setGameState("stageSelect")
+                  setGameState("stageSelect");
                   // Reset timer for next activity
-                  gameStartTime.current = Date.now()
+                  gameStartTime.current = Date.now();
                 }}
               >
                 <Text variant="bold" className="text-white">
@@ -1319,34 +1494,36 @@ const completeLevelAndUpdateProgress = async () => { // Make it async
           </LinearGradient>
         </View>
       </SafeAreaView>
-    )
-  }
+    );
+  };
 
   // Loading screen
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 justify-center items-center">
         <ActivityIndicator size="large" color="#6366f1" />
-        <Text className="mt-4 text-slate-600">Loading your learning journey...</Text>
+        <Text className="mt-4 text-slate-600">
+          Loading your learning journey...
+        </Text>
       </SafeAreaView>
-    )
+    );
   }
 
   // Main render function that switches between game states
   switch (gameState) {
     case "stageSelect":
-      return renderStageSelectScreen()
+      return renderStageSelectScreen();
     case "levelSelect":
-      return renderLevelSelectScreen()
+      return renderLevelSelectScreen();
     case "learning":
-      return renderLearningScreen()
+      return renderLearningScreen();
     case "playing":
-      return renderGameScreen()
+      return renderGameScreen();
     case "levelComplete":
-      return renderLevelCompletionScreen()
+      return renderLevelCompletionScreen();
     default:
-      return renderStageSelectScreen()
+      return renderStageSelectScreen();
   }
-}
+};
 
-export default LugandaLearningGame
+export default LugandaLearningGame;

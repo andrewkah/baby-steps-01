@@ -1,349 +1,229 @@
-"use client"
-
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
-import { View, Image, TouchableOpacity, Animated, Dimensions, SafeAreaView, ActivityIndicator } from "react-native"
-import { Audio } from "expo-av"
-import { StatusBar } from "expo-status-bar"
-import * as ScreenOrientation from "expo-screen-orientation"
-import { useRouter } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
-import { LinearGradient } from "expo-linear-gradient"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useChild } from "@/context/ChildContext"
-import { saveActivity } from "@/lib/utils"
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+  Alert,
+  SafeAreaView,
+  ActivityIndicator,
+  ImageBackground,
+} from "react-native";
+import { Audio } from "expo-av";
+import { StatusBar } from "expo-status-bar";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useChild } from "@/context/ChildContext";
+import { saveActivity } from "@/lib/utils";
 import {
   COUNTING_GAME_STAGES,
+  CountingGameStage,
   culturalItems,
   getRandomNumbersForStage,
   getLugandaWord,
-  type CulturalItem,
+  CulturalItem,
   ugandanCurrency,
-} from "./utils/countingGameStages"
-import { Text } from "@/components/StyledText"
+} from "./utils/countingGameStages";
+import { Text } from "@/components/StyledText";
 
-const { width, height } = Dimensions.get("window")
+
+const { width, height } = Dimensions.get("window");
 
 // Define TypeScript interfaces for our data structures
 interface CountItem {
-  id: number
-  x: number
-  y: number
-  rotate: number
-  scale: number
-  bunch?: number // Optional bunch number for grouped items
+  id: number;
+  x: number;
+  y: number;
+  rotate: number;
+  scale: number;
+  bunch?: number; // Optional bunch number for grouped items
 }
 
 interface WindowDimensions {
-  width: number
-  height: number
+  width: number;
+  height: number;
 }
-
-// Define the game state interface for persistence
-interface GameState {
-  currentStage: number
-  currentLevel: number
-  score: number
-  gameLevels: number[]
-  lastPlayed: number // timestamp
-}
-
-// Storage key for the game state
-const GAME_STATE_STORAGE_KEY = "luganda_counting_game_state"
 
 const LugandaCountingGame: React.FC = () => {
-  const router = useRouter()
-  const [currentStage, setCurrentStage] = useState<number>(1)
-  const [currentLevel, setCurrentLevel] = useState<number>(1)
-  const [currentItem, setCurrentItem] = useState<CulturalItem>(culturalItems[0])
-  const [itemsToCount, setItemsToCount] = useState<CountItem[]>([])
-  const [selectedCount, setSelectedCount] = useState<number | null>(null)
-  const [showFeedback, setShowFeedback] = useState<boolean>(false)
-  const [isCorrect, setIsCorrect] = useState<boolean>(false)
-  const [score, setScore] = useState<number>(0)
-  const [sound, setSound] = useState<Audio.Sound | null>(null)
-  const [numberOptions, setNumberOptions] = useState<number[]>([])
+  const router = useRouter();
+  const [currentStage, setCurrentStage] = useState<number>(1);
+  const [currentLevel, setCurrentLevel] = useState<number>(1);
+  const [currentItem, setCurrentItem] = useState<CulturalItem>(
+    culturalItems[0]
+  );
+  const [itemsToCount, setItemsToCount] = useState<CountItem[]>([]);
+  const [selectedCount, setSelectedCount] = useState<number | null>(null);
+  const [showFeedback, setShowFeedback] = useState<boolean>(false);
+  const [isCorrect, setIsCorrect] = useState<boolean>(false);
+  const [score, setScore] = useState<number>(0);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [numberOptions, setNumberOptions] = useState<number[]>([]);
   const [dimensions, setDimensions] = useState<WindowDimensions>({
     width,
     height,
-  })
-  const [targetNumber, setTargetNumber] = useState<number>(1)
-  const [gameLevels, setGameLevels] = useState<number[]>([])
-  const [stageCompleted, setStageCompleted] = useState<boolean>(false)
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [isInitialized, setIsInitialized] = useState<boolean>(false)
+  });
+  const [targetNumber, setTargetNumber] = useState<number>(1);
+  const [gameLevels, setGameLevels] = useState<number[]>([]);
+  const [stageCompleted, setStageCompleted] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const bounceAnim = useRef(new Animated.Value(1)).current
-  const rotateAnim = useRef(new Animated.Value(0)).current
-  const { activeChild } = useChild()
-  const gameStartTime = useRef(Date.now())
-
-  // Save game state to AsyncStorage
-  const saveGameState = async () => {
-    try {
-      // Only save if we have valid game levels
-      if (gameLevels.length === 0) {
-        console.log("No game levels to save, skipping save")
-        return
-      }
-
-      const gameState: GameState = {
-        currentStage,
-        currentLevel,
-        score,
-        gameLevels,
-        lastPlayed: Date.now(),
-      }
-
-      console.log("Saving game state:", gameState)
-      await AsyncStorage.setItem(`${GAME_STATE_STORAGE_KEY}_${activeChild?.id || "default"}`, JSON.stringify(gameState))
-      console.log("Game state saved successfully")
-    } catch (error) {
-      console.error("Error saving game state:", error)
-    }
-  }
-
-  // Load game state from AsyncStorage
-  const loadGameState = async () => {
-    try {
-      console.log("Attempting to load game state...")
-      const savedState = await AsyncStorage.getItem(`${GAME_STATE_STORAGE_KEY}_${activeChild?.id || "default"}`)
-
-      if (savedState) {
-        const gameState: GameState = JSON.parse(savedState)
-        console.log("Found saved game state:", gameState)
-
-        // Check if the saved state is from within the last 24 hours
-        const isRecent = Date.now() - gameState.lastPlayed < 24 * 60 * 60 * 1000
-
-        if (isRecent) {
-          console.log("Loading saved game state - it's recent")
-          // Directly set state values
-          setCurrentStage(gameState.currentStage)
-          setCurrentLevel(gameState.currentLevel)
-          setScore(gameState.score)
-
-          // Important: Set gameLevels directly
-          setGameLevels(gameState.gameLevels)
-
-          return true
-        } else {
-          console.log("Saved game state is too old, starting fresh")
-          await AsyncStorage.removeItem(`${GAME_STATE_STORAGE_KEY}_${activeChild?.id || "default"}`)
-        }
-      } else {
-        console.log("No saved game state found")
-      }
-
-      return false
-    } catch (error) {
-      console.error("Error loading game state:", error)
-      return false
-    }
-  }
+  const bounceAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const { activeChild } = useChild();
+  const gameStartTime = useRef(Date.now());
 
   // Add orientation locking
   useEffect(() => {
     // Lock to landscape orientation
     async function setLandscapeOrientation(): Promise<void> {
       try {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
+        await ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.LANDSCAPE
+        );
       } catch (error) {
-        console.error("Failed to lock orientation:", error)
+        console.error("Failed to lock orientation:", error);
       }
     }
 
-    setLandscapeOrientation()
+    setLandscapeOrientation();
 
     return () => {
       // Reset orientation when component unmounts
-    }
-  }, [])
+    };
+  }, []);
 
   // Add listener for dimension changes
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
-      setDimensions(window)
-    })
+      setDimensions(window);
+    });
 
     return () => {
-      subscription?.remove()
-    }
-  }, [])
+      subscription?.remove();
+    };
+  }, []);
 
-  // Initialize game - first try to load saved state, otherwise start fresh
+  // Initialize game with stage 1 levels
   useEffect(() => {
-    const initGame = async () => {
-      setIsLoading(true)
-      try {
-        const loaded = await loadGameState()
-
-        if (loaded) {
-          console.log("Successfully loaded saved game state")
-          // If we loaded a saved state, we need to set up the current level
-          if (gameLevels.length > 0) {
-            const levelIndex = currentLevel - 1
-            if (levelIndex < gameLevels.length) {
-              setupLevel(gameLevels[levelIndex], currentStage)
-            }
-          }
-        } else {
-          console.log("No saved game found, starting new game")
-          initializeStage(1)
-        }
-
-        setIsInitialized(true)
-      } catch (error) {
-        console.error("Error during game initialization:", error)
-        initializeStage(1)
-        setIsInitialized(true)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    initGame()
-
-    return () => {
-      // Ensure game state is saved when component unmounts
-      saveGameState()
-      if (sound) {
-        sound.unloadAsync()
-      }
-    }
-  }, [])
-
-  // Save game state when app goes to background
-  useEffect(() => {
-    const saveOnBlur = () => {
-      saveGameState()
-    }
-
-    // Add event listeners for app state changes
-    // This is a simplified approach - in a real app, you'd use AppState
-    window.addEventListener("blur", saveOnBlur)
-
-    return () => {
-      window.removeEventListener("blur", saveOnBlur)
-    }
-  }, [currentStage, currentLevel, score, gameLevels])
+    console.log("Initial game setup");
+    initializeStage(currentStage);
+  }, []);
 
   // When the stage changes, initialize the new stage
   useEffect(() => {
-    if (!isInitialized) return
-
-    console.log(`Stage changed to ${currentStage}`)
-    setIsLoading(true)
-    initializeStage(currentStage)
+    console.log(`Stage changed to ${currentStage}`);
+    setIsLoading(true);
+    initializeStage(currentStage);
     // Reset UI states when changing stages
-    setShowFeedback(false)
-    setSelectedCount(null)
-    setNumberOptions([])
-    setIsLoading(false)
-
-    // Save game state when stage changes
-    saveGameState()
-  }, [currentStage, isInitialized])
+    setShowFeedback(false);
+    setSelectedCount(null);
+    setNumberOptions([]);
+    setIsLoading(false);
+  }, [currentStage]);
 
   // When level changes, setup the level
   useEffect(() => {
-    if (!isInitialized) return
-
-    console.log(`Setting up level ${currentLevel} with game levels:`, gameLevels)
+    console.log(
+      `Setting up level ${currentLevel} with game levels:`,
+      gameLevels
+    );
     if (gameLevels.length > 0) {
-      const levelIndex = currentLevel - 1
+      const levelIndex = currentLevel - 1;
       if (levelIndex < gameLevels.length) {
-        setupLevel(gameLevels[levelIndex], currentStage)
+        setupLevel(gameLevels[levelIndex], currentStage);
       } else {
-        console.error(`Level index ${levelIndex} out of bounds for game levels array of length ${gameLevels.length}`)
+        console.error(
+          `Level index ${levelIndex} out of bounds for game levels array of length ${gameLevels.length}`
+        );
         // Handle edge case
         if (gameLevels.length > 0) {
-          setupLevel(gameLevels[0], currentStage)
+          setupLevel(gameLevels[0], currentStage);
         }
       }
     }
 
-    // Save game state when level changes
-    saveGameState()
-
     return () => {
       if (sound) {
-        sound.unloadAsync()
+        sound.unloadAsync();
       }
-    }
-  }, [currentLevel, gameLevels, isInitialized])
+    };
+  }, [currentLevel, gameLevels]);
 
   // Initialize a stage with randomized levels
   const initializeStage = (stageId: number): void => {
     try {
       // Get random numbers for this stage
-      const randomNumbers = getRandomNumbersForStage(stageId)
+      const randomNumbers = getRandomNumbersForStage(stageId);
 
       // Verify we have numbers before proceeding
       if (randomNumbers.length === 0) {
-        console.error(`No numbers generated for stage ${stageId}`)
+        console.error(`No numbers generated for stage ${stageId}`);
         // Default to some fallback numbers based on stage
-        const stage = COUNTING_GAME_STAGES.find((s) => s.id === stageId) || COUNTING_GAME_STAGES[0]
-        const { min } = stage.numbersRange
-        setGameLevels([min, min + 1, min + 2, min + 3])
+        const stage =
+          COUNTING_GAME_STAGES.find((s) => s.id === stageId) ||
+          COUNTING_GAME_STAGES[0];
+        const { min } = stage.numbersRange;
+        setGameLevels([min, min + 1, min + 2, min + 3]);
       } else {
-        console.log(`Stage ${stageId} initialized with levels:`, randomNumbers)
-        setGameLevels(randomNumbers)
+        console.log(`Stage ${stageId} initialized with levels:`, randomNumbers);
+        setGameLevels(randomNumbers);
       }
 
       // Reset level to 1 when starting a new stage
-      setCurrentLevel(1)
-      setStageCompleted(false)
+      setCurrentLevel(1);
+      setStageCompleted(false);
 
       // Ensure clean UI state
-      setShowFeedback(false)
-      setSelectedCount(null)
-
-      // Mark as initialized
-      setIsInitialized(true)
+      setShowFeedback(false);
+      setSelectedCount(null);
     } catch (error) {
-      console.error("Error initializing stage:", error)
+      console.error("Error initializing stage:", error);
       // Set some default game levels to prevent the game from breaking
-      setGameLevels([1, 2, 3, 4, 5])
-      setIsInitialized(true)
+      setGameLevels([1, 2, 3, 4, 5]);
     }
-  }
+  };
 
   const setupLevel = (targetNum = 0, stageId = currentStage): void => {
     try {
       // Choose a random item from cultural items
-      const randomItemIndex = Math.floor(Math.random() * culturalItems.length)
-      const newItem = culturalItems[randomItemIndex]
+      const randomItemIndex = Math.floor(Math.random() * culturalItems.length);
+      const newItem = culturalItems[randomItemIndex];
 
       // Get the current stage
-      const stage = COUNTING_GAME_STAGES.find((s) => s.id === stageId) || COUNTING_GAME_STAGES[0]
+      const stage =
+        COUNTING_GAME_STAGES.find((s) => s.id === stageId) ||
+        COUNTING_GAME_STAGES[0];
 
       // Get the target number for this level from the randomized levels
-      const levelIndex = currentLevel - 1
+      const levelIndex = currentLevel - 1;
       // Use provided targetNum if available, otherwise get from gameLevels
-      const numberToUse = targetNum || (gameLevels[levelIndex] ?? stage.numbersRange.min)
-      console.log(`Setting up level with target number: ${numberToUse}`)
-      setTargetNumber(numberToUse)
+      const numberToUse =
+        targetNum || (gameLevels[levelIndex] ?? stage.numbersRange.min);
+      console.log(`Setting up level with target number: ${numberToUse}`);
+      setTargetNumber(numberToUse);
 
       // Calculate container dimensions
-      const containerWidth = dimensions.width * 0.6 // Center section is 4/6 of width = ~60%
-      const containerHeight = 200 // Fixed height for items container
+      const containerWidth = dimensions.width * 0.6; // Center section is 4/6 of width = ~60%
+      const containerHeight = 200; // Fixed height for items container
 
       // Item dimensions
-      const itemSize = 64 // 16 * 4 = 64px (w-16 h-16)
+      const itemSize = 64; // 16 * 4 = 64px (w-16 h-16)
 
       // Calculate safe boundaries with padding to ensure items stay fully visible
-      const safeAreaPadding = 10
-      const minX = safeAreaPadding
-      const maxX = containerWidth - itemSize - safeAreaPadding
-      const minY = safeAreaPadding
-      const maxY = containerHeight - itemSize - safeAreaPadding
+      const safeAreaPadding = 10;
+      const minX = safeAreaPadding;
+      const maxX = containerWidth - itemSize - safeAreaPadding;
+      const minY = safeAreaPadding;
+      const maxY = containerHeight - itemSize - safeAreaPadding;
 
-      let newItemsToCount: CountItem[] = []
+      let newItemsToCount: CountItem[] = [];
 
       if (stage.useBunches) {
         // For stages with bunches, we show fewer visual items representing groups
-        const bunches = Math.ceil(numberToUse / (stage.itemsPerBunch || 10))
+        const bunches = Math.ceil(numberToUse / (stage.itemsPerBunch || 10));
 
         // Create one item per bunch
         newItemsToCount = Array.from({ length: bunches }, (_, i) => ({
@@ -353,7 +233,7 @@ const LugandaCountingGame: React.FC = () => {
           rotate: Math.random() * 360,
           scale: 0.8 + Math.random() * 0.4,
           bunch: stage.itemsPerBunch || 10,
-        }))
+        }));
       } else if (stage.usesCurrency) {
         // For currency stage, show notes/coins based on the value
         // We'll simplify by showing one currency item
@@ -365,7 +245,7 @@ const LugandaCountingGame: React.FC = () => {
             rotate: 0,
             scale: 1.5,
           },
-        ]
+        ];
       } else {
         // For basic counting (Stage 1), show individual items
         newItemsToCount = Array.from({ length: numberToUse }, (_, i) => ({
@@ -374,83 +254,87 @@ const LugandaCountingGame: React.FC = () => {
           y: minY + Math.random() * (maxY - minY),
           rotate: Math.random() * 360,
           scale: 0.8 + Math.random() * 0.4,
-        }))
+        }));
       }
 
       // Generate number options here and store them in state
-      const correctAnswer = numberToUse
-      const options: number[] = [correctAnswer]
+      const correctAnswer = numberToUse;
+      const options: number[] = [correctAnswer];
 
       // Generate possible options within the stage's range
-      const { min, max } = stage.numbersRange
-      const possibleOptions: number[] = []
+      const { min, max } = stage.numbersRange;
+      const possibleOptions: number[] = [];
 
       // Add numbers within the range as possible options
       for (let i = min; i <= max; i++) {
         // For stages with bunches, only add multiples of the bunch size
         if (stage.useBunches && stage.itemsPerBunch) {
           if (i % stage.itemsPerBunch === 0 && i !== correctAnswer) {
-            possibleOptions.push(i)
+            possibleOptions.push(i);
           }
         } else if (i !== correctAnswer) {
-          possibleOptions.push(i)
+          possibleOptions.push(i);
         }
       }
 
       // Randomly select 2 more options
       while (options.length < 3 && possibleOptions.length > 0) {
-        const randomIndex = Math.floor(Math.random() * possibleOptions.length)
-        options.push(possibleOptions[randomIndex])
-        possibleOptions.splice(randomIndex, 1)
+        const randomIndex = Math.floor(Math.random() * possibleOptions.length);
+        options.push(possibleOptions[randomIndex]);
+        possibleOptions.splice(randomIndex, 1);
       }
 
       // Shuffle the options
-      options.sort(() => Math.random() - 0.5)
+      options.sort(() => Math.random() - 0.5);
 
-      setCurrentItem(newItem)
-      setItemsToCount(newItemsToCount)
-      setSelectedCount(null)
-      setShowFeedback(false)
-      setNumberOptions(options)
+      setCurrentItem(newItem);
+      setItemsToCount(newItemsToCount);
+      setSelectedCount(null);
+      setShowFeedback(false);
+      setNumberOptions(options);
     } catch (error) {
-      console.error("Error setting up level:", error)
+      console.error("Error setting up level:", error);
       // Set default values to prevent crashes
-      setItemsToCount([])
-      setNumberOptions([1, 2, 3])
+      setItemsToCount([]);
+      setNumberOptions([1, 2, 3]);
     }
-  }
+  };
 
   const playNumberSound = async (number: number): Promise<void> => {
     try {
       if (sound) {
-        await sound.unloadAsync()
+        await sound.unloadAsync();
       }
 
       // In a real app, you'd have actual audio files
       // For this example, we'll just log which sound would play
-      console.log(`Playing sound for: ${getLugandaWord(number, currentStage)}`)
+      console.log(`Playing sound for: ${getLugandaWord(number, currentStage)}`);
 
       try {
-        const { sound: newSound } = await Audio.Sound.createAsync(require("@/assets/sounds/correct.mp3"))
-        setSound(newSound)
-        await newSound.playAsync()
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          require("@/assets/sounds/correct.mp3")
+        );
+        setSound(newSound);
+        await newSound.playAsync();
       } catch (audioError) {
-        console.error("Error loading sound file:", audioError)
+        console.error("Error loading sound file:", audioError);
       }
     } catch (error) {
-      console.error("Error playing sound", error)
+      console.error("Error playing sound", error);
     }
-  }
+  };
 
-  const trackActivity = async (isStageComplete = false) => {
-    if (!activeChild) return
+  const trackActivity = async (isStageComplete: boolean = false) => {
+    if (!activeChild) return;
 
-    const duration = Math.round((Date.now() - gameStartTime.current) / 1000) // duration in seconds
+    const duration = Math.round((Date.now() - gameStartTime.current) / 1000); // duration in seconds
 
     await saveActivity({
       child_id: activeChild.id,
       activity_type: "counting",
-      activity_name: isStageComplete ? `Completed Counting Stage ${currentStage}` : "Practiced Counting",
+      activity_name: isStageComplete
+        ? `Completed Counting Stage ${currentStage}`
+        : "Practiced Counting",
       score: score.toString(),
       duration,
       completed_at: new Date().toISOString(),
@@ -461,19 +345,19 @@ const LugandaCountingGame: React.FC = () => {
       }`,
       stage: currentStage,
       level: currentLevel,
-    })
-  }
+    });
+  };
 
   const handleNumberPress = async (number: number): Promise<void> => {
-    setSelectedCount(number)
-    playNumberSound(number)
+    setSelectedCount(number);
+    playNumberSound(number);
 
     // Check if the answer is correct
-    const isAnswerCorrect = number === targetNumber
-    setIsCorrect(isAnswerCorrect)
+    const isAnswerCorrect = number === targetNumber;
+    setIsCorrect(isAnswerCorrect);
 
     // Show feedback
-    setShowFeedback(true)
+    setShowFeedback(true);
 
     // Animate the feedback
     Animated.sequence([
@@ -489,11 +373,11 @@ const LugandaCountingGame: React.FC = () => {
         tension: 40,
         useNativeDriver: true,
       }),
-    ]).start()
+    ]).start();
 
     // If correct, add to score and prepare for next level
     if (isAnswerCorrect) {
-      setScore(score + 10)
+      setScore(score + 10);
 
       // Rotate animation for correct answer
       Animated.timing(rotateAnim, {
@@ -501,33 +385,32 @@ const LugandaCountingGame: React.FC = () => {
         duration: 1000,
         useNativeDriver: true,
       }).start(() => {
-        rotateAnim.setValue(0)
-      })
+        rotateAnim.setValue(0);
+      });
 
       // Move to next level after a delay
       setTimeout(async () => {
-        const currentStageData = COUNTING_GAME_STAGES.find((s) => s.id === currentStage) || COUNTING_GAME_STAGES[0]
+        const currentStageData =
+          COUNTING_GAME_STAGES.find((s) => s.id === currentStage) ||
+          COUNTING_GAME_STAGES[0];
         if (currentLevel < currentStageData.levels) {
-          await trackActivity(false)
-          setCurrentLevel((prevLevel) => prevLevel + 1)
-          // Save game state after level completion
-          saveGameState()
+          await trackActivity(false);
+          setCurrentLevel((prevLevel) => prevLevel + 1);
         } else {
           // Stage completed!
-          setStageCompleted(true)
-          await trackActivity(true)
-          // Save game state after stage completion
-          saveGameState()
+          setStageCompleted(true);
+          await trackActivity(true);
+
         }
-      }, 1500)
+      }, 1500);
     } else {
       // For incorrect answers, clear feedback after a short delay to allow another try
       setTimeout(() => {
-        setShowFeedback(false)
-        setSelectedCount(null)
-      }, 1500)
+        setShowFeedback(false);
+        setSelectedCount(null);
+      }, 1500);
     }
-  }
+  };
 
   const renderNumberOptions = (): JSX.Element[] => {
     return numberOptions.map((number) => (
@@ -538,78 +421,43 @@ const LugandaCountingGame: React.FC = () => {
             selectedCount === number && isCorrect
               ? "bg-success"
               : selectedCount === number && !isCorrect
-                ? "bg-destructive"
-                : "bg-secondary"
+              ? "bg-destructive"
+              : "bg-secondary"
           }`}
         onPress={() => handleNumberPress(number)}
         disabled={showFeedback && isCorrect} // Only disable if showing correct feedback
       >
-        <Text variant="bold" className="text-lg text-white">
-          {number}
-        </Text>
+        <Text variant="bold" className="text-lg text-white">{number}</Text>
         <Text variant="bold" className="text-xs text-white">
           {getLugandaWord(number, currentStage)}
         </Text>
       </TouchableOpacity>
-    ))
-  }
+    ));
+  };
 
-  // Replace the getImageSource function with this implementation
-  const getImageSource = (imageName?: string) => {
-    // Create a mapping of image names to their require statements
-    // This is necessary because React Native's require needs static strings
-    const imageMap: Record<string, any> = {
-      // Cultural items
-      "matooke.png": require("@/assets/images/matooke.png"),
-      "mango.png": require("@/assets/images/mango.png"),
-      "goat.png": require("@/assets/images/goat.png"),
-      "basket.png": require("@/assets/images/basket.png"),
-      "drum.png": require("@/assets/images/drum.png"),
-      "banana.png": require("@/assets/images/banana.png"),
-      "bean.png": require("@/assets/images/bean.png"),
-      "child.png": require("@/assets/images/child.png"),
-
-      // Currency items
-      "500.png": require("@/assets/images/500.png"),
-      "1000.jpeg": require("@/assets/images/1000.jpeg"),
-      "2000.jpeg": require("@/assets/images/2000.jpeg"),
-      "5000.jpeg": require("@/assets/images/5000.jpeg"),
-      "10000.jpeg": require("@/assets/images/10000.jpeg"),
-      "20000.jpeg": require("@/assets/images/20000.jpeg"),
-      "50000.jpeg": require("@/assets/images/50000.jpeg"),
-
-      // Default fallback
-      default: require("@/assets/images/banana.png"),
-    }
-
+  const getImageSource = () => {
     try {
-      // If we have a valid image name and it exists in our map, return it
-      if (imageName && imageMap[imageName]) {
-        return imageMap[imageName]
-      }
-
-      // Log which image we're trying to load for debugging
-      console.log(`Trying to load image: ${imageName || "undefined"}`)
-
-      // Return the default image as fallback
-      return imageMap["default"]
+      return require("@/assets/images/african-logic.png");
     } catch (error) {
-      console.error(`Failed to load image ${imageName}:`, error)
+      console.error("Failed to load image:", error);
       // Return null if image can't be loaded, will be handled in rendering
-      return null
+      return null;
     }
-  }
+  };
 
-  // Update the renderItemsToCount function to correctly use the image name
   const renderItemsToCount = (): JSX.Element[] => {
-    const stage = COUNTING_GAME_STAGES.find((s) => s.id === currentStage) || COUNTING_GAME_STAGES[0]
+    const stage =
+      COUNTING_GAME_STAGES.find((s) => s.id === currentStage) ||
+      COUNTING_GAME_STAGES[0];
 
     // For currency stage, render the currency item
     if (stage.usesCurrency) {
-      const currencyItem = ugandanCurrency.find((item) => item.value === targetNumber)
+      const currencyItem = ugandanCurrency.find(
+        (item) => item.value === targetNumber
+      );
 
       if (!currencyItem) {
-        console.warn(`No currency item found for value ${targetNumber}`)
+        console.warn(`No currency item found for value ${targetNumber}`);
         // Display a fallback
         return [
           <View
@@ -624,14 +472,10 @@ const LugandaCountingGame: React.FC = () => {
               {`Shs ${targetNumber}`}
             </Text>
           </View>,
-        ]
+        ];
       }
 
-      // Log the currency item for debugging
-      console.log("Currency item:", currencyItem)
-
-      // Get the image source using the image name from the currency item
-      const imageSource = getImageSource(currencyItem.image)
+      const imageSource = getImageSource();
 
       return [
         <View
@@ -656,15 +500,10 @@ const LugandaCountingGame: React.FC = () => {
             {currencyItem.name}
           </Text>
         </View>,
-      ]
+      ];
     }
 
-    // Log the current item for debugging
-    console.log("Current cultural item:", currentItem)
-
-    // Get the image source using the image name from the current cultural item
-    const imageSource = getImageSource(currentItem.image)
-
+    const imageSource = getImageSource();
     if (!imageSource) {
       // If image can't be loaded, show text placeholders
       return itemsToCount.map((item) => (
@@ -676,11 +515,9 @@ const LugandaCountingGame: React.FC = () => {
             top: item.y,
           }}
         >
-          <Text variant="bold" className="text-white">
-            {item.id + 1}
-          </Text>
+          <Text variant="bold" className="text-white">{item.id + 1}</Text>
         </View>
-      ))
+      ));
     }
 
     // For stages with bunches
@@ -698,7 +535,10 @@ const LugandaCountingGame: React.FC = () => {
             source={imageSource}
             className="w-16 h-16"
             style={{
-              transform: [{ rotate: `${item.rotate}deg` }, { scale: item.scale }],
+              transform: [
+                { rotate: `${item.rotate}deg` },
+                { scale: item.scale },
+              ],
             }}
             resizeMode="contain"
           />
@@ -706,7 +546,7 @@ const LugandaCountingGame: React.FC = () => {
             {item.bunch} {currentItem.name}
           </Text>
         </View>
-      ))
+      ));
     }
 
     // For basic counting (Stage 1)
@@ -722,22 +562,24 @@ const LugandaCountingGame: React.FC = () => {
         }}
         resizeMode="contain"
       />
-    ))
-  }
+    ));
+  };
 
   const getQuestionText = (): string => {
-    const stage = COUNTING_GAME_STAGES.find((s) => s.id === currentStage) || COUNTING_GAME_STAGES[0]
+    const stage =
+      COUNTING_GAME_STAGES.find((s) => s.id === currentStage) ||
+      COUNTING_GAME_STAGES[0];
 
     if (stage.usesCurrency) {
-      return "How much is this Ugandan currency worth?"
+      return "How much is this Ugandan currency worth?";
     }
 
     if (stage.useBunches) {
-      return `Each bunch has ${stage.itemsPerBunch} ${currentItem.name}. How many ${currentItem.name} are there in total?`
+      return `Each bunch has ${stage.itemsPerBunch} ${currentItem.name}. How many ${currentItem.name} are there in total?`;
     }
 
-    return `Balanga ${currentItem.name} emeka? (How many ${currentItem.name} do you see?)`
-  }
+    return `Balanga ${currentItem.name} emeka? (How many ${currentItem.name} do you see?)`;
+  };
 
   // Show loading state if game is loading
   if (isLoading) {
@@ -766,7 +608,7 @@ const LugandaCountingGame: React.FC = () => {
           </Text>
         </LinearGradient>
       </SafeAreaView>
-    )
+    );
   }
 
   return (
@@ -786,22 +628,19 @@ const LugandaCountingGame: React.FC = () => {
       <View className="flex-row justify-between items-center px-4 pt-3 pb-2">
         <TouchableOpacity
           className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-indigo-100"
-          onPress={async () => {
-            // Save game state before navigating away
-            await saveGameState()
-            console.log("Game state saved before navigation")
-            router.back()
-          }}
+          onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={20} color="#818cf8" />
         </TouchableOpacity>
 
         <View className="flex-row items-center  px-4 py-2 rounded-xl">
           <View className="flex-row items-center bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-            <Image source={require("@/assets/images/coin.png")} className="w-5 h-5 mr-1" resizeMode="contain" />
-            <Text variant="bold" className="text-amber-500">
-              {score}
-            </Text>
+            <Image
+              source={require("@/assets/images/coin.png")}
+              className="w-5 h-5 mr-1"
+              resizeMode="contain"
+            />
+            <Text variant="bold" className="text-amber-500">{score}</Text>
           </View>
         </View>
       </View>
@@ -811,12 +650,16 @@ const LugandaCountingGame: React.FC = () => {
         {/* Left section - Stage indicator */}
         <View className="w-1/6 items-center pt-4">
           <View className="bg-white rounded-xl shadow-sm p-3 w-full">
-            <Text className="text-center text-sm text-indigo-400">STAGE</Text>
+            <Text className="text-center text-sm text-indigo-400">
+              STAGE
+            </Text>
             <View className="items-center justify-center my-2">
               <View
                 className="w-16 h-16 rounded-full items-center justify-center shadow-md"
                 style={{
-                  backgroundColor: (COUNTING_GAME_STAGES[currentStage - 1] as any)?.color || "#818cf8",
+                  backgroundColor:
+                    (COUNTING_GAME_STAGES[currentStage - 1] as any)?.color ||
+                    "#818cf8",
                 }}
               >
                 <Text variant="bold" className="text-2xl text-white">
@@ -829,15 +672,22 @@ const LugandaCountingGame: React.FC = () => {
               <View
                 className="bg-indigo-500 rounded-full h-2"
                 style={{
-                  width: `${(currentLevel / (COUNTING_GAME_STAGES[currentStage - 1]?.levels || 5)) * 100}%`,
+                  width: `${
+                    (currentLevel /
+                      (COUNTING_GAME_STAGES[currentStage - 1]?.levels || 5)) *
+                    100
+                  }%`,
                 }}
               />
             </View>
 
             <Text className="text-center text-xs text-indigo-500">
-              Level {currentLevel}/{COUNTING_GAME_STAGES[currentStage - 1]?.levels || 5}
+              Level {currentLevel}/
+              {COUNTING_GAME_STAGES[currentStage - 1]?.levels || 5}
             </Text>
           </View>
+
+          
         </View>
 
         {/* Center section - Items to count */}
@@ -848,7 +698,8 @@ const LugandaCountingGame: React.FC = () => {
               {getQuestionText()}
             </Text>
             <Text className="text-sm text-indigo-600 text-center mt-1">
-              {COUNTING_GAME_STAGES[currentStage - 1]?.description || "Learn to count in Luganda"}
+              {COUNTING_GAME_STAGES[currentStage - 1]?.description ||
+                "Learn to count in Luganda"}
             </Text>
           </View>
 
@@ -895,7 +746,9 @@ const LugandaCountingGame: React.FC = () => {
         {/* Right section - Number options */}
         <View className="w-1/4 items-center justify-center">
           <View className="bg-white rounded-xl shadow-sm p-4 w-full">
-            <Text className="text-center text-sm text-indigo-400 mb-3">BALANGA EMEKA?</Text>
+            <Text className="text-center text-sm text-indigo-400 mb-3">
+              BALANGA EMEKA?
+            </Text>
 
             <View className="items-center justify-around py-2 space-y-3">
               {numberOptions.length > 0 ? (
@@ -906,8 +759,8 @@ const LugandaCountingGame: React.FC = () => {
                       selectedCount === number && isCorrect
                         ? "bg-emerald-500 border-2 border-emerald-200"
                         : selectedCount === number && !isCorrect
-                          ? "bg-red-500 border-2 border-red-200"
-                          : "bg-indigo-500"
+                        ? "bg-red-500 border-2 border-red-200"
+                        : "bg-indigo-500"
                     }`}
                     onPress={() => handleNumberPress(number)}
                     disabled={showFeedback && isCorrect}
@@ -932,7 +785,9 @@ const LugandaCountingGame: React.FC = () => {
       {showFeedback && (
         <Animated.View
           className={`absolute bg-white px-6 py-5 rounded-3xl shadow-lg ${
-            isCorrect ? "border-4 border-emerald-400" : "border-4 border-red-400"
+            isCorrect
+              ? "border-4 border-emerald-400"
+              : "border-4 border-red-400"
           }`}
           style={{
             top: "50%",
@@ -954,12 +809,16 @@ const LugandaCountingGame: React.FC = () => {
           <View className="items-center">
             <Text className="text-4xl mb-2 pt-3">{isCorrect ? "🎉" : "😕"}</Text>
             <Text
-              variant="bold"
-              className={`text-xl text-center mb-1 ${isCorrect ? "text-emerald-600" : "text-red-600"}`}
+            variant="bold"
+              className={`text-xl text-center mb-1 ${
+                isCorrect ? "text-emerald-600" : "text-red-600"
+              }`}
             >
               {isCorrect ? "Kirungi!" : "Gezaako nela!"}
             </Text>
-            <Text className="text-slate-600 text-center">{isCorrect ? "Correct!" : "Try again!"}</Text>
+            <Text className="text-slate-600 text-center">
+              {isCorrect ? "Correct!" : "Try again!"}
+            </Text>
           </View>
         </Animated.View>
       )}
@@ -977,7 +836,8 @@ const LugandaCountingGame: React.FC = () => {
             </Text>
 
             <Text className="text-slate-600 text-center mb-5 text-base">
-              You've mastered counting from {COUNTING_GAME_STAGES[currentStage - 1]?.numbersRange.min} to{" "}
+              You've mastered counting from{" "}
+              {COUNTING_GAME_STAGES[currentStage - 1]?.numbersRange.min} to{" "}
               {COUNTING_GAME_STAGES[currentStage - 1]?.numbersRange.max}!
             </Text>
 
@@ -985,7 +845,9 @@ const LugandaCountingGame: React.FC = () => {
               <View className="flex-row justify-between items-center mb-3">
                 <View className="flex-row items-center">
                   <Ionicons name="star" size={20} color="#f59e0b" />
-                  <Text className="ml-2 text-slate-700">Score</Text>
+                  <Text  className="ml-2 text-slate-700">
+                    Score
+                  </Text>
                 </View>
                 <Text variant="bold" className="text-amber-500 text-lg">
                   {score + 10}
@@ -995,7 +857,9 @@ const LugandaCountingGame: React.FC = () => {
               <View className="flex-row justify-between items-center">
                 <View className="flex-row items-center">
                   <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-                  <Text className="ml-2 text-slate-700">Levels Completed</Text>
+                  <Text className="ml-2 text-slate-700">
+                    Levels Completed
+                  </Text>
                 </View>
                 <Text variant="bold" className="text-emerald-600 text-lg">
                   {COUNTING_GAME_STAGES[currentStage - 1]?.levels || 5}
@@ -1006,28 +870,27 @@ const LugandaCountingGame: React.FC = () => {
             <TouchableOpacity
               className="bg-indigo-500 py-4 px-6 rounded-xl shadow-md"
               onPress={() => {
-                // Save game state before proceeding to next stage
-                const nextStage = currentStage < COUNTING_GAME_STAGES.length ? currentStage + 1 : 1
-                setNumberOptions([])
-                setShowFeedback(false)
-                setSelectedCount(null)
-                setItemsToCount([])
-                setCurrentStage(nextStage)
-                setScore(0)
-                gameStartTime.current = Date.now()
-                // Save the new game state
-                setTimeout(() => saveGameState(), 500)
+                // Your existing next stage logic
+                setNumberOptions([]);
+                setShowFeedback(false);
+                setSelectedCount(null);
+                setItemsToCount([]);
+                setCurrentStage(currentStage + 1);
+                setScore(0);
+                gameStartTime.current = Date.now();
               }}
             >
               <Text variant="bold" className="text-white text-lg text-center">
-                {currentStage < COUNTING_GAME_STAGES.length ? "Next Stage" : "Play Again"}
+                {currentStage < COUNTING_GAME_STAGES.length
+                  ? "Next Stage"
+                  : "Play Again"}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
     </SafeAreaView>
-  )
-}
+  );
+};
 
-export default LugandaCountingGame
+export default LugandaCountingGame;
