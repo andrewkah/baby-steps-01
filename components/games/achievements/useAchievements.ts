@@ -1,4 +1,3 @@
-// ./achievements/useAchievements.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useChild } from '@/context/ChildContext'; // Adjust path
 import {

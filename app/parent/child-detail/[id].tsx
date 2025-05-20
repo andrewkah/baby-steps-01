@@ -8,12 +8,12 @@ import { useLocalSearchParams, useRouter } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase" // Assuming this is your Supabase client
 import { useChild } from "@/context/ChildContext"
 
 // Achievement imports
-import { useAchievements } from "@/components/games/achievements/useAchievements"
-import { AchievementDefinition } from "@/components/games/achievements/achievementTypes" 
+import { useAchievements } from "@/components/games/achievements/useAchievements" // Ensure this path is correct
+import { AchievementDefinition, ChildAchievement } from "@/components/games/achievements/achievementTypes" // Ensure this path is correct
 
 // Define TypeScript interface for our child data
 interface ChildData {
@@ -25,7 +25,8 @@ interface ChildData {
 }
 
 // Interface for achievements prepared for display
-interface DisplayableAchievement extends AchievementDefinition {
+interface DisplayableAchievement extends AchievementDefinition { // This carries definition fields like name, description, icon_name, points
+  earned_instance_id: string; // Unique ID from child_achievements table for the key prop
   earned_at_timestamp: string;
 }
 
@@ -38,66 +39,64 @@ export default function ChildDetailScreen() {
   const [childData, setChildData] = useState<ChildData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Achievements state
   const { 
     definedAchievements, 
-    earnedChildAchievements, 
+    earnedChildAchievements, // This is an array of ChildAchievement objects
     isLoadingAchievements,
-    refreshAchievements 
-  } = useAchievements(childId); // Pass childId to the hook
+    // refreshAchievements // Not actively used but good to have
+  } = useAchievements(childId);
 
   const [childsEarnedFullAchievements, setChildsEarnedFullAchievements] = useState<DisplayableAchievement[]>([]);
 
   useEffect(() => {
     if (childId) {
       fetchChildData();
-      // refreshAchievements(); // useAchievements will call loadInitialAchievements on mount/childId change
     }
-  }, [childId]) // Removed refreshAchievements from here as hook handles it
+  }, [childId])
 
   const fetchChildData = async () => {
     // ... (your existing fetchChildData remains the same)
     try {
       setLoading(true)
-      const { data, error } = await supabase.from("children").select("id, name, gender, age").eq("id", childId).single()
-      if (error) {
-        console.error("Error fetching child data:", error.message)
-        throw error
-      }
-      const childWithAvatar = {
+      const { data, error } = await supabase.from("children").select("id, name, gender, age").eq("id", childId).single();
+      if (error) throw error;
+      setChildData({
         ...data,
         avatar: data.gender === "male" ? "👦" : data.gender === "female" ? "👧" : "👶",
-      }
-      setChildData(childWithAvatar)
+      });
     } catch (error) {
-      console.error("Error in fetchChildData:", error)
+      console.error("Error fetching child data:", error);
+      setChildData(null); // Clear data on error
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  // useEffect to process and combine achievement data for display
   useEffect(() => {
-    if (!isLoadingAchievements && definedAchievements.length > 0 && childId) {
+    if (!isLoadingAchievements && definedAchievements.length > 0 && earnedChildAchievements.length >= 0 && childId) {
       const achievementDefinitionsMap = new Map(definedAchievements.map(achDef => [achDef.id, achDef]));
       
+      // earnedChildAchievements is an array of `ChildAchievement` interfaces.
+      // Each `ChildAchievement` has its own unique `id`.
       const fullEarnedDetails = earnedChildAchievements
-        // earnedChildAchievements from the hook (if modified correctly) should already be for the specific childId
-        // .filter(earned => earned.child_id === childId) // This filter might be redundant if hook fetches specifically
-        .map(earned => {
-          const definition = achievementDefinitionsMap.get(earned.achievement_id);
+        .map((earnedInstance: ChildAchievement) => { // earnedInstance is a ChildAchievement
+          const definition = achievementDefinitionsMap.get(earnedInstance.achievement_id); // Use achievement_id to link to definition
           if (definition) {
             return { 
-              ...definition, 
-              earned_at_timestamp: earned.earned_at 
+              ...definition, // Spread properties of AchievementDefinition (name, desc, icon, points, etc.)
+                              // Note: definition.id is the achievement_definition_id
+              earned_instance_id: earnedInstance.id, // This is the unique ID from child_achievements table
+              earned_at_timestamp: earnedInstance.earned_at,
             };
           }
           return undefined;
         })
-        .filter(Boolean) as DisplayableAchievement[]; // Filter out undefined and assert type
+        .filter(Boolean) as DisplayableAchievement[];
 
-      setChildsEarnedFullAchievements(fullEarnedDetails.sort((a, b) => new Date(b.earned_at_timestamp).getTime() - new Date(a.earned_at_timestamp).getTime())); // Sort by most recent
-    } else if (!isLoadingAchievements) { // If not loading and no defined achievements or childId, clear the list
+      setChildsEarnedFullAchievements(
+        fullEarnedDetails.sort((a, b) => new Date(b.earned_at_timestamp).getTime() - new Date(a.earned_at_timestamp).getTime())
+      );
+    } else if (!isLoadingAchievements) {
         setChildsEarnedFullAchievements([]);
     }
   }, [childId, definedAchievements, earnedChildAchievements, isLoadingAchievements]);
@@ -131,7 +130,7 @@ export default function ChildDetailScreen() {
   return (
     <>
       <StatusBar style="dark" />
-      <SafeAreaView className="flex-1 bg-slate-50" edges={["top", "left", "right"]}> {/* Changed bg for better contrast */}
+      <SafeAreaView className="flex-1 bg-slate-50" edges={["top", "left", "right"]}>
         {/* Header */}
         <View className="flex-row items-center px-4 py-3 border-b border-gray-100 bg-white">
           <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
@@ -143,13 +142,13 @@ export default function ChildDetailScreen() {
         </View>
 
         <ScrollView className="flex-1">
-          {loading ? ( // Loading for child profile
+          {loading ? (
             <View className="flex-1 items-center justify-center p-6">
               <TranslatedText className="text-gray-600">Loading child profile...</TranslatedText>
             </View>
           ) : childData ? (
             <>
-              {/* Child profile header */}
+              {/* Child profile header ... same ... */}
               <View className="p-4 border-b border-gray-200 bg-white">
                 <View className="flex-row items-center">
                   <View className="relative mr-4">
@@ -189,19 +188,19 @@ export default function ChildDetailScreen() {
                   </View>
                 ) : childsEarnedFullAchievements.length > 0 ? (
                   <View>
-                    {childsEarnedFullAchievements.map((achievement, index) => (
+                    {childsEarnedFullAchievements.map((achievement, index) => ( // achievement is DisplayableAchievement
                       <View
-                          key={achievement.id}
+                          key={achievement.earned_instance_id} // <<< USE THE UNIQUE INSTANCE ID HERE
                           className={`
                             bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex-row items-start
                             ${index < childsEarnedFullAchievements.length - 1 ? "mb-3" : ""} 
-                          `} // Add mb-3 (margin-bottom) to all but the last item
+                          `}
                         >
                         <View className="mr-4 mt-1 bg-amber-100 p-3 rounded-full shadow-sm">
                           <Ionicons
                             name={(achievement.icon_name as any) || 'star-outline'}
                             size={26}
-                            color="#d97706" // Darker amber for icon
+                            color="#d97706"
                           />
                         </View>
                         <View className="flex-1">
@@ -233,7 +232,7 @@ export default function ChildDetailScreen() {
                 )}
               </View>
 
-              {/* Child ID (for debugging or info) - Kept it simple */}
+              {/* Developer Info ... same ... */}
               <View className="p-4 mt-2">
                  <TranslatedText variant="bold" className="text-gray-800 text-lg mb-2">
                     Developer Info
@@ -244,7 +243,7 @@ export default function ChildDetailScreen() {
               </View>
 
             </>
-          ) : ( // Child not found
+          ) : (
             <View className="flex-1 items-center justify-center p-6">
               <TranslatedText className="text-gray-600">Child not found or an error occurred.</TranslatedText>
             </View>

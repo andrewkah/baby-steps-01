@@ -27,6 +27,8 @@ import {
   isLevelUnlocked
 } from './utils/progressManagerWordGame';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAchievements } from "./achievements/useAchievements"; 
+import { AchievementDefinition } from "./achievements/achievementTypes"; 
 
 // Get screen dimensions
 const { width, height } = Dimensions.get("window");
@@ -70,6 +72,14 @@ const getImageSource = (imageName: string | undefined) => {
 const WordGame: React.FC = () => {
   // Add child context
   const { activeChild } = useChild();
+  const { 
+    isLoadingAchievements, 
+    checkAndGrantNewAchievements 
+  } = useAchievements(activeChild?.id, 'word_game'); // Game key
+
+  const [newlyEarnedAchievementWG, setNewlyEarnedAchievementWG] = useState<AchievementDefinition | null>(null);
+  const [hintUsedCurrentLevel, setHintUsedCurrentLevel] = useState<boolean>(false); // For no-hint achievement
+  const [consecutiveWins, setConsecutiveWins] = useState<number>(0);
   
   // Add state to track level start time
   const levelStartTime = useRef<number>(Date.now());
@@ -243,42 +253,128 @@ const WordGame: React.FC = () => {
 
   // Modified goToNextLevel to track level completion and unlock the next level
   const goToNextLevel = async () => {
-    // Track completion of current level
-    await trackLevelCompletion();
+    await trackLevelCompletion(); // Original tracking
     
-    // Update progress to mark this level as completed
+    let finalProgress = progress; // Start with current progress
+
     if (activeChild) {
-      // Create a copy of the current progress
-      const updatedProgress = updateProgressForLevelCompletion(
+      const progressAfterLevel = updateProgressForLevelCompletion(
         progress,
         currentLevelIndex,
         currentWord,
         activeChild.id
       );
+      // No need to push to completedLevels or unlockedLevels here, updateProgressForLevelCompletion handles it.
       
-      // Ensure the level is added to completedLevels
-      if (!updatedProgress.completedLevels.includes(currentLevelIndex)) {
-        updatedProgress.completedLevels.push(currentLevelIndex);
+      // --- ACHIEVEMENT CHECKING (AFTER LEVEL COMPLETE) ---
+      let achievementPointsEarned = 0;
+      const eventsForAchievements: Parameters<typeof checkAndGrantNewAchievements>[0][] = [];
+
+      // Event for level completion
+      eventsForAchievements.push({
+          type: 'word_game_level_just_completed',
+          gameKey: 'word_game',
+          levelIndex: currentLevelIndex,
+          wordGameProgress: progressAfterLevel, // Pass the progress *after* this level is notionally complete
+          hintUsedThisLevel: hintUsedCurrentLevel,
+          // consecutiveLevelsCompleted: currentConsecutiveWins, // If tracking this
+      });
+
+      // Event for stats update (score, completed levels count)
+      eventsForAchievements.push({
+          type: 'word_game_stats_updated', // Or just use 'word_game_level_just_completed' and let manager derive
+          gameKey: 'word_game',
+          wordGameProgress: progressAfterLevel,
+      });
+      
+      // Handle consecutive wins (simplified example: assumes linear play)
+      // If they can jump levels, this needs more robust logic, perhaps from playHistory.
+      const currentConsecutiveWins = consecutiveWins + 1;
+      setConsecutiveWins(currentConsecutiveWins); // Update state
+      if (currentConsecutiveWins >= 3) { // Example for "Three in a Row"
+          eventsForAchievements.push({
+              type: 'word_game_level_just_completed', // Re-use or make specific 'word_game_streak_achieved'
+              gameKey: 'word_game',
+              levelIndex: currentLevelIndex, // Context
+              consecutiveLevelsCompleted: currentConsecutiveWins,
+              wordGameProgress: progressAfterLevel, 
+          });
       }
-      
-      // Ensure the next level is added to unlockedLevels
-      const nextLevelIndex = currentLevelIndex + 1;
-      if (nextLevelIndex < gameLevels.length && !updatedProgress.unlockedLevels.includes(nextLevelIndex)) {
-        updatedProgress.unlockedLevels.push(nextLevelIndex);
+
+
+      for (const event of eventsForAchievements) {
+          const newlyEarnedFromEvent = await checkAndGrantNewAchievements(event);
+          if (newlyEarnedFromEvent.length > 0) {
+              newlyEarnedFromEvent.forEach(ach => {
+                  achievementPointsEarned += ach.points;
+                  console.log(`WORD GAME - NEW ACHIEVEMENT: ${ach.name}`);
+                  setNewlyEarnedAchievementWG(ach);
+              });
+          }
       }
-      
-      console.log('Saving progress with completed levels:', updatedProgress.completedLevels);
-      
-      // Update state and save to AsyncStorage
-      setProgress(updatedProgress);
-      await saveGameProgress(updatedProgress, activeChild.id);
+
+      // Add achievement points to the progress that will be saved
+      finalProgress = {
+          ...progressAfterLevel,
+          totalScore: progressAfterLevel.totalScore + achievementPointsEarned,
+      };
+      // --- END ACHIEVEMENT CHECKING ---
+
+      setProgress(finalProgress); // Update local state with points
+      await saveGameProgress(finalProgress, activeChild.id); // Save progress with new points
+    } else {
+      // If no active child, still update local state for non-persistent play
+      finalProgress = updateProgressForLevelCompletion(
+          progress,
+          currentLevelIndex,
+          currentWord,
+          undefined // no childId
+        );
+      setProgress(finalProgress);
     }
     
-    const nextLevelIndex = currentLevelIndex + 1;
-    setCurrentLevelIndex(nextLevelIndex);
+    const nextLevelIdx = currentLevelIndex + 1;
     setShowSuccessModal(false);
-    setSelectedLetters([]);
-    loadLevel(nextLevelIndex);
+    setSelectedLetters([]); // Should be done when new level loads
+    
+    // Reset for next level BEFORE loading it
+    setHintUsedCurrentLevel(false); 
+    
+    // Check if this was the last level
+    if (nextLevelIdx >= gameLevels.length) {
+        setIsGameCompleted(true);
+        await trackGameCompletion(); // Original tracking
+        // --- ACHIEVEMENT CHECKING (ALL LEVELS COMPLETE) ---
+        if (activeChild) {
+            const eventAllComplete: Parameters<typeof checkAndGrantNewAchievements>[0] = {
+                type: 'game_completed', // Using generic 'game_completed'
+                gameKey: 'word_game',
+                wordGameProgress: finalProgress, // Pass the latest progress
+                allLevelsInGameCount: gameLevels.length,
+            };
+            const newlyEarnedAllComplete = await checkAndGrantNewAchievements(eventAllComplete);
+            if (newlyEarnedAllComplete.length > 0) {
+                let pointsFromAllComplete = 0;
+                newlyEarnedAllComplete.forEach(ach => {
+                    pointsFromAllComplete += ach.points;
+                    console.log(`WORD GAME - ALL LEVELS COMPLETE - NEW ACHIEVEMENT: ${ach.name}`);
+                    setNewlyEarnedAchievementWG(ach);
+                });
+                if (pointsFromAllComplete > 0) {
+                    const finalProgressWithAllCompletePoints = {
+                        ...finalProgress,
+                        totalScore: finalProgress.totalScore + pointsFromAllComplete,
+                    };
+                    setProgress(finalProgressWithAllCompletePoints);
+                    await saveGameProgress(finalProgressWithAllCompletePoints, activeChild.id);
+                }
+            }
+        }
+        // --- END ALL LEVELS COMPLETE ACHIEVEMENT CHECKING ---
+    } else {
+        setCurrentLevelIndex(nextLevelIdx);
+        loadLevel(nextLevelIdx);
+    }
   };
 
   // Updated useEffect to lock screen orientation and load the first level
@@ -413,6 +509,40 @@ const WordGame: React.FC = () => {
 
     loadSavedProgress();
   }, [activeChild]);
+
+  const renderAchievementUnlockedModalWG = () => {
+    if (!newlyEarnedAchievementWG) return null;
+    // Use same modal structure as other games, just different state variable
+    return (
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <View style={{ backgroundColor: 'white', borderRadius: 20, padding: 24, width: '85%', maxWidth: 380, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 }}>
+          <View style={{ position: 'absolute', top: -40, backgroundColor: '#f59e0b', width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'white' }}>
+            <Ionicons name={(newlyEarnedAchievementWG.icon_name as any) || "star"} size={36} color="white" />
+          </View>
+          <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#b45309', marginTop: 48, marginBottom: 8, textAlign: 'center' }}>
+            Achievement Unlocked!
+          </Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 24, color: '#374151', marginBottom: 8, textAlign: 'center' }}>
+            {newlyEarnedAchievementWG.name}
+          </Text>
+          <Text style={{ fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 16 }}>
+            {newlyEarnedAchievementWG.description}
+          </Text>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#f59e0b', marginBottom: 24 }}>
+            +{newlyEarnedAchievementWG.points} Points!
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: '#f59e0b', paddingVertical: 12, paddingHorizontal: 40, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41, elevation: 2 }}
+            onPress={() => setNewlyEarnedAchievementWG(null)}
+          >
+            <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 16, textAlign: 'center' }}>
+              Awesome!
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   // Move to next level
   const animateLetterToWord = (
@@ -589,6 +719,7 @@ const WordGame: React.FC = () => {
   return (
     <View ref={containerRef} className="flex-1 bg-primary-50">
       <StatusBar style="dark" translucent backgroundColor="transparent" />
+      {renderAchievementUnlockedModalWG()}
 
       {/* Background decorative elements */}
       <View className="absolute top-5 left-5">

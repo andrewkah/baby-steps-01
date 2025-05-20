@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { AchievementDefinition, ChildAchievement } from './achievementTypes';
 import { UserStats as LugandaLearningUserStats } from '../utils/progressManagerLugandaLearning'; 
-import { CountingGameProgress, saveGameProgress } from '../utils/progressManagerCountingGame'; // Adjust path
+import { CountingGameProgress, saveGameProgress } from '../utils/progressManagerCountingGame'; 
+import { WordGameProgress } from '../utils/progressManagerWordGame'; 
 
 // --- Supabase Functions ---
 
@@ -86,7 +87,12 @@ interface CheckAchievementsArgs {
       // Card Matching Game Specific Event Types
       | 'match_made'
       | 'game_completed' // For card matching
-      | 'match_streak_achieved';
+      | 'match_streak_achieved'
+      // Word Game Specific Event Types
+      | 'word_game_level_just_completed' // Different from generic level_completed if needed
+      | 'word_game_stats_updated' // For score, completed levels count
+      ;
+      
     gameKey: string; // e.g., 'luganda_learning_game', 'counting_game'
     // Game-specific data carried by the event
     levelId?: number;
@@ -101,8 +107,12 @@ interface CheckAchievementsArgs {
     matchedCardValue?: string;            // For match_made, matching_game_specific_match
     streakCount?: number;                 // For matching_game_match_streak
     totalPairsMatchedAcrossGames?: number; // For matching_game_total_pairs (if tracked)
-    // isFirstMatchEver?: boolean; // For matching_game_first_match (alternative to just awarding once)
-    // isFirstGameEverCompleted?: boolean; // For matching_game_first_play
+    // Word Game specific event data
+    levelIndex?: number; // The index of the level just completed
+    wordGameProgress?: WordGameProgress; // Current progress state of the word game
+    allLevelsInGameCount?: number; // Total number of levels available in the word game
+    hintUsedThisLevel?: boolean; // For 'word_game_level_no_hint'
+    consecutiveLevelsCompleted?: number; // For 'word_game_consecutive_levels'
   };
 }
 
@@ -176,8 +186,7 @@ export const checkAndGrantNewAchievements = async ({
           break;
       }
     }
-    // Add 'else if (event.gameKey === 'counting_game')' block here for counting game achievements
-    // based on your previous logic, adapting to the new event structure.
+   
     else if (event.gameKey === 'counting_game') {
         switch (achDef.activity_type) {
           case 'counting_game_stage_complete': // from your earlier code
@@ -254,6 +263,50 @@ export const checkAndGrantNewAchievements = async ({
             shouldAward = true;
           }
           break;
+      }
+    }
+
+    else if (event.gameKey === 'word_game') {
+      switch (achDef.activity_type) {
+        case 'word_game_level_complete': // For "First Word!"
+          if (event.type === 'word_game_level_just_completed' && 
+              event.levelIndex === achDef.trigger_value) { // trigger_value is 0 for first level
+            shouldAward = true;
+          }
+          break;
+        case 'word_game_levels_milestone':
+          if (event.wordGameProgress && achDef.trigger_value !== null && achDef.trigger_value !== undefined &&
+              event.wordGameProgress.completedLevels.length >= Number(achDef.trigger_value)) {
+            shouldAward = true;
+          }
+          break;
+        case 'word_game_all_levels_complete':
+          if (event.type === 'game_completed' && event.wordGameProgress && event.allLevelsInGameCount &&
+              event.wordGameProgress.completedLevels.length === event.allLevelsInGameCount) {
+            shouldAward = true;
+          }
+          break;
+        case 'word_game_total_score_reach':
+          if (event.wordGameProgress && achDef.trigger_value !== null && achDef.trigger_value !== undefined &&
+              event.wordGameProgress.totalScore >= Number(achDef.trigger_value)) {
+            shouldAward = true;
+          }
+          break;
+        case 'word_game_level_no_hint':
+            if (event.type === 'word_game_level_just_completed' &&
+                event.levelIndex === achDef.trigger_value &&
+                event.hintUsedThisLevel === false) {
+                shouldAward = true;
+            }
+            break;
+        case 'word_game_consecutive_levels':
+            if (event.type === 'word_game_level_just_completed' && // Or a specific event type like 'word_game_streak_update'
+                event.consecutiveLevelsCompleted !== undefined &&
+                achDef.trigger_value !== null && achDef.trigger_value !== undefined &&
+                event.consecutiveLevelsCompleted >= Number(achDef.trigger_value)) {
+                shouldAward = true;
+            }
+            break;
       }
     }
 
